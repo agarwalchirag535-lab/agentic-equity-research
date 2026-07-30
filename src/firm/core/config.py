@@ -73,6 +73,11 @@ def line_item_registry() -> dict[str, Any]:
     return load_yaml("line_items.yaml")
 
 
+def reconciliation_thresholds() -> dict[str, float]:
+    """Bands for classifying a cross-filing disagreement (ADR-0024): rounding / restatement / misread."""
+    return load_thresholds()["reconciliation"]
+
+
 def load_playbooks() -> dict[str, Any]:
     """Business-model detection thresholds + per-model check playbooks (ADR-0017)."""
     return load_yaml("forensic_playbooks.yaml")

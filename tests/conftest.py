@@ -23,7 +23,37 @@ PUBLISHED = date(2026, 4, 1)
 FILING_PUBLISHED = date(2026, 6, 15)
 
 #: A clean-looking annual report: full Schedule III rows, clean CARO answers, notes with figures.
+#: The AUDITED statement pages. Kept distinct from the notes page on purpose: `find_statement_row`
+#: (ADR-0024) reads balance-sheet metrics only from pages that ARE the balance sheet, because on the real
+#: Alkyl Amines filings a document-wide search picked up a cash-flow movement line (negative receivables)
+#: and a sentence in the auditor's report. A fixture whose figures live on a notes page does not exercise
+#: the path the pipeline actually takes. Note-reference columns ("Trade Receivables 9 118.0") are included
+#: so the note-column stripping is exercised too.
+def _statement_pages(receivables, inventory, cash, revenue, pbt) -> tuple[str, str]:
+    balance_sheet = (
+        "Balance Sheet as at March 31, 2026\n"
+        "(` in crore)\n"
+        f"(a) Inventories 10  {inventory[0]}  {inventory[1]}\n"
+        f"(b) (i) Trade Receivables 9  {receivables[0]}  {receivables[1]}\n"
+        f"(c) (iii) Cash and Cash Equivalents 11  {cash[0]}  {cash[1]}\n"
+        "Total Assets  900.00  800.00\n"
+        "Total Equity and Liabilities  900.00  800.00\n"
+    )
+    profit_and_loss = (
+        "Statement of Profit and Loss for the year ended March 31, 2026\n"
+        "(` in crore)\n"
+        f"Revenue from operations  {revenue[0]}  {revenue[1]}\n"
+        f"Total Income  {revenue[0]}  {revenue[1]}\n"
+        f"Profit before tax  {pbt[0]}  {pbt[1]}\n"
+    )
+    return balance_sheet, profit_and_loss
+
+
 CLEAN_AR_PAGES: tuple[str, ...] = (
+    *_statement_pages(
+        ("118.00", "110.00"), ("96.00", "90.00"), ("40.00", "35.00"),
+        ("1,050.00", "1,000.00"), ("173.00", "157.00"),
+    ),
     (
         "Notes to the Financial Statements (₹ in crore)\n"
         "Note 1: Corporate Information\n"
@@ -64,6 +94,10 @@ CLEAN_AR_PAGES: tuple[str, ...] = (
 #: The same filing shape for a company whose receivables are running away from revenue (+110% vs +5%) —
 #: the channel-stuffing / fictitious-sales signature the universal SPEC §5 check exists to catch.
 FRAUD_AR_PAGES: tuple[str, ...] = (
+    *_statement_pages(
+        ("210.00", "100.00"), ("140.00", "90.00"), ("30.00", "28.00"),
+        ("1,050.00", "1,000.00"), ("186.00", "166.00"),
+    ),
     (
         "Notes to the Financial Statements (₹ in crore)\n"
         "Note 1: Corporate Information\n"

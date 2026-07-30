@@ -130,3 +130,23 @@ class FactStore:
             (ticker, metric, period, as_of.isoformat()),
         ).fetchone()
         return self._row_to_fact(row) if row is not None else None
+
+    def facts_for(self, ticker: str, metric: str, period: str) -> list[Fact]:
+        """EVERY stored fact for (ticker, metric, period), oldest source first — not point-in-time.
+
+        Deliberately unfiltered by `as_of`, because its purpose is the opposite of `query_fact`'s: comparing
+        what *different documents* assert about the same year. Two annual reports overlap by one year (the
+        later one's comparative column restates the earlier one's reported figure), and where they disagree
+        either the company restated or an extractor misread — both findings. Use `query_fact` for anything
+        a report relies on; use this only to audit the sources against each other (ADR-0024).
+        """
+        rows = self._conn.execute(
+            """
+            SELECT f.*, d.published_at, d.grade, d.extractor_version
+            FROM facts f JOIN documents d ON f.doc_id = d.doc_id
+            WHERE f.ticker = ? AND f.metric = ? AND f.period = ?
+            ORDER BY d.published_at ASC, f.rowid ASC
+            """,
+            (ticker, metric, period),
+        ).fetchall()
+        return [self._row_to_fact(row) for row in rows]

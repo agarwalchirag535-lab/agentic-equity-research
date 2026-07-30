@@ -201,6 +201,12 @@ def deep_dive(
     model: str = typer.Option("analysis", "--model", help="model role key from config/models.yaml"),
     company: str = typer.Option("", "--company", help="display name for the report header"),
     reports_root: str = typer.Option("reports", "--reports-root"),
+    filings: str = typer.Option(
+        "", "--filings",
+        help="path to a filings manifest (data/manifests/{TICKER}-filings.json). Ingests every audited "
+             "annual report published on/before --as-of as grade-A facts and walks the latest one's notes. "
+             "Without this the run rests on a grade-B screener snapshot (ADR-0024)."),
+    bronze: str = typer.Option("data/bronze", "--bronze", help="where the manifest's PDFs live"),
     force: bool = typer.Option(
         False, "--force", help="write the report even if a publication gate fails (debugging only)"),
 ) -> None:
@@ -224,8 +230,31 @@ def deep_dive(
 
     store = FactStore(db)
     try:
+        # PRIMARY SOURCES FIRST (owner directive 1, ADR-0024). Every annual report in the manifest that
+        # was published on or before `as_of` is ingested as grade-A facts; the most recent one is then
+        # handed to the run so its NOTES are enumerated and dispositioned, which is what the cash and
+        # related-party checks read. Without a manifest the run is screener-only and says so.
+        latest_filing = None
+        if filings:
+            from firm.core.ingest.filings import (
+                filing_from_manifest,
+                ingest_manifest,
+                load_manifest,
+            )
+
+            manifest = load_manifest(filings)
+            ingested = ingest_manifest(store, manifest, bronze=bronze, as_of=run_date)
+            typer.echo(f"  filings: ingested {len(ingested)} annual report(s) as grade-A facts")
+            usable = [
+                entry for entry in sorted(manifest["filings"], key=lambda e: str(e["period"]))
+                if date.fromisoformat(str(entry["published_at"])) <= run_date
+            ]
+            if usable:
+                latest_filing = filing_from_manifest(usable[-1], bronze)
+                typer.echo(f"  walking notes from {usable[-1]['file']} ({usable[-1]['period']})")
+
         result = run_deep_dive(
-            store, ticker, run_date, provider=llm, answers=prepared,
+            store, ticker, run_date, provider=llm, answers=prepared, filing=latest_filing,
             company_name=company or ticker, model=model, reports_root=reports_root,
             write=not force,
         )

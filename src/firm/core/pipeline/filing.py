@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Mapping, Sequence
 
-from firm.adapters.base.tables import ExtractedValue, find_row
+from firm.adapters.base.tables import ExtractedValue, find_statement_row, to_canonical_crore
 from firm.adapters.india.filings import disclosure_gaps, forensic_sections
 from firm.adapters.india.notes import (
     Note,
@@ -42,13 +42,21 @@ from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs
 from firm.core.report.assemble import NotesReview
 from firm.schemas.report import CheckOutcome
 
-#: Filing rows the Phase-2 checks need: metric key -> (label keywords, excluded keywords).
-#: `exclude` matters: "Trade Receivables ageing schedule" is a Schedule III table, not the balance.
-FILING_ROWS: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
-    D.RECEIVABLES: (("trade receivable", "sundry debtor"), ("ageing", "schedule")),
-    D.INVENTORY: (("inventories", "inventory"), ("ageing", "policy")),
-    D.SALES: (("revenue from operations", "revenue from operation"), ("note", "policy")),
-    D.CASH: (("cash and cash equivalent",), ("ageing", "policy")),
+#: Filing rows the Phase-2 checks need: metric -> (statement, label keywords, excluded keywords).
+#:
+#: The `statement` is load-bearing, not decoration. Searching a whole annual report for "Inventories" finds
+#: an auditor's sentence about stock verification; searching it for "Trade Receivables" finds the cash-flow
+#: statement's movement line, which is a NEGATIVE number. Both happened on the real Alkyl Amines filings
+#: (FY20, FY21) and both would have entered the fact store as grade A. Rows are therefore read only from the
+#: pages that ARE the balance sheet or the P&L (`find_statement_row`), and a label absent from those pages
+#: is UNAVAILABLE rather than sourced from prose.
+#:
+#: `exclude` still matters: "Trade Receivables ageing schedule" is a Schedule III table, not the balance.
+FILING_ROWS: Mapping[str, tuple[str, tuple[str, ...], tuple[str, ...]]] = {
+    D.RECEIVABLES: ("balance_sheet", ("trade receivable", "sundry debtor"), ("ageing", "schedule")),
+    D.INVENTORY: ("balance_sheet", ("inventories", "inventory"), ("ageing", "policy")),
+    D.CASH: ("balance_sheet", ("cash and cash equivalent",), ("ageing", "policy", "other bank")),
+    D.SALES: ("pnl", ("revenue from operations", "revenue from operation"), ("note", "policy")),
 }
 
 #: Note taxonomy category -> the deterministic checks that read that note. A note whose category has no
@@ -98,12 +106,15 @@ class FilingWalk:
 
 def register_filing_facts(
     store: FactStore, ticker: str, filing: FilingSource
-) -> tuple[dict[str, ExtractedValue], tuple[str, ...]]:
+) -> tuple[dict[str, ExtractedValue], tuple[str, ...], dict[str, str]]:
     """Read the needed rows out of the filing and store them as grade-A, locator-bound facts (Law 2).
 
     A row that is not present is simply not stored — the check that needed it then reports UNAVAILABLE
-    with the input named, which is the behaviour owner directive 2 requires.
+    with the input named, which is the behaviour owner directive 2 requires. Returns
+    ``(rows, fact_ids, unresolved)``, where `unresolved` maps a metric to why a row that WAS found could
+    not be trusted (today: an undeclared unit — see the scale-discipline note below).
     """
+    unresolved: dict[str, str] = {}
     store.add_document(Document(
         doc_id=filing.doc_id, source_url=filing.source_url, sha256=filing.sha256,
         published_at=filing.published_at, fetched_at=filing.published_at,
@@ -111,10 +122,26 @@ def register_filing_facts(
     ))
     rows: dict[str, ExtractedValue] = {}
     fact_ids: list[str] = []
-    for metric, (keywords, excluded) in FILING_ROWS.items():
-        row = find_row(filing.pages, keywords, exclude=excluded)
+    for metric, (statement, keywords, excluded) in FILING_ROWS.items():
+        row = find_statement_row(filing.pages, statement, keywords, exclude=excluded)
         if row is None or not row.values:
             continue
+
+        # SCALE DISCIPLINE. Indian filings report in lakhs ("₹ In Lakhs" on the balance-sheet page) while
+        # every screener fact in the store is in crore. This used to default the unit to `INR_cr` when the
+        # page declared nothing, which stored each filing figure 100x too large — carrying the filing's
+        # grade-A stamp, so it would be believed over the correct secondary value. A figure whose scale
+        # cannot be established is therefore NOT stored: the check that needed it reports UNAVAILABLE with
+        # the input named, which is the same treatment as an absent row and the honest one (ADR-0024).
+        if to_canonical_crore(row.values[0], row.unit_hint) is None:
+            unresolved[metric] = (
+                f"{row.label!r} found at {row.locator} but the page declares no unit the pipeline can "
+                f"resolve ({row.unit_hint or 'no declaration'}), so its scale is unknown and it is not "
+                f"stored — a wrong scale is indistinguishable from a wrong number once it carries a "
+                f"grade-{filing.grade} provenance"
+            )
+            continue
+
         rows[metric] = row
         columns = [(filing.period, row.values[0])]
         if filing.prior_period and len(row.values) > 1:
@@ -123,22 +150,28 @@ def register_filing_facts(
             fact_id = f"{filing.doc_id}:{metric}:{period}"
             store.add_fact(
                 fact_id=fact_id, doc_id=filing.doc_id, ticker=ticker, metric=metric,
-                period=period, value=value, unit=row.unit_hint or "INR_cr", locator=row.locator,
+                period=period, value=to_canonical_crore(value, row.unit_hint),
+                # The canonical scale is recorded, and the locator keeps the printed scale so a reader can
+                # re-derive the figure from the page exactly as printed.
+                unit="INR_cr", locator=f"{row.locator} (as printed: {row.unit_hint})",
             )
             fact_ids.append(fact_id)
-    return rows, tuple(fact_ids)
+    return rows, tuple(fact_ids), unresolved
 
 
 def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWalk:
     """Enumerate the notes, scan the mandated disclosures, and register the filing's figures as facts."""
-    rows, fact_ids = register_filing_facts(store, ticker, filing)
+    rows, fact_ids, unresolved = register_filing_facts(store, ticker, filing)
     notes = tuple(enumerate_notes(filing.pages))
 
     text = "\n".join(filing.pages)
     sections_missing, _ = disclosure_gaps(forensic_sections(text))
     schedule_missing, _ = schedule_iii_gaps(scan_schedule_iii(filing.pages))
     caro = tuple(caro_candidate_flags(parse_caro_clauses(text)))
-    missing = tuple(sorted({*sections_missing, *schedule_missing}))
+    # A row found but unusable is a disclosure/extraction gap in its own right, and must surface rather
+    # than vanish into a silently shorter `rows` mapping.
+    missing = tuple(sorted({*sections_missing, *schedule_missing, *(
+        f"{metric}: {why}" for metric, why in unresolved.items())}))
 
     def pair(metric: str) -> tuple[float, float] | None:
         row = rows.get(metric)

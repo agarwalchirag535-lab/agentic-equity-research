@@ -90,6 +90,19 @@ report:
   # clean its ratios look. On a screener snapshot alone nothing should ever reach COMPOUNDER.
   max_unanswered_high_line_items: 0
 
+# Cross-document reconciliation (ADR-0024): a later annual report's comparative column restates the prior
+# year, so consecutive filings overlap by one year and must agree. Classifying the disagreement matters:
+# reprinting at a different rounding is noise, a real restatement is a finding, and a huge gap is our own
+# extraction error. All PROVISIONAL until the Phase-6 golden set.
+reconciliation:
+  rounding_abs_cr: 0.01      # <= Rs 1 lakh apart: the two documents rounded differently, not a restatement
+  # Rounding is ABSOLUTE, tied to the precision the filings print (2dp in lakh). A relative band was tried
+  # at 5bp and was wrong in both directions: on FY23 revenue 5bp is Rs 0.84cr, so a Rs 0.72cr revenue
+  # reclassification was excused as "rounding" while an identical Rs 0.81cr one on the smaller FY22 base was
+  # flagged as a restatement. Same phenomenon, opposite verdicts, decided by the size of the denominator.
+  rounding_rel: 0.0
+  extraction_error_rel: 0.25 # >25% apart is not a restatement, it is a misread row — quarantine, never use
+
 screen:
   # SPEC §1 universe band and §8 Gate A liquidity/history floors
   mcap_min_cr: 300
