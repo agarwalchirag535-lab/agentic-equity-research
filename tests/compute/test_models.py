@@ -136,3 +136,30 @@ def test_trader_playbook_runs_revenue_inflation():
 def test_every_model_has_a_config_playbook(model):
     # guards against a model enum being added without its playbook (silent no-op adaptation)
     assert model.value in PB, f"missing playbook for {model.value}"
+
+
+def test_every_playbook_check_is_a_real_forensic_signal():
+    """A playbook naming a check that no signal implements would silently never fire — the worst kind
+    of bug in a fraud detector (the report would claim a check ran when nothing was evaluated)."""
+    from firm.core.compute.quality import ForensicMetrics
+
+    signals = set(ForensicMetrics.__dataclass_fields__)
+    # metric-valued fields carry values, not booleans; the boolean flags are the check names.
+    value_fields = {"cfo_pat", "cumulative_cfo_pat", "accrual_ratio", "beneish_m"}
+    # screen flag names that differ from their metric field name
+    aliases = {
+        "cumulative_cfo_pat": "cumulative_cfo_pat_low",
+        "cfo_pat": "cfo_pat_low",
+        "accrual_ratio": "high_accruals",
+        "beneish_m": "beneish_manipulator",
+        "cash_interest_inconsistent": "cash_interest_inconsistent",
+    }
+    known = (signals - value_fields) | set(aliases.values()) | value_fields
+
+    referenced: set[str] = set()
+    for entry in PB.values():
+        referenced |= set(entry.get("applies", ()))
+        referenced |= set(entry.get("suppress", ()))
+
+    unknown = referenced - known
+    assert unknown == set(), f"playbooks reference non-existent checks: {sorted(unknown)}"

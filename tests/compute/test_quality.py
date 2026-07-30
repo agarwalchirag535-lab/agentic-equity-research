@@ -17,10 +17,15 @@ from firm.core.compute.quality import (
     cumulative_cfo_pat_ratio,
     disclosure_completeness,
     forensic_screen,
+    adjusted_ebitda_bridge_gap,
+    capitalised_cost_share,
+    contract_asset_divergence,
     gain_on_sale_reliance,
     gnpa_drift_flag,
+    guarantees_to_net_worth,
     held_for_sale_reserve_flag,
     other_income_share,
+    promoter_loan_share,
     provision_book_divergence,
     provision_coverage_flag,
     provision_rate,
@@ -216,6 +221,73 @@ def test_revenue_inflation_tell():
     assert revenue_inflation_tell(0.80, 0.01, 0.50, 0.03) is True     # trader signature
     assert revenue_inflation_tell(0.80, 0.20, 0.50, 0.03) is False    # real margin -> fine
     assert revenue_inflation_tell(0.10, 0.01, 0.50, 0.03) is False    # slow growth -> fine
+
+
+# ---- model-specific checks (ADAPTIVE_FORENSICS §2 matrix) ---------------------------------------
+def test_contract_asset_divergence():
+    # EPC: unbilled revenue +80% while billed revenue +10% -> profit is increasingly an estimate
+    ca_g, rev_g, flag = contract_asset_divergence(180, 100, 110, 100, 0.30)
+    assert ca_g == pytest.approx(0.80) and rev_g == pytest.approx(0.10) and flag is True
+    _, _, ok = contract_asset_divergence(115, 100, 110, 100, 0.30)
+    assert ok is False
+
+
+def test_guarantees_to_net_worth():
+    ratio, flag = guarantees_to_net_worth(600, 1000, 0.50)
+    assert ratio == pytest.approx(0.60) and flag is True
+    ratio, flag = guarantees_to_net_worth(200, 1000, 0.50)
+    assert flag is False
+    # negative/zero net worth with guarantees outstanding = unbounded exposure
+    ratio, flag = guarantees_to_net_worth(100, 0, 0.50)
+    assert math.isinf(ratio) and flag is True
+    ratio, flag = guarantees_to_net_worth(0, -50, 0.50)
+    assert ratio == 0.0 and flag is False
+
+
+def test_capitalised_cost_share():
+    share, flag = capitalised_cost_share(45, 100, 0.30)
+    assert share == pytest.approx(0.45) and flag is True
+    _, ok = capitalised_cost_share(10, 100, 0.30)
+    assert ok is False
+    with pytest.raises(ValueError):
+        capitalised_cost_share(10, 0, 0.30)
+
+
+def test_adjusted_ebitda_bridge_gap():
+    # ₹12cr of add-backs on ₹100cr revenue = 12% of revenue "adjusted" away
+    gap, flag = adjusted_ebitda_bridge_gap(10, -2, 100, 0.05)
+    assert gap == pytest.approx(0.12) and flag is True
+    gap, flag = adjusted_ebitda_bridge_gap(10, 9, 100, 0.05)
+    assert flag is False
+    with pytest.raises(ValueError):
+        adjusted_ebitda_bridge_gap(10, 5, 0, 0.05)
+
+
+def test_promoter_loan_share():
+    share, flag = promoter_loan_share(30, 100, 0.10)
+    assert share == pytest.approx(0.30) and flag is True
+    _, ok = promoter_loan_share(5, 100, 0.10)
+    assert ok is False
+    # no advances at all -> nothing to divert, not a flag
+    assert promoter_loan_share(0, 0, 0.10) == (0.0, False)
+
+
+def test_screen_model_specific_flags():
+    m = ForensicMetrics(
+        promoter_lending=True, guarantees_heavy=True, contract_asset_divergent=True,
+        capitalised_cost_heavy=True, adjusted_ebitda_gap=True,
+    )
+    r = forensic_screen(SectorClass.NON_FINANCIAL, m, TH)
+    names = {f.name for f in r.flags}
+    assert {"promoter_lending", "guarantees_heavy", "contract_asset_divergent",
+            "capitalised_cost_heavy", "adjusted_ebitda_gap"} == names
+    # promoter lending is SEVERE on its own -> hard fail
+    assert r.verdict is ForensicVerdict.HARD_FAIL and r.hard_fail is True
+
+
+def test_screen_promoter_lending_alone_is_severe():
+    r = forensic_screen(SectorClass.NON_FINANCIAL, ForensicMetrics(promoter_lending=True), TH)
+    assert r.verdict is ForensicVerdict.HARD_FAIL
 
 
 # ---- aggregator: the deterministic Gate-B verdict ----------------------------------------------

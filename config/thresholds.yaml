@@ -48,6 +48,14 @@ universal_forensic:
   revenue_inflation_min_growth: 0.50  # trader tell: revenue growth at/above this ...
   revenue_inflation_max_margin: 0.03  # ... while gross margin at/below this = flag
 
+# Model-specific checks (ADAPTIVE_FORENSICS §2 matrix). PROVISIONAL until golden-set calibration.
+model_forensic:
+  contract_asset_flow_gap: 0.30       # EPC: contract-asset growth − revenue growth above this = flag
+  guarantees_to_net_worth_max: 0.50   # off-BS guarantees above this multiple of net worth = flag
+  capitalised_cost_max_share: 0.30    # share of R&D/dev spend capitalised above this = flag
+  adjusted_ebitda_gap_max: 0.05       # (adjusted − statutory) EBITDA above this share of revenue = flag
+  promoter_loan_max_share: 0.10       # loans to promoters/KMP above this share of advances = flag
+
 screen:
   # SPEC §1 universe band and §8 Gate A liquidity/history floors
   mcap_min_cr: 300

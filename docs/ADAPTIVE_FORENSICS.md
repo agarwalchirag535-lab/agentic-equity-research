@@ -88,9 +88,13 @@ Keyword-window section-spotting (today's `filings.py`) finds six sections. Line-
    7 models; conglomerates get the **union** of playbooks; **suppression always wins** (Beneish can never
    fire on the lending arm of a manufacturer-plus-NBFC); `UNIVERSAL` is the floor so an unclassified
    company is still screened; `gross_margin=None` ("not disclosed") is never read as zero. 100% covered.
-5. **Model-specific checks** in matrix order of India-frequency: LENDER extras → MANUFACTURER →
-   TRADER → EPC → the rest. *(Playbooks reference these by name; several are now coded — the remaining
-   model-specific ones from §2 are the next compute work.)*
+5. ✅ **Model-specific checks** — BUILT 2026-07-30: `contract_asset_divergence` (EPC unbilled-vs-billed
+   revenue), `guarantees_to_net_worth` (off-BS SPV exposure), `capitalised_cost_share` (R&D/dev cost
+   capitalisation), `adjusted_ebitda_bridge_gap` (add-backs as a share of revenue), `promoter_loan_share`
+   (**SEVERE** — Schedule III siphoning channel, applies universally). Wired into `forensic_screen`,
+   selected per model in `forensic_playbooks.yaml`, thresholds in `thresholds.yaml` → `model_forensic`.
+   A test guards that **every check named in a playbook is a real signal** — a typo'd playbook entry
+   would otherwise claim a check ran while nothing was evaluated. 100% covered.
 6. **Golden-set calibration per model** (Phase 6) — thresholds stop being provisional.
 
 **Chain proven end-to-end** (`tests/test_pipeline_e2e.py`, offline): BSE archive fixture → dated `Filing`

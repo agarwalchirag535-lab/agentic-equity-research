@@ -76,7 +76,22 @@ Existing: citation, arithmetic, consistency, hedge, evidence-graph R1–R6. Adde
 - **legal framing** — forensic claims render as evidence-indicates language with replication steps;
   unhedged accusation of fraud as fact = build failure.
 
-## 5. Formats
+## 5. Status — BUILT (2026-07-30)
+
+- `schemas/report.py` — `ResearchReport` (5 verdicts, 11 sections), `VerifiedCleanChecklist`,
+  `CheckRecord` (PASS / FLAG / NOT_APPLICABLE / UNAVAILABLE, the latter two requiring a reason),
+  `Criterion` (dated, filing-resolvable), `ReportClaim` (grade inline).
+- `core/validators/publication.py` — the three blocking gates: **P1** verified-clean completeness (every
+  expected check accounted for; note coverage must be 100%), **P2** symmetry (positives need ≥3 dated kill
+  criteria incl. one load-bearing; negatives need rehabilitation criteria; both need the opposing case and
+  non-empty open questions), **P3** legal framing (unhedged fraud accusations blocked; a FORENSIC_CAUTION
+  needs replication steps, ≥1 FLAG, and may not rest only on grade C/D).
+- `core/report/render.py` — markdown + JSON renderer. `write_report()` **runs the gates and refuses to
+  write an invalid report** (`ReportNotPublishable`), so a misleading artifact cannot reach disk by
+  accident. Uncited numbers render as `**UNCITED**` rather than passing as sourced.
+- 28 tests, all three modules 100% covered.
+
+## 6. Formats
 
 `reports/{TICKER}/{run_id}/report.md` + `report.json` (the structured object the validators check) —
 extending the existing `reports/ALKYLAMINE.md` + `.json` pattern. Markdown is the publishable artifact;

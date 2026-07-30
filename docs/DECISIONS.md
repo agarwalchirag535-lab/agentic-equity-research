@@ -313,3 +313,44 @@ cannot be dated or fetched is not archive material. Real API responses are froze
 `tests/fixtures/bse_*.json` so the parsers are tested against the production schema.
 Implemented: `adapters/india/exchange.py` (`BseFilingsSource` implements `FilingsSource`; 100% cov).
 
+
+---
+
+### ADR-0019 — Dual-verdict report is code, not just a spec; publication is gated
+**Context.** ADR-0016 defined the dual-verdict product (publish on PASS as well as FAIL) but left it a
+document. A spec that isn't enforced is a preference; the owner's directive — *"we will also publish a
+report if a company passes all the things"* — only becomes real if a positive report is held to the same
+evidentiary bar as a negative one.
+**Decision.** Implemented as three modules with blocking gates:
+- `schemas/report.py` — `ResearchReport` (5 verdicts × 11 sections), `VerifiedCleanChecklist` (every
+  check that ran, **passes included**), `CheckRecord` with `NOT_APPLICABLE`/`UNAVAILABLE` requiring a
+  stated reason, `Criterion` (dated, filing-resolvable), `ReportClaim` (grade rendered inline).
+- `core/validators/publication.py` — **P1** verified-clean completeness (every playbook-expected check
+  accounted for; 100% note coverage required), **P2** symmetry (positives ≥3 dated kill criteria incl. one
+  load-bearing; negatives need rehabilitation criteria; both need the opposing case and non-empty
+  `open_questions`), **P3** legal framing (unhedged fraud accusation blocked; a `FORENSIC_CAUTION` needs
+  replication steps, ≥1 FLAG, and may not rest solely on grade C/D).
+- `core/report/render.py` — markdown + JSON; `write_report()` runs the gates and **refuses** to write an
+  invalid report (`ReportNotPublishable`), so a misleading artifact cannot reach disk by accident.
+  Uncited numbers render as `**UNCITED**` rather than passing as sourced.
+**Consequences.** "We found nothing" is now falsifiable — the reader sees the check list. A `force=True`
+escape hatch exists only to persist a failing draft for debugging. Predictions/Brier wiring (SPEC §7)
+remains to be connected to `Criterion`.
+
+---
+
+### ADR-0020 — Model-specific checks land behind the playbook, with an anti-typo guard
+**Context.** ADAPTIVE_FORENSICS §2 named model-specific checks that no code implemented; playbooks
+referenced them by name. A playbook naming a check that doesn't exist is the worst failure mode in a
+fraud detector: the report claims a check ran while nothing was evaluated.
+**Decision.** Coded `contract_asset_divergence` (EPC: unbilled vs billed revenue),
+`guarantees_to_net_worth` (off-balance-sheet SPV exposure; non-positive net worth with guarantees =
+unbounded → flag), `capitalised_cost_share` (R&D/dev capitalisation), `adjusted_ebitda_bridge_gap`
+(add-backs scaled by *revenue*, which stays stable for loss-making companies where EBITDA does not), and
+`promoter_loan_share` (**SEVERE** — the Schedule III siphoning channel; applies universally, not per
+model). Thresholds in `thresholds.yaml` → `model_forensic`; selection in `forensic_playbooks.yaml`.
+Added a test asserting **every check named in any playbook is a real `ForensicMetrics` signal** (verified
+non-vacuous: a typo'd name fails it).
+**Consequences.** The §2 matrix is now executable for EPC/IT/real-estate/platform models, not just
+lender/manufacturer. Remaining matrix items (same-store-growth gap, ECL stage migration, RERA/USFDA
+ground-truth cross-checks) need external data and are deferred with that reason stated.

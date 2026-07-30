@@ -328,6 +328,88 @@ def revenue_inflation_tell(
     return revenue_growth >= min_growth and gross_margin <= max_margin
 
 
+# --------------------------------------------------------------------------------------------------
+# Model-specific checks (ADAPTIVE_FORENSICS §2 matrix). Selected by the playbook, never fired blindly.
+# All thresholds provisional until Phase-6 golden-set calibration.
+# --------------------------------------------------------------------------------------------------
+
+
+def contract_asset_divergence(
+    contract_assets_curr: float,
+    contract_assets_prior: float,
+    revenue_curr: float,
+    revenue_prior: float,
+    max_gap: float,
+) -> tuple[float, float, bool]:
+    """EPC/infra: unbilled revenue (contract assets) outrunning billed revenue.
+
+    Percentage-of-completion accounting lets a contractor book revenue before billing it. When contract
+    assets grow far faster than revenue, profit is increasingly an estimate rather than an invoice.
+    Thin wrapper over `stock_flow_divergence` so the EPC playbook has a named check.
+    """
+    return stock_flow_divergence(
+        contract_assets_curr, contract_assets_prior, revenue_curr, revenue_prior, max_gap
+    )
+
+
+def guarantees_to_net_worth(
+    guarantees: float, net_worth: float, max_ratio: float
+) -> tuple[float, bool]:
+    """Off-balance-sheet guarantees (typically to SPVs/subsidiaries) as a multiple of net worth.
+
+    The EPC/infra failure pattern: the parent looks solvent while guaranteeing SPV debt that can be
+    called. A ratio above ``max_ratio`` means the contingent exposure is material against equity.
+    Non-positive net worth with guarantees outstanding is unbounded exposure → flags.
+    """
+    if net_worth <= 0:
+        return (float("inf"), True) if guarantees > 0 else (0.0, False)
+    ratio = guarantees / net_worth
+    return ratio, ratio > max_ratio
+
+
+def capitalised_cost_share(
+    capitalised: float, total_spend: float, max_share: float
+) -> tuple[float, bool]:
+    """Share of a cost pool capitalised rather than expensed (R&D for pharma, dev cost for platforms).
+
+    Capitalising what peers expense moves cost off the P&L into the balance sheet, flattering current
+    margins and deferring the reckoning to an impairment. Returns (share, is_flagged).
+    """
+    if total_spend <= 0:
+        raise ValueError("total_spend must be positive")
+    share = capitalised / total_spend
+    return share, share > max_share
+
+
+def adjusted_ebitda_bridge_gap(
+    adjusted_ebitda: float, statutory_ebitda: float, revenue: float, max_gap_of_revenue: float
+) -> tuple[float, bool]:
+    """Platform/new-age: the gap between "adjusted" EBITDA and the statutory figure, scaled by revenue.
+
+    Every add-back is a claim that a real cost is not really a cost. Scaling by revenue (not by EBITDA,
+    which is often near zero or negative) keeps the measure stable for loss-making companies.
+    Returns (gap_as_share_of_revenue, is_flagged).
+    """
+    if revenue <= 0:
+        raise ValueError("revenue must be positive")
+    gap = (adjusted_ebitda - statutory_ebitda) / revenue
+    return gap, gap > max_gap_of_revenue
+
+
+def promoter_loan_share(
+    loans_to_promoters: float, total_loans_advances: float, max_share: float
+) -> tuple[float, bool]:
+    """Loans/advances to promoters, directors and KMP as a share of the total book.
+
+    Schedule III (2021) forces this disclosure precisely because it is a classic siphoning channel.
+    Zero total advances is not a flag — there is nothing to divert. Returns (share, is_flagged).
+    """
+    if total_loans_advances <= 0:
+        return 0.0, False
+    share = loans_to_promoters / total_loans_advances
+    return share, share > max_share
+
+
 def disclosure_completeness(
     required_fields: Sequence[str], present_fields: Sequence[str]
 ) -> tuple[list[str], bool]:
@@ -385,6 +467,12 @@ class ForensicMetrics:
     inventory_divergent: bool = False
     other_income_heavy: bool = False
     revenue_inflation: bool = False
+    # Model-specific signals (ADAPTIVE_FORENSICS §2) — fired only when the playbook selects them
+    contract_asset_divergent: bool = False
+    guarantees_heavy: bool = False
+    capitalised_cost_heavy: bool = False
+    adjusted_ebitda_gap: bool = False
+    promoter_lending: bool = False
 
 
 @dataclass(frozen=True)
@@ -471,6 +559,23 @@ def forensic_screen(
     if metrics.provision_book_divergent:
         flags.append(Flag("provision_book_divergent", Severity.MEDIUM,
                           "loan-loss provisions diverging sharply from loan-book growth"))
+
+    # Model-specific signals (ADAPTIVE_FORENSICS §2) — the playbook decides which of these were run.
+    if metrics.promoter_lending:
+        flags.append(Flag("promoter_lending", Severity.SEVERE,
+                          "material loans/advances to promoters, directors or KMP — siphoning channel"))
+    if metrics.guarantees_heavy:
+        flags.append(Flag("guarantees_heavy", Severity.HIGH,
+                          "off-balance-sheet guarantees large versus net worth"))
+    if metrics.contract_asset_divergent:
+        flags.append(Flag("contract_asset_divergent", Severity.HIGH,
+                          "unbilled revenue outrunning billed revenue — profit is an estimate"))
+    if metrics.capitalised_cost_heavy:
+        flags.append(Flag("capitalised_cost_heavy", Severity.MEDIUM,
+                          "outsized share of costs capitalised rather than expensed"))
+    if metrics.adjusted_ebitda_gap:
+        flags.append(Flag("adjusted_ebitda_gap", Severity.MEDIUM,
+                          "large gap between 'adjusted' and statutory EBITDA"))
 
     # Disclosure gap — missing legally-public data is a signal, never a silent skip (owner directive).
     if metrics.disclosure_gap:

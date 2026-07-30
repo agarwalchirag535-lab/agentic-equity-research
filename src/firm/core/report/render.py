@@ -1,0 +1,184 @@
+"""Render a validated `ResearchReport` to publishable markdown + auditable JSON (ADR-0016).
+
+Section order is fixed by REPORT_ARCHITECTURE §3 — the order *is* the argument: the verdict and its
+load-bearing points come first (so a reader cannot miss what is being claimed), the forensic section
+including its **passes** carries the credibility, and thesis/anti-thesis appear together so the opposing
+case can never be quietly dropped.
+
+Refuses to render an invalid report by default: publication is gated on the P1/P2/P3 validators, so a
+report that would mislead cannot be written to disk by accident.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from firm.core.validators.publication import validate_report
+from firm.schemas.report import CheckOutcome, ResearchReport
+
+_OUTCOME_MARK = {
+    CheckOutcome.PASS: "✅ pass",
+    CheckOutcome.FLAG: "🚩 flag",
+    CheckOutcome.NOT_APPLICABLE: "— n/a",
+    CheckOutcome.UNAVAILABLE: "⚠️ unavailable",
+}
+
+_VERDICT_HEADLINE = {
+    "COMPOUNDER": "Passes the compounding test",
+    "QUALITY_WRONG_PRICE": "Quality business, wrong price today",
+    "WATCH": "Watch — thesis not yet provable",
+    "FORENSIC_CAUTION": "Forensic caution — red flags evidenced below",
+    "INSUFFICIENT_DISCLOSURE": "Insufficient disclosure — opacity is the finding",
+}
+
+
+class ReportNotPublishable(RuntimeError):
+    """Raised when a report fails a publication gate. Carries the violations for the caller to log."""
+
+    def __init__(self, violations) -> None:  # noqa: ANN001 - list[PublicationViolation]
+        self.violations = violations
+        detail = "; ".join(f"{v.rule}:{v.field}" for v in violations)
+        super().__init__(f"report failed {len(violations)} publication gate(s): {detail}")
+
+
+def _criteria_table(title: str, criteria) -> list[str]:  # noqa: ANN001
+    if not criteria:
+        return []
+    lines = [f"### {title}", "", "| criterion | metric | test | resolve by | load-bearing |",
+             "|---|---|---|---|---|"]
+    for c in criteria:
+        lines.append(
+            f"| {c.statement} | `{c.metric}` | `{c.operator} {c.threshold}` | "
+            f"{c.resolve_by.isoformat()} | {'**yes**' if c.load_bearing else 'no'} |"
+        )
+    lines.append("")
+    return lines
+
+
+def render_markdown(report: ResearchReport) -> str:
+    """The publishable artifact. Every number in §4 renders with its `[fact:...]` citation token."""
+    r = report
+    headline = _VERDICT_HEADLINE.get(r.verdict.value, r.verdict.value)
+    out: list[str] = []
+
+    # 1. header
+    out += [
+        f"# {r.company_name} ({r.ticker}) — research note",
+        "",
+        f"**Verdict: `{r.verdict.value}` — {headline}**",
+        "",
+        f"_As-of {r.as_of.isoformat()} · run `{r.run_id}` · confidence "
+        f"{r.confidence.value:.2f} (from {r.confidence.evidence_count} facts, lowest grade "
+        f"{r.confidence.lowest_grade_relied_on.value}) · {r.confidence.rationale}_",
+        "",
+        f"> {r.disclaimer}",
+        "",
+    ]
+    if r.agent_versions:
+        versions = ", ".join(f"{k}@{v}" for k, v in sorted(r.agent_versions.items()))
+        out += [f"_Agents: {versions}_", ""]
+
+    # 2. executive summary + load-bearing points (grades inline — house style §8)
+    if r.executive_summary:
+        out += ["## Executive summary", "", r.executive_summary, ""]
+    if r.load_bearing_points:
+        out += ["### The load-bearing points", ""]
+        for claim in r.load_bearing_points:
+            out.append(f"- **[{claim.kind}, grade {claim.lowest_grade.value}]** {claim.text}")
+        out.append("")
+
+    # 3. business model in plain language
+    if r.business_model_plain:
+        out += ["## What this business actually does", "", r.business_model_plain, ""]
+
+    # 4. the numbers, each citation-locked
+    if r.computed_facts:
+        out += ["## The numbers (deterministic — Law 1)", "", "| metric | value | source |", "|---|---|---|"]
+        for metric, value in r.computed_facts.items():
+            cite = r.fact_citations.get(metric)
+            src = (f"`[fact:{cite.fact_id}]` {cite.doc_id} {cite.locator} (grade {cite.grade.value})"
+                   if cite else "**UNCITED**")
+            out.append(f"| {metric} | {value:,.2f} | {src} |")
+        out.append("")
+
+    # 5. forensic — passes included; this is the credibility backbone
+    out += ["## Forensic review", ""]
+    cl = r.checklist
+    if cl.business_models:
+        out += [f"_Business model(s) detected: **{', '.join(cl.business_models)}** — checks selected by "
+                f"playbook (ADR-0017)._", ""]
+    out += [f"**Note coverage: {cl.note_coverage:.0%}**"
+            + (f" · undispositioned: {cl.notes_undispositioned}" if cl.notes_undispositioned else ""),
+            ""]
+    if cl.records:
+        out += ["### Verified-clean checklist", "",
+                "_Every check that ran, passes included — a clean verdict with an invisible process is "
+                "worth nothing._", "",
+                "| check | outcome | detail | facts |", "|---|---|---|---|"]
+        for rec in cl.records:
+            facts = ", ".join(f"`[fact:{f}]`" for f in rec.fact_ids) or "—"
+            detail = rec.detail or rec.reason or ""
+            out.append(f"| `{rec.name}` | {_OUTCOME_MARK[rec.outcome]} | {detail} | {facts} |")
+        out.append("")
+    if cl.disclosure_gaps:
+        out += [f"**Disclosure gaps** (mandated but not found — a signal, not a blank): "
+                f"{', '.join(cl.disclosure_gaps)}", ""]
+    if r.forensic_narrative:
+        out += [r.forensic_narrative, ""]
+
+    # 6-7. management + valuation
+    if r.management_narrative:
+        out += ["## Management and governance", "", r.management_narrative, ""]
+    if r.valuation_narrative:
+        out += ["## Valuation", "", r.valuation_narrative, ""]
+
+    # 8. thesis AND anti-thesis — always both
+    out += ["## Thesis", "", r.thesis or "_none stated_", "",
+            "## Anti-thesis (the strongest case against)", "", r.anti_thesis or "_none stated_", ""]
+
+    # 9. symmetric falsifiability
+    out += ["## Falsifiability", ""]
+    out += _criteria_table("Kill criteria — what would break this thesis", r.kill_criteria)
+    out += _criteria_table("Rehabilitation criteria — what would reverse this verdict",
+                           r.rehabilitation_criteria)
+
+    # 10-11. open questions + appendix
+    if r.open_questions:
+        out += ["## Open questions", ""] + [f"- {q}" for q in r.open_questions] + [""]
+    if r.unavailable_items:
+        out += ["## Not available from primary sources", "",
+                "_Reported as unavailable rather than estimated._", ""]
+        out += [f"- {item}" for item in r.unavailable_items] + [""]
+    if r.replication_notes:
+        out += ["## Replication", "", "_How a third party reproduces these findings._", ""]
+        out += [f"{i}. {note}" for i, note in enumerate(r.replication_notes, 1)] + [""]
+
+    return "\n".join(out).rstrip() + "\n"
+
+
+def render_json(report: ResearchReport) -> str:
+    """The auditable artifact — the exact object the validators checked."""
+    return json.dumps(json.loads(report.model_dump_json()), indent=2, sort_keys=True) + "\n"
+
+
+def write_report(
+    report: ResearchReport, root: str | Path, *, force: bool = False
+) -> tuple[Path, Path]:
+    """Write `report.md` + `report.json` under ``root/{TICKER}/{run_id}/``.
+
+    Runs the publication gates first and refuses to write an invalid report unless ``force=True``
+    (which exists only so a caller can deliberately persist a failing draft for debugging).
+    Returns (markdown_path, json_path).
+    """
+    violations = validate_report(report)
+    if violations and not force:
+        raise ReportNotPublishable(violations)
+
+    out_dir = Path(root) / report.ticker / report.run_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+    md_path = out_dir / "report.md"
+    json_path = out_dir / "report.json"
+    md_path.write_text(render_markdown(report))
+    json_path.write_text(render_json(report))
+    return md_path, json_path

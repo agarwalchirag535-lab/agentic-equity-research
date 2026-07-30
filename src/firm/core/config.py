@@ -48,6 +48,11 @@ def universal_forensic_thresholds() -> dict[str, float]:
     return load_thresholds()["universal_forensic"]
 
 
+def model_forensic_thresholds() -> dict[str, float]:
+    """Thresholds for the model-specific checks (ADAPTIVE_FORENSICS §2)."""
+    return load_thresholds()["model_forensic"]
+
+
 def load_playbooks() -> dict[str, Any]:
     """Business-model detection thresholds + per-model check playbooks (ADR-0017)."""
     return load_yaml("forensic_playbooks.yaml")
