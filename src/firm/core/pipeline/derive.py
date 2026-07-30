@@ -57,6 +57,13 @@ RESERVES = "balance_sheet:Reserves"
 CWIP = "balance_sheet:CWIP"
 FIXED_ASSETS = "balance_sheet:Fixed Assets"
 TOTAL_ASSETS = "balance_sheet:Total Assets"
+#: Governance facts from the quarterly SEBI shareholding pattern (ADR-0035). Quarterly rather than annual,
+#: so they never enter an annual derivation — they exist so an agent can CITE promoter holding and pledge
+#: instead of abstaining, which is what `ownership_flows_analyst` had to do while the parser wrote nowhere.
+PROMOTER_HOLDING = "governance:Promoter Holding"
+PUBLIC_HOLDING = "governance:Public Holding"
+PROMOTER_PLEDGED = "governance:Promoter Pledged"
+
 CASH = "balance_sheet:Cash Equivalents"
 RECEIVABLES = "balance_sheet:Trade Receivables"
 INVENTORY = "balance_sheet:Inventories"
@@ -73,6 +80,11 @@ READ_METRICS: tuple[str, ...] = (
     CASH, RECEIVABLES, INVENTORY,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
 )
+
+
+#: Metrics filed quarterly rather than annually. Read against quarter labels (`Q2FY25`), never mixed into an
+#: annual derivation — a promoter stake is a point-in-time holding, not a flow to compound.
+QUARTERLY_METRICS: tuple[str, ...] = (PROMOTER_HOLDING, PUBLIC_HOLDING, PROMOTER_PLEDGED)
 
 
 def _worst_grade(grades: Sequence[str]) -> Grade:
@@ -129,8 +141,15 @@ def load_company_facts(
     *,
     start_year: int = 2015,
     metrics: Sequence[str] = READ_METRICS,
+    quarterly_metrics: Sequence[str] = QUARTERLY_METRICS,
 ) -> CompanyFacts:
-    """Read the known metric set for ``ticker`` as-of ``as_of``. Absent metrics are simply absent."""
+    """Read the known metric set for ``ticker`` as-of ``as_of``. Absent metrics are simply absent.
+
+    Two passes, because two cadences. Annual metrics are read against fiscal years; the SEBI shareholding
+    pattern is filed quarterly, so its facts carry quarter labels (`Q2FY25`) that an annual-only scan never
+    queries. Before the second pass the governance facts existed in the store, loaded into nothing, and
+    `ownership_flows_analyst` abstained for want of anything it could cite (ADR-0035).
+    """
     series: dict[str, dict[str, Fact]] = {}
     periods_with_data: list[str] = []
     for period in fiscal_years(as_of, start_year):
@@ -142,6 +161,14 @@ def load_company_facts(
                 found = True
         if found:
             periods_with_data.append(period)
+        # Quarterly facts hang off the fiscal year they fall in, so a run that knows its years knows its
+        # quarters. They are NOT added to `periods_with_data`: `history_years` counts annual periods, and a
+        # quarterly filing must not inflate the apparent length of the record.
+        for quarter in (f"Q{n}{period}" for n in (1, 2, 3, 4)):
+            for metric in quarterly_metrics:
+                fact = store.query_fact(ticker, metric, quarter, as_of=as_of)
+                if fact is not None:
+                    series.setdefault(metric, {})[quarter] = fact
     return CompanyFacts(ticker, as_of, tuple(periods_with_data), series)
 
 

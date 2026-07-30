@@ -133,8 +133,9 @@ enforces build order and reports three distinct kinds of skip. 54 governance doc
 sections that discovery had never opened. Remaining in this phase:
 1. ~~wire `deep_dive` to the roster~~ DONE (ADR-0033) — `--phase`/`--documents`; coverage gaps reach the
    report but never the verdict; pre-flight names unstaffed agents. DONE (ADR-0034): 8 agents now appear in a published report's
-   `agent_versions`. Remaining: parsers to turn ingested documents into citable facts (shareholding and
-   transcripts are downloaded and parsed but not registered), then peer ingest for `sector_analyst`.
+   `agent_versions`. Shareholding is now registered as grade-A quarterly facts and CITED in the report (ADR-0035).
+   Remaining: the transcript parser (guidance extraction), the older shareholding layout (14 quarters that
+   fail at location), and peer ingest for `sector_analyst`.
 2. parsers for shareholding (promoter %, pledge %, institutional trend) and transcripts (guidance extraction)
 3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
 

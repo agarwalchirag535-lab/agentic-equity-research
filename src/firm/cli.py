@@ -348,7 +348,18 @@ def deep_dive(
 
             from firm.core.orchestrator.roster import available_inputs_from
 
-            satisfied |= set(available_inputs_from(_json.loads(_Path(documents).read_text())))
+            manifest_json = _json.loads(_Path(documents).read_text())
+            satisfied |= set(available_inputs_from(manifest_json))
+            # Register the quarterly shareholding as grade-A governance facts (ADR-0035), so
+            # `ownership_flows_analyst` can CITE promoter holding and pledge instead of abstaining.
+            from firm.core.ingest.governance import ingest_shareholding_manifest
+
+            governance = ingest_shareholding_manifest(
+                store, manifest_json, bronze=f"{bronze}/{ticker}", as_of=run_date)
+            registered = [g for g in governance if g.fact_ids]
+            if governance:
+                typer.echo(f"  governance: {len(registered)} of {len(governance)} shareholding filings "
+                           f"registered as facts")
         if latest_filing is not None:
             satisfied |= {"financials", "filing", "segments"}
         available: tuple[str, ...] = tuple(sorted(satisfied))

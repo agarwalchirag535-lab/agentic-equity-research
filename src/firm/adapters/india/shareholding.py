@@ -38,9 +38,13 @@ _PLEDGE_QUESTION = re.compile(
     r"encumbered\s*\??\s*(yes|no)?",
     re.I,
 )
-#: The reporting date: "as on 30/09/2024", "as at September 30, 2024", "30-09-2024".
+#: The reporting date. Real filings write "As on : 30-09-2024" with a colon and spaces, and some give only
+#: "Quarter ending 30-09-2024" — an earlier pattern required "as on" followed immediately by the date and so
+#: matched none of the 27 Alkyl Amines filings, leaving every quarter undated.
 _AS_ON = re.compile(
-    r"as\s+(?:on|at|of)\s+(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})", re.I)
+    r"(?:as\s+(?:on|at|of)|quarter\s+end(?:ing|ed))\s*:?\s*(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})",
+    re.I,
+)
 
 #: A holding percentage is in (0, 100]. Share COUNTS are large integers, so a decimal in range is the
 #: discriminator that survives column interleaving.

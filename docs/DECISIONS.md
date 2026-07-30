@@ -919,3 +919,37 @@ into a better verdict, which is the separation of powers working.
 `transcript_analyst` scores no guidance drift, `ownership_flows_analyst` cites no holding, and
 `unit_economics_analyst` reports both unit counts as zero-meaning-unknown. That is the correct output for
 this state of the ingest, and far more useful than invented tonnage or a tone reading from a skim.
+
+### ADR-0035 — A parsed figure nothing can cite is not a fact
+**Context.** ADR-0032 parsed the SEBI shareholding pattern; nothing wrote the result anywhere an agent could
+reach. So `ownership_flows_analyst` ran and abstained — *"filings ingested, none registered as facts, so no
+holding may be cited"* — honest and useless. A parser whose output no report can quote has not closed the gap
+it was written for.
+
+**Decision — register quarterly governance facts, with three constraints that each caught something.**
+
+*Publication date is the filing deadline, not the quarter end.* SEBI Reg. 31 allows 21 days. Dating the
+filing at quarter end would place it public before it can exist, breaking Law 3 in the only direction that
+matters — the one that permits look-ahead.
+
+*Quarterly facts need a quarterly read path.* `load_company_facts` iterated fiscal years only, so
+`Q2FY25` was never queried and the facts loaded into nothing. A second pass reads quarter labels, and
+deliberately does **not** add them to `periods_with_data`: `history_years` counts annual periods, and a
+quarterly filing must not inflate the apparent length of the record.
+
+*Pledge stays tri-state through storage.* Stored 1.0/0.0 with unit `bool`, and **only when the filing
+answered**. An unanswered pledge question writes no fact, so silence can never be read as "no pledge"
+(ADR-0027 preserved past the parser).
+
+**The defect worth recording.** The fact ids were built straight from the metric name — `governance:Promoter
+Holding` — which contains a space, and the citation grammar cannot parse one. The gate that exists to let an
+agent quote a number rejected these facts outright: governance metrics that no report could ever cite, in a
+system whose entire premise is that every number carries a citation. Ids are now slugged
+(`…:promoter_holding:Q4FY26`); the metric name is unchanged, so queries and report tables read as before.
+The lesson generalises: a fact id is an opaque token consumed by a strict grammar, and deriving it from a
+human-readable label couples two things that have no reason to agree.
+
+**Result.** 12 quarters registered grade-A, spanning Q2FY23-Q4FY26. The report now carries its first
+primary-source governance claim: *"Promoter holding at the latest quarter read is 72.05%
+[fact:SHP-Q4FY26-…:promoter_holding:Q4FY26]"* — grade A, and the pledge question answered no in every
+quarter that answers it. The verdict is unchanged; a positive governance finding did not buy a better one.
