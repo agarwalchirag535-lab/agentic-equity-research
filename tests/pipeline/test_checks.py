@@ -274,3 +274,25 @@ def test_a_real_paradox_still_flags_when_the_inputs_are_material(store):
 
     assert record.outcome is CheckOutcome.FLAG
     assert "cash/assets" in record.detail
+
+
+def test_a_check_reports_the_provenance_span_it_rests_on(store):
+    """ADR-0028: a check drawing on grade A and grade B must say so.
+
+    `cash_debt_paradox` divides cash from the audited filing by total assets from the screener. Reported as
+    one number it launders the weaker source — a reader sees a filing-backed check and cannot tell half the
+    denominator came from an aggregator.
+    """
+    seed_store(store, "GRADED", clean_series())
+    facts = D.load_company_facts(store, "GRADED", AS_OF)
+    derived = D.derive_metrics(facts)
+    evaluation = evaluate_checks(
+        build_playbook([], model_playbooks()), derived, facts,
+        forensic=TH["forensic"], universal=universal_forensic_thresholds(),
+        model_specific=model_forensic_thresholds(),
+    )
+    ran = [r for r in evaluation.records if r.outcome is CheckOutcome.PASS and r.fact_ids]
+    assert ran, "expected at least one check to run on the seeded company"
+    # Every screener-sourced check is grade B and must name it.
+    assert all("(grade B)" in r.detail for r in ran)
+    assert not any("mixed provenance" in r.detail for r in ran)

@@ -19,9 +19,20 @@ from dataclasses import dataclass, field
 from typing import Sequence
 
 # "Note 29: Contingent Liabilities" / "NOTE 12 - Related Party" / "29. CONTINGENT LIABILITIES"
+#: Three heading forms, because Indian filings use all three and the first two alone missed almost every
+#: real note. "Note 9: Inventories" and "9. Inventories" were handled; the FY17-FY26 Alkyl Amines filings
+#: write the audited notes as a BARE number then the title — "41 RELATED PARTY DISCLOSURES", "38 EMPLOYEE
+#: BENEFITS", "39 Segment Reporting" — with no punctuation at all. Scoped enumeration found 3 notes where
+#: there were ~49, so `substantive_share` sat at 0% and the verdict was INSUFFICIENT_DISCLOSURE for a
+#: formatting reason rather than a disclosure one (ADR-0028).
+#:
+#: The bare form is the loosest, so it is anchored hard: the line must END after the title, which keeps it
+#: off balance-sheet rows ("9 Inventories 12,213.07 16,478.08" carries figures and is rejected). Combined
+#: with `notes_section_start` scoping, it does not reach the numbered paragraphs in the AGM notice or BRSR.
 _NOTE_HEADING = re.compile(
     r"^\s*(?:NOTE|Note)\s+(\d{1,3})\s*[:.\-–)]\s*(\S.{2,90})$|"
-    r"^\s*(\d{1,3})\s*[.)]\s+([A-Z][A-Za-z &,/()'\-]{3,90})\s*$"
+    r"^\s*(\d{1,3})\s*[.)]\s+([A-Z][A-Za-z &,/()'\-]{3,90})\s*$|"
+    r"^\s*(\d{1,3})\s+([A-Z][A-Za-z &,/()'\-]{4,90})\s*$"
 )
 
 # CARO clause markers: (i) ... (xxi), at line starts.
@@ -159,8 +170,8 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
             m = _NOTE_HEADING.match(line)
             if not m:
                 continue
-            number = int(m.group(1) or m.group(3))
-            title = (m.group(2) or m.group(4) or "").strip(" .:-–")
+            number = int(m.group(1) or m.group(3) or m.group(5))
+            title = (m.group(2) or m.group(4) or m.group(6) or "").strip(" .:-–")
             if number in seen:
                 continue
             seen.add(number)

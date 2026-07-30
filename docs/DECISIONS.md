@@ -678,3 +678,33 @@ headings — scoped enumeration finds 3 notes where there are ~49 — so `substa
 verdict remains `INSUFFICIENT_DISCLOSURE` on that basis. The pattern in `notes_content.py:_NOTE_HEADING` DOES
 match them (it locates notes 38-49 reliably), so the fix is to port it. That is the next task, and it is now a
 one-file change rather than an open question.
+
+### ADR-0028 — Note headings come in three forms, and a check must declare its provenance span
+**Decision 1 — the bare-number heading.** `notes.py` matched "Note 9: Inventories" and "9. Inventories" but
+not the form these filings actually use for the audited notes: a bare number, whitespace, then the title —
+"41 RELATED PARTY DISCLOSURES", "38 EMPLOYEE BENEFITS". Scoped enumeration found **3 notes where there are
+~49**, so `substantive_share` sat at 0% and ALKYLAMINE was `INSUFFICIENT_DISCLOSURE` for a *formatting* reason
+dressed up as a disclosure finding — the worst kind of wrong answer, because it is unfalsifiable from the
+outside. Adding the third form takes FY26 to 11 notes with `related_party`, `tax`, `segment`, `leases` and
+`employee_benefits` correctly categorised, and substantive coverage from 0% to 9%.
+
+The bare form is the loosest of the three, so it is anchored hard: the line must END after the title, which
+keeps it off balance-sheet rows ("9 Inventories 12,213.07 16,478.08" carries figures and is rejected). With
+`notes_section_start` scoping it does not reach the AGM notice or the BRSR.
+
+**Decision 2 — surface mixed-grade arithmetic rather than refuse it.** `cash_debt_paradox` divides cash read
+from the audited filing (grade A) by total assets from the screener snapshot (grade B) and reports the ratio as
+one measurement. That silently launders the weaker source: Law 2's chain says "filing-backed check" while half
+the denominator came from an aggregator. Every `CheckRecord` detail now carries its provenance span —
+`(grade B)`, or `(grades A+B — mixed provenance, weakest is B)`.
+
+Surfacing was chosen over refusing deliberately. Refusing would disable the cash checks entirely until an AR
+total-assets row exists, trading a *visible* weakness for an *invisible* gap — and ADR-0025 was caused by an
+invisible gap. The rule is the one ADR-0021 already applies to `Derivation.citation`: a derived figure may
+never look better-sourced than its worst input. It is now true of checks as well as derivations.
+
+**Consequence.** `promoter_lending` reports real content ("categories disclosed = remuneration; KMP
+remuneration ₹27.69cr"). Reaching the 50% substantive floor needs content readers for most note categories —
+inventory, receivables, borrowings, contingent liabilities, tax, leases, employee benefits, segment — which is
+several sessions of work, not one fix. Recorded honestly in STATUS rather than papered over by lowering the
+floor: the floor is right and the coverage is not there yet.

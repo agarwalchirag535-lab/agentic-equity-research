@@ -110,11 +110,32 @@ class CheckEvaluation:
 
 
 class _Recorder:
-    def __init__(self, playbook: Playbook) -> None:
+    def __init__(self, playbook: Playbook, grades: Mapping[str, str] | None = None) -> None:
         self.playbook = playbook
         self.records: list[CheckRecord] = []
         self.fired: set[str] = set()
         self.values: dict[str, float] = {}
+        #: fact_id -> grade, so a record can report the provenance SPAN of what it consumed.
+        self.grades = dict(grades or {})
+
+    def _grade_note(self, fact_ids: Sequence[str]) -> str:
+        """"(grades: A)" or "(grades: A+B — mixed provenance)" for the facts a check consumed.
+
+        MIXED-GRADE ARITHMETIC (ADR-0028). `cash_debt_paradox` divides cash read from the audited filing
+        (grade A) by total assets from the screener snapshot (grade B). The ratio is then reported as though
+        it were one measurement, and Law 2's provenance chain silently launders the weaker source: a reader
+        sees a filing-backed check and cannot tell that half its denominator came from an aggregator.
+        Surfacing beats refusing here — refusing would disable the cash checks entirely until the AR yields
+        a total-assets row, which trades a visible weakness for an invisible gap — but it must be VISIBLE,
+        and a derived ratio must never look better-sourced than its worst input (the rule ADR-0021 already
+        applies to `Derivation.citation`).
+        """
+        seen = sorted({self.grades[f] for f in fact_ids if f in self.grades})
+        if not seen:
+            return ""
+        if len(seen) == 1:
+            return f" (grade {seen[0]})"
+        return f" (grades {'+'.join(seen)} — mixed provenance, weakest is {seen[-1]})"
 
     def unavailable(self, check: str, missing: Sequence[str]) -> None:
         self.records.append(CheckRecord(
@@ -123,6 +144,7 @@ class _Recorder:
         ))
 
     def ran(self, check: str, flagged: bool, detail: str, fact_ids: Sequence[str]) -> None:
+        detail = f"{detail}{self._grade_note(fact_ids)}"
         self.records.append(CheckRecord(
             name=check,
             outcome=CheckOutcome.FLAG if flagged else CheckOutcome.PASS,
@@ -165,7 +187,13 @@ def evaluate_checks(
 
         check_inputs = check_input_thresholds()
     ext = external or ExternalInputs()
-    r = _Recorder(playbook)
+    # Grades of every fact in scope, so each record can report the provenance span it rests on (ADR-0028).
+    grades = {
+        fact.fact_id: fact.grade
+        for metric in facts.series for fact in facts.series[metric].values()
+    }
+    grades.update({f"derived:{name}": d.citation.grade.value for name, d in derived.values.items()})
+    r = _Recorder(playbook, grades)
 
     def missing_for(*metrics: str) -> tuple[str, ...]:
         return tuple(m for metric in metrics for m in derived.missing.get(metric, (metric,)))
