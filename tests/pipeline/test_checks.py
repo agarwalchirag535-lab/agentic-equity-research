@@ -210,3 +210,67 @@ def test_unavailable_share_is_one_when_nothing_is_applicable(store):
         playbook, D.derive_metrics(facts), facts, forensic=TH["forensic"],
         universal=universal_forensic_thresholds(), model_specific=model_forensic_thresholds())
     assert evaluation.records == () and evaluation.unavailable_share == 1.0
+
+
+# ------------------------------------------------------------------------------------------------
+# Input plausibility for the deterministic checks (ADR-0025).
+#
+# These exist because the first primary-source run published a FORENSIC_CAUTION on a real listed company
+# from two degenerate inputs. A check may not accuse a company on a number that means nothing.
+
+
+def _paradox_setup(store, *, cash_cr: float, borrowings_cr: float, assets_cr: float = 1896.0,
+                   interest_cr: float = 1.0):
+    """A minimal company plus a filing whose only job is to supply a cash figure."""
+    from firm.core.pipeline.checks import ExternalInputs
+
+    series = clean_series()
+    series["balance_sheet:Borrowings"] = [borrowings_cr] * 6
+    series["balance_sheet:Total Assets"] = [assets_cr] * 6
+    series["pnl:Interest"] = [interest_cr] * 6
+    seed_store(store, "PARADOX", series)
+    facts = D.load_company_facts(store, "PARADOX", AS_OF)
+    derived = D.derive_metrics(facts)
+    evaluation = evaluate_checks(
+        build_playbook([], model_playbooks()), derived, facts,
+        forensic=TH["forensic"], universal=universal_forensic_thresholds(),
+        model_specific=model_forensic_thresholds(),
+        external=ExternalInputs(cash=cash_cr),
+    )
+    return evaluation
+
+
+def test_immaterial_borrowings_make_the_paradox_check_unavailable_not_a_flag(store):
+    """ALKYLAMINE: Interest ₹1cr / Borrowings ₹1cr = a "100% cost of debt" that fired FORENSIC_CAUTION.
+
+    Both are rounded screener figures. A cost-of-debt ratio on ₹1cr of year-end debt is an artefact of
+    rounding, not a rate the company pays, so the check must decline to run.
+    """
+    evaluation = _paradox_setup(store, cash_cr=94.15, borrowings_cr=1.0)
+    record = next(r for r in evaluation.records if r.name == "cash_debt_paradox")
+
+    assert record.outcome is CheckOutcome.UNAVAILABLE
+    assert "artefact of rounding" in record.reason
+
+
+def test_an_impossible_cash_to_assets_ratio_is_reported_as_our_fault_not_theirs(store):
+    """cash/assets above 1 is arithmetically impossible, so it is a unit or extraction fault here.
+
+    This read 496.6% when a lakh cash figure met a crore asset base, and flagged the company for it.
+    """
+    evaluation = _paradox_setup(store, cash_cr=9415.34, borrowings_cr=100.0)
+    record = next(r for r in evaluation.records if r.name == "cash_debt_paradox")
+
+    assert record.outcome is CheckOutcome.UNAVAILABLE
+    assert "impossible" in record.reason
+    assert "different scales" in record.reason or "misread" in record.reason
+
+
+def test_a_real_paradox_still_flags_when_the_inputs_are_material(store):
+    """The guard must not disarm the check: material debt at a high rate on a large cash pile still fires."""
+    # ₹60cr of interest on ₹500cr of debt is a real 12% rate, held alongside ₹600cr of cash.
+    evaluation = _paradox_setup(store, cash_cr=600.0, borrowings_cr=500.0, interest_cr=60.0)
+    record = next(r for r in evaluation.records if r.name == "cash_debt_paradox")
+
+    assert record.outcome is CheckOutcome.FLAG
+    assert "cash/assets" in record.detail

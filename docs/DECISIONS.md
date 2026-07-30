@@ -562,3 +562,42 @@ still missing for Phase 5 to close: `resolver.py` is never invoked against a lat
 *resolved* yet; `memory/lessons.jsonl` does not exist; and `core/evolution/` is still empty. The ledger has
 inputs and no loop — but the inputs are real, dated and idempotent, which is the part that had to be right
 before anything scored them.
+
+### ADR-0025 — A deterministic check may not fire on a degenerate input
+**Context.** The first primary-source run of ALKYLAMINE published `FORENSIC_CAUTION` on `cash_debt_paradox`
+with the detail `cash/assets 496.6% at cost of debt 100.0%`. Neither number was real. Cash cannot be five
+times total assets, and the 100% cost of debt was Interest ₹1cr ÷ Borrowings ₹1cr — two *rounded* grade-B
+screener figures whose ratio carries no information. On a real listed company that is a defamatory output,
+and no existing gate could stop it: P3 checks the *prose*, which was correctly hedged, and the verdict came
+from a deterministic check, which the architecture treats as authoritative.
+
+Two distinct causes, both fixed here.
+
+**Cause 1 — the unit fix was half-done (ADR-0024 follow-through).** `register_filing_facts` normalised the
+figures it wrote to the fact store, but `walk_filing` still built `ExternalInputs` from `row.values`, i.e.
+the figure *as printed* in lakh. The checks then mixed scales: a lakh cash figure divided by a crore asset
+base gives exactly 496.6%. Ratio-of-pairs checks (receivables vs revenue growth) are scale-invariant, which
+is precisely why the bug hid until a check compared across two sources. Everything crossing into
+`ExternalInputs` is now canonical ₹ crore, so no check can see two scales at once.
+
+**Cause 2 — the plausibility guard existed in only one layer.** ADR-0022 gave the *narration* layer a
+`plausible:` precondition, and it worked: the line-by-line section correctly **refuses** to narrate this same
+100% cost of debt, saying the ratio is uninformative because interest is a flow and borrowings a year-end
+snapshot. The *check* layer had no equivalent, so the identical input produced an accusation instead of an
+abstention. `config/thresholds.yaml:check_inputs` now carries two preconditions:
+
+* `min_debt_to_assets` (2%) — below this the implied cost of debt is an artefact of rounding rather than a
+  rate the company pays, so the paradox check declines to run. ALKYLAMINE's borrowings are 0.05% of assets.
+* `max_cash_to_assets` (1.0) — an arithmetically impossible ratio is a fault in OUR pipeline, never a
+  finding about the company. It reports unavailable and says the inputs are on different scales or a row was
+  misread, which is what a reader needs in order to fix it.
+
+**Consequence.** ALKYLAMINE returns `INSUFFICIENT_DISCLOSURE` (43% of the playbook unevaluable) with
+`disclosure_gap` as the one live flag — the Schedule III rows genuinely are not in the filing text. The
+unavailable share *rose* from 29% to 43% because a false flag became an honest abstention, which is the
+right direction: 29% was cheaper and wrong.
+
+**The general rule this establishes.** A precondition on an input is not the same thing as a threshold on a
+result, and the firm needs both. Every check added from here states what its inputs must look like to be
+worth believing, and mixed-grade arithmetic (a grade-A filing figure over a grade-B screener figure) is a
+smell that deserves the same treatment — noted in STATUS as the remaining piece.

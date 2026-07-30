@@ -127,7 +127,15 @@ a company for the firm's own unfinished note-parser would reject every good busi
 
 ## 3. What is REMAINING (priority order)
 
-### 0. A FALSE-POSITIVE FORENSIC_CAUTION — fix before any real company is judged ← **blocking**
+### 0. ~~A FALSE-POSITIVE FORENSIC_CAUTION~~ — FIXED 2026-07-30 (ADR-0025)
+Both causes fixed: `ExternalInputs` is now canonical ₹ crore (the ADR-0024 unit fix had normalised only the
+fact store, so a lakh cash figure met a crore asset base and produced `cash/assets 496.6%`), and
+`config/thresholds.yaml:check_inputs` gives the deterministic checks the input-plausibility precondition the
+narration layer already had. ALKYLAMINE now returns INSUFFICIENT_DISCLOSURE with `disclosure_gap` as the only
+live flag. **Still open from this**: a check may silently divide a grade-A filing figure by a grade-B
+screener figure; mixed-grade arithmetic should be surfaced or refused.
+
+<details><summary>original entry</summary>
 Found 2026-07-30 on the first primary-source run of ALKYLAMINE. The deterministic screen returned
 `FORENSIC_CAUTION` on `cash_debt_paradox`, and the finding is **not real**. Its detail line reads
 `cash/assets 496.6% at cost of debt 100.0%` — cash cannot be 5x total assets, and the 100% cost of debt is
@@ -146,6 +154,7 @@ degenerate returns FLAG instead of UNAVAILABLE. Work:
   screener, and the ratio silently spans both
 - the `cash/assets` denominator itself is wrong and needs tracing — 94.15/496.6% implies a ₹19cr asset base
   against a real ~₹2,000cr balance sheet
+</details>
 
 ### A. Close the data gap the first real report exposed ← **the highest-value next step**
 **As of ADR-0022 this backlog generates itself.** Every report now emits `disclosure_backlog`: the

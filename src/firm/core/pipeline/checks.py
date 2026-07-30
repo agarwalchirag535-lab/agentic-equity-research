@@ -144,13 +144,20 @@ def evaluate_checks(
     universal: Mapping[str, float],
     model_specific: Mapping[str, float],
     external: ExternalInputs | None = None,
+    check_inputs: Mapping[str, float] | None = None,
 ) -> CheckEvaluation:
     """Evaluate every check the playbook selects, and mark every suppressed check NOT_APPLICABLE.
 
-    `forensic` / `universal` / `model_specific` are the config threshold blocks (`config/thresholds.yaml`).
+    `forensic` / `universal` / `model_specific` / `check_inputs` are the config threshold blocks
+    (`config/thresholds.yaml`). `check_inputs` carries the ADR-0025 plausibility preconditions: a check whose
+    inputs are degenerate reports UNAVAILABLE rather than accusing the company.
     Checks the playbook does not name at all are simply not in the report — that is what a playbook is
     for; the *suppressed* ones are recorded, because a suppression is a decision worth publishing.
     """
+    if check_inputs is None:
+        from firm.core.config import check_input_thresholds
+
+        check_inputs = check_input_thresholds()
     ext = external or ExternalInputs()
     r = _Recorder(playbook)
 
@@ -226,6 +233,23 @@ def evaluate_checks(
                 if debt is None:
                     absent.append(f"{D.BORROWINGS} {derived.last_period}")
                 r.unavailable(check, absent)
+            elif (impossible := ext.cash / assets.value) > check_inputs["max_cash_to_assets"]:
+                # Arithmetically impossible, so this is a unit or extraction fault in OUR pipeline, not a
+                # finding about the company. It is reported as unavailable and named as a fault rather than
+                # flagged — this exact ratio read 496.6% when a lakh cash figure met a crore asset base.
+                r.unavailable(check, [
+                    f"cash/assets computes to {impossible:.1%}, which is impossible — the inputs are on "
+                    f"different scales or a row was misread, so this check cannot run"
+                ])
+            elif (debt_share := debt.value / assets.value) < check_inputs["min_debt_to_assets"]:
+                # Immaterial borrowings make the implied cost of debt an artefact of rounding: ALKYLAMINE's
+                # Rs 1cr of debt against Rs 1cr of interest produced "100%". A paradox check needs real debt
+                # for the paradox to exist at all.
+                r.unavailable(check, [
+                    f"borrowings are {debt_share:.2%} of assets (floor "
+                    f"{check_inputs['min_debt_to_assets']:.0%}), so the implied cost of debt "
+                    f"({cod.value:.0%}) is an artefact of rounding rather than a rate the company pays"
+                ])
             else:
                 flagged = quality.cash_debt_paradox(
                     ext.cash, assets.value, debt.value, cod.value,

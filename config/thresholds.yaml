@@ -94,6 +94,19 @@ report:
 # year, so consecutive filings overlap by one year and must agree. Classifying the disagreement matters:
 # reprinting at a different rounding is noise, a real restatement is a finding, and a huge gap is our own
 # extraction error. All PROVISIONAL until the Phase-6 golden set.
+# Input plausibility for the DETERMINISTIC checks (ADR-0025). ADR-0022 gave the narration layer a
+# `plausible:` guard that refuses to describe a degenerate ratio; the check layer had no equivalent, so it
+# fired a FORENSIC_CAUTION on ALKYLAMINE off an implied cost of debt of 100% -- Interest Rs 1cr / Borrowings
+# Rs 1cr, two ROUNDED screener figures whose ratio carries no information. A check may not accuse a company
+# on an input that means nothing.
+check_inputs:
+  # A cost-of-debt ratio is only informative when the borrowings are material. Below this share of total
+  # assets the year-end balance is noise and the implied rate is an artefact of rounding.
+  min_debt_to_assets: 0.02
+  # Ratios that are arithmetically impossible indicate a unit or extraction fault, never a finding. Cash
+  # cannot exceed total assets; a value above this fails loudly instead of flagging the company.
+  max_cash_to_assets: 1.0
+
 reconciliation:
   rounding_abs_cr: 0.01      # <= Rs 1 lakh apart: the two documents rounded differently, not a restatement
   # Rounding is ABSOLUTE, tied to the precision the filings print (2dp in lakh). A relative band was tried

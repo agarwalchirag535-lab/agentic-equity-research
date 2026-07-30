@@ -73,6 +73,11 @@ def line_item_registry() -> dict[str, Any]:
     return load_yaml("line_items.yaml")
 
 
+def check_input_thresholds() -> dict[str, float]:
+    """Plausibility preconditions a deterministic check's inputs must clear before it may fire (ADR-0025)."""
+    return load_thresholds()["check_inputs"]
+
+
 def reconciliation_thresholds() -> dict[str, float]:
     """Bands for classifying a cross-filing disagreement (ADR-0024): rounding / restatement / misread."""
     return load_thresholds()["reconciliation"]

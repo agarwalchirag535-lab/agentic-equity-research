@@ -173,11 +173,24 @@ def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWa
     missing = tuple(sorted({*sections_missing, *schedule_missing, *(
         f"{metric}: {why}" for metric, why in unresolved.items())}))
 
-    def pair(metric: str) -> tuple[float, float] | None:
+    # UNITS, AGAIN — and this is the half the first fix missed. `register_filing_facts` normalises what it
+    # writes to the fact store, but `ExternalInputs` was still built from `row.values`, i.e. the figure AS
+    # PRINTED (lakh). The checks then mixed the two scales: `cash_debt_paradox` divided a lakh cash figure
+    # by a crore asset figure and reported "cash/assets 496.6%", which fired a FORENSIC_CAUTION on a company
+    # whose real ratio is 4.97%. Ratio-of-pairs checks (receivables vs revenue growth) are scale-invariant
+    # and survived, which is exactly why the bug stayed hidden until a check compared across sources.
+    #
+    # Everything crossing into `ExternalInputs` is therefore converted to canonical ₹ crore here, so a check
+    # can never see two scales at once.
+    def canonical(metric: str, index: int) -> float | None:
         row = rows.get(metric)
-        if row is None or len(row.values) < 2:
+        if row is None or len(row.values) <= index:
             return None
-        return row.values[0], row.values[1]
+        return to_canonical_crore(row.values[index], row.unit_hint)
+
+    def pair(metric: str) -> tuple[float, float] | None:
+        first, second = canonical(metric, 0), canonical(metric, 1)
+        return None if first is None or second is None else (first, second)
 
     ids_by_check: dict[str, tuple[str, ...]] = {}
     locators: dict[str, str] = {}
@@ -197,7 +210,7 @@ def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWa
         receivables=pair(D.RECEIVABLES),
         inventory=pair(D.INVENTORY),
         revenue=pair(D.SALES),
-        cash=rows[D.CASH].values[0] if D.CASH in rows else None,
+        cash=canonical(D.CASH, 0),
         disclosure_gaps=missing,
         disclosure_scanned=True,
         source_locators=locators,
