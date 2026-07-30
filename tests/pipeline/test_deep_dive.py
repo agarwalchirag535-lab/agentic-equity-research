@@ -115,11 +115,24 @@ def test_write_packets_then_read_answers_round_trips(store, tmp_path):
     assert set(read_answers(tmp_path)) == {"business_analyst"}
 
 
-def test_a_missing_answer_and_no_provider_is_an_explicit_error(store):
+def test_a_missing_answer_fails_fast_and_names_every_unstaffed_agent(store):
+    """Pre-flight (ADR-0033), and it must run BEFORE any agent call.
+
+    Previously an agent with no answer fell through to the configured provider — by default the local stub,
+    whose output fails schema validation — so the run burned three retries per unstaffed agent and died with
+    "agent output failed validation after 3 attempts", naming no agent and not hinting at the cause. Now
+    that the roster grows with the build phase, planning more agents than the operator has answered is an
+    ordinary situation and deserves a precise error.
+    """
     seed_store(store, "ACME", clean_series())
     partial = {"business_analyst": clean_answers("ACME")["business_analyst"]}
-    with pytest.raises(ValueError, match="no provider and no prepared answer"):
+    with pytest.raises(ValueError, match="no prepared answer for 2 planned agent") as caught:
         run_deep_dive(store, "ACME", AS_OF, answers=partial, write=False)
+
+    message = str(caught.value)
+    assert "financial_statement_analyst" in message and "forensic_accountant" in message
+    assert "firm packets" in message          # the remedy, not just the complaint
+    assert "lower --phase" in message
 
 
 def test_write_false_returns_the_full_result_without_touching_disk(store, tmp_path):

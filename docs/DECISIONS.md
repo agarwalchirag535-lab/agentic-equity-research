@@ -848,3 +848,38 @@ patterns do not match at all — they fail at location, not at reconciliation, s
 Extending to that layout is the next task and is precisely specified: the files are named in
 `data/manifests/ALKYLAMINE-documents.json` and every one fails with "the promoter and public category rows
 were not both located".
+
+### ADR-0033 — The roster drives the run, and an unstaffed agent is visible twice
+**Context.** ADR-0030 built the roster; nothing consumed it. `deep_dive` still defaulted to `PHASE2_AGENTS`,
+so the published report's `agent_versions` listed the same three agents it had since Phase 2 and the roster's
+89% staffing existed only in a planner nobody called. That is the Phase-2 gap repeating one level up:
+machinery that nothing runs through is unproven machinery.
+
+**Decision 1 — `plan_agents(phase, available_inputs)` selects the roster, and `firm deep-dive` gains
+`--phase` and `--documents`.** Availability is the **union** of the filings manifest and the documents
+manifest. Reading only one made a Phase-2 run plan *zero* agents, because the annual reports live in the
+filings manifest while the governance documents live in the documents manifest, so `financials` looked
+unsatisfied while ten annual reports sat in the store.
+
+**Decision 2 — coverage gaps reach the report but never the verdict.** They join `unavailable_items`, so a
+reader sees everything unestablished in one place, phrased so the distinction survives: a company's
+non-disclosure reads as a disclosure gap, an agent that never ran says in its own words that the gap is
+ours. `choose_verdict` deliberately takes no `coverage_gaps` argument, and says so in a comment — ADR-0019
+forbids charging a company for the firm's own missing extractor, and the cleanest way to enforce that is to
+make the data unavailable at the point of decision.
+
+**Decision 3 — pre-flight before any agent call.** An agent with no answer used to fall through to whatever
+provider was configured; by default the local stub, whose output fails schema validation. The run burned
+three retries per unstaffed agent and died with *"agent output failed validation after 3 attempts"* — naming
+no agent and giving no hint of the cause. Now that the roster grows with the build phase, planning more
+agents than the operator has answered is an ordinary situation, so it fails immediately with the agents
+named and the remedy stated.
+
+**Verified end to end.** `--phase 2` plans 3 agents, staffs all 3, and publishes a byte-identical report.
+`--phase 3` plans 8 and stops at once: *"no prepared answer for 5 planned agent(s): macro_strategist,
+unit_economics_analyst, management_analyst, transcript_analyst, ownership_flows_analyst."* An intermediate
+run also proved the publication gate independently — with zero agents staffed it refused to ship, citing
+`P2_asymmetric @ thesis: thesis is empty`, rather than publishing an empty report.
+
+**What this does NOT yet do.** The five new agents have prompts, schemas and a place in the run order, but no
+answered packets, so no new narration reaches a report. Phase 3 is wired, not staffed.

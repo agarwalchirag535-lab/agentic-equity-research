@@ -83,6 +83,8 @@ def choose_verdict(
     min_history_years: int,
     forensic_veto: bool = False,
     interrogation: Interrogation | None = None,
+    # Deliberately takes NO `coverage_gaps`. An agent the firm could not staff must never move the verdict
+    # (ADR-0019); those gaps go to `assemble_report` so a reader sees them, and no further.
 ) -> VerdictDecision:
     """The deterministic verdict ladder. No LLM votes; `forensic_veto` is the one agent-supplied input.
 
@@ -285,12 +287,22 @@ def build_line_items(interrogation: Interrogation | None) -> list[LineItemSectio
     ]
 
 
-def _unavailable_items(evaluation: CheckEvaluation) -> list[str]:
+def _unavailable_items(
+    evaluation: CheckEvaluation, coverage_gaps: Sequence[str] = ()
+) -> list[str]:
+    """Everything this run could not establish: the company's non-disclosure AND our own coverage holes.
+
+    Both belong in one section because a reader needs a single place to see what is unestablished — but
+    they are phrased so the distinction survives (ADR-0019). A check whose inputs the company did not
+    disclose reads as a disclosure gap; an agent that never ran says in its own words that the gap is
+    OURS. Only the first kind may move a verdict, and a report that showed the second as a company failing
+    would be charging a company for the firm's missing extractor.
+    """
     return [
         f"{r.name}: {r.reason}"
         for r in evaluation.records
         if r.outcome is CheckOutcome.UNAVAILABLE
-    ]
+    ] + list(coverage_gaps)
 
 
 @dataclass(frozen=True)
@@ -328,6 +340,9 @@ def assemble_report(
     feasibility: FeasibilityResult | None = None,
     self_fund_ceiling: float = 1.0,
     interrogation: Interrogation | None = None,
+    #: Agents the roster planned but could not staff (ADR-0030/0033). Published as the
+    #: FIRM's gaps, never as the company's, and they reach no verdict.
+    coverage_gaps: Sequence[str] = (),
 ) -> ResearchReport:
     """Build the report object. Publication gates run separately (`core/report/render.write_report`).
 
@@ -362,7 +377,7 @@ def assemble_report(
         anti_thesis=narration.anti_thesis,
         open_questions=list(dict.fromkeys(narration.open_questions)),
         replication_notes=list(narration.replication_notes),
-        unavailable_items=_unavailable_items(evaluation),
+        unavailable_items=_unavailable_items(evaluation, coverage_gaps),
     )
 
     if report.is_positive:

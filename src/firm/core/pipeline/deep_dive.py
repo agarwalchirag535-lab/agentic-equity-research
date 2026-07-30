@@ -98,10 +98,27 @@ from firm.schemas.agents import AGENT_OUTPUTS
 from firm.schemas.evidence import EvidenceGraph
 from firm.schemas.report import CheckOutcome, ResearchReport
 
-#: The Phase-2 roster, in run order (SPEC §11 Phase 2 — these three only).
+#: The Phase-2 roster, in run order (SPEC §11 Phase 2 — these three only). Retained as the default so an
+#: existing caller behaves identically; `plan_agents()` is how a run picks its roster from Phase 3 onward.
 PHASE2_AGENTS: tuple[str, ...] = (
     "business_analyst", "financial_statement_analyst", "forensic_accountant",
 )
+
+
+def plan_agents(
+    *, phase: int, available_inputs: Sequence[str] = (), roster_path: str | Path | None = None
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """`(agents to run, coverage gaps)` for a run, from `config/roster.yaml` (ADR-0030/0033).
+
+    Returns the gaps alongside the roster because they are the same decision seen from two sides: an agent
+    that could not run is a hole in the report, and a report that does not say so is claiming coverage it
+    does not have. The caller is expected to publish them — worded against the firm, never against the
+    company (ADR-0019).
+    """
+    from firm.core.orchestrator.roster import load_roster, plan_run
+
+    plan = plan_run(load_roster(roster_path), available_inputs=available_inputs, max_phase=phase)
+    return plan.names, plan.disclosure_gaps()
 
 #: Agent numeric field -> the derived metric it must equal. `None` = the compute layer cannot produce it
 #: in this pipeline, so the agent MUST return null (Law 1: no LLM-authored numbers).
@@ -514,6 +531,9 @@ def run_deep_dive(
     agents_dir: str | Path | None = None,
     repo_root: str | Path | None = None,
     agents: Sequence[str] = PHASE2_AGENTS,
+    #: Coverage gaps from `plan_agents` — agents the roster planned but could not run (ADR-0033). Passed
+    #: in rather than recomputed so the report states exactly the plan this run was executed against.
+    coverage_gaps: Sequence[str] = (),
     start_year: int = 2015,
     write: bool = True,
     max_citation_retries: int = 1,
@@ -577,6 +597,22 @@ def run_deep_dive(
     }
     known_values.update({f"derived:{n}": d.value for n, d in derived.values.items()})
 
+    # PRE-FLIGHT (ADR-0033). On the Claude-in-the-loop path (`--answers`) an agent with no answer file used
+    # to fall through to whatever provider was configured — by default the local stub, whose output fails
+    # schema validation. The run then burned three retries PER unstaffed agent and died with
+    # "agent output failed validation after 3 attempts", naming no agent and not hinting at the real cause.
+    # A roster that plans more agents than the operator has answered is an ordinary situation now that the
+    # roster grows with the build phase, so it deserves a precise error rather than a confusing one.
+    if answers is not None:
+        unanswered = [name for name in packets if name not in answers]
+        if unanswered:
+            raise ValueError(
+                f"no prepared answer for {len(unanswered)} planned agent(s): {', '.join(unanswered)}. "
+                f"Write their packets with `firm packets --ticker {ticker} --phase <n>`, answer each one, "
+                f"and place the JSON at {{agent}}.json — or lower --phase so the roster plans only the "
+                f"agents you have answered."
+            )
+
     run = _AgentRun()
     specs = [spec for spec, _, _ in packets.values()]
     run_id = compute_run_id(ticker, as_of, specs, facts.all_fact_ids())
@@ -632,6 +668,8 @@ def run_deep_dive(
         min_history_years=int(thresholds["screen"]["min_history_years"]),
         forensic_veto=bool(getattr(forensic_out, "veto", False)) if forensic_out else False,
         interrogation=interrogation,
+        # NOT `coverage_gaps`. The verdict must never move because the FIRM failed to look — ADR-0019.
+        # They reach the report (below) so a reader sees them, and stop there.
     )
     report = assemble_report(
         ticker=ticker, company_name=company_name or ticker, as_of=as_of, run_id=run_id,
@@ -643,6 +681,7 @@ def run_deep_dive(
         feasibility=feasibility,
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
         interrogation=interrogation,
+        coverage_gaps=coverage_gaps,
     )
 
     publication_violations = tuple(validate_report(report))

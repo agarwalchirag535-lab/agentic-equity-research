@@ -277,6 +277,15 @@ def deep_dive(
              "annual report published on/before --as-of as grade-A facts and walks the latest one's notes. "
              "Without this the run rests on a grade-B screener snapshot (ADR-0024)."),
     bronze: str = typer.Option("data/bronze", "--bronze", help="where the manifest's PDFs live"),
+    phase: int = typer.Option(
+        2, "--phase",
+        help="build phase (SPEC §11). Selects the agent roster from config/roster.yaml; agents above this "
+             "phase are refused, so the build order is enforced rather than remembered (ADR-0030)."),
+    documents: str = typer.Option(
+        "", "--documents",
+        help="path to a documents manifest (data/manifests/{TICKER}-documents.json). Determines which "
+             "roster prerequisites are satisfied, so agent coverage is derived from what is actually "
+             "ingested rather than asserted (ADR-0031)."),
     force: bool = typer.Option(
         False, "--force", help="write the report even if a publication gate fails (debugging only)"),
 ) -> None:
@@ -290,7 +299,7 @@ def deep_dive(
     import os
 
     from firm.core.llm.provider import build_provider
-    from firm.core.pipeline.deep_dive import read_answers, run_deep_dive
+    from firm.core.pipeline.deep_dive import plan_agents, read_answers, run_deep_dive
     from firm.core.report.render import write_report
 
     run_date = date.fromisoformat(as_of) if as_of else date.today()
@@ -323,8 +332,30 @@ def deep_dive(
                 latest_filing = filing_from_manifest(usable[-1], bronze)
                 typer.echo(f"  walking notes from {usable[-1]['file']} ({usable[-1]['period']})")
 
+        # THE ROSTER DECIDES WHO RUNS (ADR-0033). Availability is derived from the documents manifest, so
+        # a run cannot claim coverage the ingest does not support — and the agents it could not staff are
+        # published as the firm's own gaps rather than dropped.
+        # Availability is the UNION of both manifests. The annual reports live in the filings manifest and
+        # the governance documents in the documents manifest; reading only one made a phase-2 run plan zero
+        # agents because `financials` looked unsatisfied while ten annual reports sat in the store.
+        satisfied: set[str] = set()
+        if documents:
+            import json as _json
+            from pathlib import Path as _Path
+
+            from firm.core.orchestrator.roster import available_inputs_from
+
+            satisfied |= set(available_inputs_from(_json.loads(_Path(documents).read_text())))
+        if latest_filing is not None:
+            satisfied |= {"financials", "filing", "segments"}
+        available: tuple[str, ...] = tuple(sorted(satisfied))
+        roster_agents, coverage_gaps = plan_agents(phase=phase, available_inputs=available)
+        typer.echo(f"  roster: phase {phase} plans {len(roster_agents)} agent(s); "
+                   f"{len(coverage_gaps)} could not be staffed")
+
         result = run_deep_dive(
             store, ticker, run_date, provider=llm, answers=prepared, filing=latest_filing,
+            agents=roster_agents, coverage_gaps=coverage_gaps,
             company_name=company or ticker, model=model, reports_root=reports_root,
             write=not force,
         )
