@@ -127,6 +127,30 @@ a company for the firm's own unfinished note-parser would reject every good busi
 
 ## 3. What is REMAINING (priority order)
 
+### 0. RECENCY BEATS PROVENANCE in the fact resolver ← **blocking, found by audit 2026-07-30**
+`FactStore.query_fact` resolves ties with `ORDER BY d.published_at DESC`. A screener snapshot taken today
+therefore outranks the audited annual report published last month, and owner directive 1 says the opposite:
+the AR is the source of record and screener.in is a grade-B **cross-check**. Demonstrated on ALKYLAMINE FY26:
+
+| metric | resolves to | should be |
+|---|---|---|
+| `pnl:Sales` FY26 | 1536.00 **grade B** (screener) | 1535.86 grade A (AR p.13 l.14) |
+| `balance_sheet:Trade Receivables` FY26 | 230.50 grade A | correct — only because the screener has no such row |
+
+So the grade-A facts are ingested and only win where the screener is silent. Every published derived ratio is
+consequently grade B, and `fact_citations` contains **zero grade-A entries**. The forensic layer is reading
+primary sources; the *report* is still quoting the aggregator wherever both exist.
+
+Fix: order by `(grade, published_at)` — best grade first, most recent within a grade — while keeping the Law 3
+`published_at <= as_of` filter untouched. This is a load-bearing change to the resolver every other layer
+depends on, so it needs its own tests: a restatement must still be invisible before its publication date, and
+a grade-A filing must not resurrect a figure the company later corrected.
+
+### 0b. Substantive note coverage is 9% against a 50% floor
+Not a defect — the floor is right and the coverage is not there yet. Needs note-content readers for inventory,
+receivables, borrowings, contingent liabilities, tax, leases, employee benefits and segment, on the pattern of
+`notes_content.related_party_summary`. Several sessions of work, one note category at a time.
+
 ### 0. ~~A FALSE-POSITIVE FORENSIC_CAUTION~~ — FIXED 2026-07-30 (ADR-0025)
 Both causes fixed: `ExternalInputs` is now canonical ₹ crore (the ADR-0024 unit fix had normalised only the
 fact store, so a lakh cash figure met a crore asset base and produced `cash/assets 496.6%`), and
