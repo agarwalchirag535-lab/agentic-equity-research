@@ -1,0 +1,56 @@
+# thresholds.yaml — EVERY hardcoded number lives here (SPEC §3, CLAUDE.md). Nowhere else.
+# The compute layer takes these as explicit parameters; no policy number is baked into code.
+
+multibagger:
+  # §6.3 feasibility gate boundaries on required_reinvestment_rate = g_required / ROIC
+  self_fund_ceiling: 1.0        # > 1.0  → cannot self-fund → must model dilution/leverage
+  high_quality_ceiling: 0.6     # < 0.6  → self-funds with surplus → flag capital-allocation risk
+  # §6.5 serial-dilution flag
+  share_cagr_flag: 0.06         # share count CAGR (10y) above this without matching ROIC step-up
+
+forensic:
+  # SPEC §5 + ADR-0006. Single-value refs; PLAN OQ#3 may promote some to dated series.
+  cfo_pat_min: 0.70             # single-year CFO/PAT below this = quality flag
+  cumulative_cfo_pat_min: 0.70  # Σ CFO / Σ PAT over history below this = earnings not converting to cash
+  beneish_m_threshold: -1.78    # M-score above this = elevated manipulation probability (NON-financials only)
+  sloan_accrual_flag: 0.10      # |accruals / avg assets| above this = low earnings quality
+  # ADR-0006 cash-reality checks
+  cash_yield_floor_ratio: 0.40  # implied cash yield below 40% of risk-free = "is the cash real?" flag
+  risk_free_rate: 0.065         # reference risk-free (India ~6.5%); PLAN OQ#3 may make this a dated series
+  high_cost_debt_rate: 0.10     # borrowing cost above this WHILE holding large cash = paradox flag
+  large_cash_to_assets: 0.15    # gross cash above this share of assets counts as "large"
+  ageing_cwip_to_assets: 0.10   # CWIP above this share of assets, not commissioning, = siphoning flag
+  ageing_cwip_years: 3          # years a CWIP block may age before it's a flag
+
+# Lender-specific forensic checks (ADR-0002) — used when sector_class == FINANCIAL
+financial_forensic:
+  gnpa_drift_flag: 0.010        # YoY rise in GNPA ratio above this = flag
+  provision_coverage_min: 0.50  # PCR below this = under-provisioned flag
+  restructured_book_flag: 0.05  # restructured advances above this share of book = flag
+
+# Originate-to-sell / lender earnings-quality checks (FORENSIC_METHODOLOGY §7 P7).
+# Apply by BUSINESS MODEL (a company that originates & sells loans), not by sector label.
+originate_to_sell:
+  gain_on_sale_reliance_max: 1.0     # gain-on-loan-sale > 1.0x net income = profit rests on the sale channel (Carvana: 2.2x)
+  provision_book_divergence_max: 0.50 # |provision growth − loan-book growth| above this = flag (Sezzle: +130% vs +6% ⇒ gap 1.24)
+  reserve_suppression_min_drop: 0.010 # loan-loss provision RATE falling by ≥1.0 rate-point YoY = reserve-suppression tell (Sezzle: 3.5%→1.2%)
+  held_for_sale_min_allowance: 0.005  # on-book loans carried with allowance < 0.5% of book while growing = no-reserve flag (Carvana)
+
+# Exogenous-series divergence scanner (FORENSIC_METHODOLOGY §3 P1).
+divergence:
+  min_abs_correlation: 0.50           # only flag a WRONG-WAY metric↔driver relationship if it is at least moderately strong
+
+# Universal SPEC §5 checks (ADAPTIVE_FORENSICS §4 step 1). PROVISIONAL until golden-set calibration.
+universal_forensic:
+  receivables_flow_gap: 0.25          # receivables growth − revenue growth above this = flag
+  inventory_flow_gap: 0.30            # inventory growth − revenue growth above this = flag
+  other_income_pbt_max: 0.25          # other income above this share of PBT = flag
+  revenue_inflation_min_growth: 0.50  # trader tell: revenue growth at/above this ...
+  revenue_inflation_max_margin: 0.03  # ... while gross margin at/below this = flag
+
+screen:
+  # SPEC §1 universe band and §8 Gate A liquidity/history floors
+  mcap_min_cr: 300
+  mcap_max_cr: 30000
+  min_history_years: 5          # below this → INSUFFICIENT_HISTORY, separate pipeline
+  adv_floor_cr: 1.0             # min average daily traded value (₹cr) — liquidity floor

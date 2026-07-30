@@ -1,0 +1,30 @@
+# universe.yaml — mcap bands, exclusions, liquidity floors (SPEC §3). Numbers reference thresholds.yaml.
+market: india
+mcap_band_cr: { min: 300, max: 30000 }   # mirror of thresholds.screen; keep in sync
+
+liquidity:
+  adv_floor_cr: 1.0            # min average daily traded value
+
+exclusions:
+  - suspended_from_trading
+  - under_liquidation_or_nclt
+  - z_group_bse                # trading/compliance-defaulting group
+  # sector-level exclusions (if any) are decided per-run, not hardcoded here
+
+history:
+  min_years: 5                 # below → EMERGING track (routed, NOT dropped — see ADR-0008)
+  target_years: 10
+  target_concall_quarters: 12
+  target_shareholding_quarters: 8
+
+# ADR-0008 — the emerging track for good young businesses (recent IPOs / new-age) with short history.
+emerging:
+  enabled: true
+  min_years: 1                 # below this we genuinely can't say anything — quarantine, not analyse
+  requires_drhp: true          # DRHP/IPO prospectus is a required grade-A source for this track
+  suppress_multiyear_forensics: true   # keep point-in-time cash-reality checks; drop decade-trend ones
+  recheck_every_quarters: 1    # re-evaluate as history accrues; graduate to MAIN at min_years
+  thesis_must_flag_short_history: true
+
+defaults:
+  statements: consolidated     # default consolidated; flag when only standalone exists (SPEC §4)

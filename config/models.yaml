@@ -1,0 +1,40 @@
+# models.yaml — model per agent role + temperature + token budget (SPEC §9).
+# Swapping providers = change `provider`/`model` here; code never names a model (Law 6).
+# NOTE: model ids below are placeholders to be confirmed with the human (PLAN OQ#5) before Phase 2.
+
+# Provider: 'claude_code' runs agents on a Claude Code subscription with NO API key (ADR-0010).
+# Switch to 'anthropic'/'openai' (with a key in .env) only for unattended batch runs. 'local' = offline stub.
+defaults:
+  provider: claude_code
+  temperature: 0.2
+  max_output_tokens: 4000
+
+# Cheap model for extraction/classification; strongest model for synthesis/red-team/valuation (SPEC §9).
+roles:
+  extraction:   { model: "<cheap-model>",    temperature: 0.0, max_output_tokens: 2000 }
+  classification:{ model: "<cheap-model>",   temperature: 0.0, max_output_tokens: 1000 }
+  analysis:     { model: "<mid-model>",       temperature: 0.2, max_output_tokens: 4000 }
+  synthesis:    { model: "<strong-model>",    temperature: 0.3, max_output_tokens: 8000 }
+  red_team:     { model: "<strong-model>",    temperature: 0.4, max_output_tokens: 6000 }
+  valuation:    { model: "<strong-model>",    temperature: 0.1, max_output_tokens: 6000 }
+
+# Map each agent to a role.
+agents:
+  macro_strategist:            analysis
+  sector_analyst:              analysis
+  business_analyst:            analysis
+  unit_economics_analyst:      analysis
+  financial_statement_analyst: analysis
+  forensic_accountant:         analysis
+  management_analyst:          analysis
+  transcript_analyst:          extraction
+  ownership_flows_analyst:     analysis
+  valuation_modeler:           valuation
+  thesis_synthesizer:          synthesis
+  red_team:                    red_team
+  portfolio_manager:           synthesis
+  post_mortem:                 analysis
+
+budgets:
+  per_run_cost_ceiling_usd: 0.0    # TBD (PLAN OQ#4). Run aborts + reports on breach (SPEC §9).
+  per_agent_token_ceiling: 20000

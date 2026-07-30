@@ -1,0 +1,132 @@
+# forensic_playbooks.yaml — business-model detection + per-model check selection (ADR-0017).
+# Every number here is a POLICY threshold (SPEC §3: no magic numbers in code) and is PROVISIONAL until
+# the Phase-6 Indian golden set calibrates it per model.
+#
+# `detection` = statement-shape thresholds consumed by core/compute/models.detect_models
+# `playbooks`  = which checks apply / are suppressed per model, consumed by models.build_playbook
+#                (suppression always wins — an invalid check must never fire on the wrong model)
+
+detection:
+  # LENDER: a material loan book OR interest-dominated revenue (catches "dealers" that are really lenders)
+  lender_loan_book_min: 0.30          # loans / total assets
+  lender_interest_income_min: 0.50    # interest income / revenue
+  bank_deposits_min: 0.30             # deposits / total liabilities -> deposit-taking bank
+  # MANUFACTURER: inventory AND plant intensity together
+  manufacturer_inventory_min: 0.08    # inventory / total assets
+  manufacturer_ppe_min: 0.20          # net PPE / total assets
+  # TRADER: revenue scale on near-zero margin (gross-vs-net booking / circular trading signature)
+  trader_gross_margin_max: 0.06
+  trader_asset_turnover_min: 2.0      # revenue / total assets
+  # EPC / INFRA: unbilled revenue & contract assets on the balance sheet
+  epc_contract_assets_min: 0.10       # contract assets / total assets
+  # SERVICES / IT: people-cost heavy, asset light
+  services_employee_cost_min: 0.35    # employee cost / revenue
+  services_inventory_max: 0.03
+  services_ppe_max: 0.25
+  # REAL ESTATE: inventory-as-property funded by customer advances
+  realestate_inventory_min: 0.30
+  realestate_advances_min: 0.15
+
+playbooks:
+  # The floor: runs on every company, including ones no model matched.
+  UNIVERSAL:
+    applies:
+      - cumulative_cfo_pat
+      - cfo_pat
+      - cash_interest_inconsistent
+      - cash_debt_paradox
+      - disclosure_gap
+      - other_income_heavy
+    priority_notes:
+      - related_party
+      - contingent_liabilities
+      - accounting_policies
+      - schedule_iii_disclosures
+
+  LENDER:
+    applies:
+      - gain_on_sale_reliant
+      - provision_book_divergent
+      - reserve_suppression
+      - held_for_sale_no_reserve
+      - gnpa_drift
+      - provision_coverage_low
+      - restructured_book_high
+    suppress:                          # ADR-0002: invalid for lenders (no trade receivables/inventory)
+      - beneish_manipulator
+      - high_accruals
+      - receivables_divergent
+      - inventory_divergent
+      - ageing_cwip
+    priority_notes:
+      - ecl_impairment
+      - loans_advances
+      - fair_value
+
+  BANK:
+    applies:
+      - gnpa_drift
+      - provision_coverage_low
+      - restructured_book_high
+    suppress:
+      - beneish_manipulator
+      - high_accruals
+      - receivables_divergent
+      - inventory_divergent
+    priority_notes:
+      - ecl_impairment
+      - investments
+
+  MANUFACTURER:
+    applies:
+      - receivables_divergent
+      - inventory_divergent
+      - ageing_cwip
+      - high_accruals
+      - beneish_manipulator
+    priority_notes:
+      - ppe_cwip
+      - inventory
+      - receivables
+
+  TRADER:
+    applies:
+      - revenue_inflation
+      - receivables_divergent
+      - high_accruals
+    priority_notes:
+      - receivables
+      - related_party
+      - revenue
+
+  EPC_INFRA:
+    applies:
+      - receivables_divergent
+      - high_accruals
+      - ageing_cwip
+    priority_notes:
+      - revenue
+      - contingent_liabilities
+      - receivables
+
+  SERVICES_IT:
+    applies:
+      - receivables_divergent
+      - high_accruals
+      - beneish_manipulator
+    suppress:
+      - inventory_divergent             # no meaningful inventory in a services model
+    priority_notes:
+      - receivables
+      - intangibles
+      - revenue
+
+  REAL_ESTATE:
+    applies:
+      - inventory_divergent
+      - high_accruals
+      - ageing_cwip
+    priority_notes:
+      - inventory
+      - borrowings
+      - related_party

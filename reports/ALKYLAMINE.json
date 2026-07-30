@@ -1,0 +1,212 @@
+{
+  "sector_analyst": {
+    "agent": "sector_analyst",
+    "agent_version": "1.0.0",
+    "ticker": "ALKYLAMINE",
+    "as_of": "2026-07-23",
+    "observations": [
+      {
+        "text": "Revenue CAGR fell from 11.2% (10y) to 4.3% (5y) as the acetonitrile super-cycle normalised.",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "inferences": [],
+    "speculations": [],
+    "open_questions": [],
+    "disconfirming_search": "Checked whether the acetonitrile/amine tailwind is structural or a spent COVID spike: the 5y revenue CAGR of 4.3% says the super-cycle has normalised.",
+    "narrative": "Genuine national-relevance tailwind: amines/acetonitrile feed India's pharma and agrochem supply chains and displace Chinese imports. But the sector is cyclical on product spreads, and the current numbers show the cycle has cooled from the FY20-22 peak.",
+    "profit_pool": "Aliphatic amines + acetonitrile \u2014 inputs to pharma APIs, agrochem, rubber chemicals, water treatment. Profit pool sits with backward-integrated scale producers; India is a near-duopoly (Alkyl Amines, Balaji Amines).",
+    "pricing_power_holders": [
+      "scale producers with captive raw material (methanol/ammonia) integration"
+    ],
+    "structural_vs_cyclical": "Structural import-substitution tailwind (China+1 in amines, acetonitrile was heavily imported) OVERLAID on a sharp product cycle \u2014 spreads spiked FY20-22, then reverted.",
+    "kpi_set": [
+      "ebitda_per_tonne",
+      "capacity_utilisation",
+      "roce",
+      "acetonitrile_spread",
+      "working_capital_days"
+    ]
+  },
+  "business_analyst": {
+    "agent": "business_analyst",
+    "agent_version": "1.0.0",
+    "ticker": "ALKYLAMINE",
+    "as_of": "2026-07-23",
+    "observations": [
+      {
+        "text": "Debt-free (borrowings \u20b91cr FY26) with interest coverage 213x \u2014 a fortress balance sheet.",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "inferences": [],
+    "speculations": [],
+    "open_questions": [],
+    "disconfirming_search": "Looked for a moat beyond scale: found backward integration + long pharma-customer qualification cycles, but no pricing power in a spread-driven commodity-specialty.",
+    "narrative": "A quality domestic amines franchise sitting on a real India supply-chain need \u2014 but economically a commodity-specialty whose profits track product spreads, not a branded moat.",
+    "what_it_does": "Makes aliphatic amines (methylamines, ethylamines), amine derivatives and acetonitrile; sells to pharma (APIs), agrochemicals, rubber and water-treatment customers. Earns on the spread between amines and raw materials (methanol, ammonia).",
+    "moat": "Narrow: scale + backward integration + multi-year pharma qualification lock-in. Not durable pricing power.",
+    "customer_concentration": null,
+    "national_relevance": true
+  },
+  "financial_statement_analyst": {
+    "agent": "financial_statement_analyst",
+    "agent_version": "1.0.0",
+    "ticker": "ALKYLAMINE",
+    "as_of": "2026-07-23",
+    "observations": [
+      {
+        "text": "ROIC ~10%; ROCE 16.6%; ROE 12.3% (FY26).",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      },
+      {
+        "text": "Cumulative CFO/PAT 1.27 over 11y; FCF/PAT 0.47 (capex-heavy expansion).",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "inferences": [
+      {
+        "text": "Returns are at a trough and recent growth capex has not yet paid off; the compounding engine has stalled pending a spread/utilisation recovery.",
+        "kind": "inference",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "speculations": [],
+    "open_questions": [
+      "Segment/product-wise capacity utilisation and acetonitrile spread, which screener does not disclose."
+    ],
+    "disconfirming_search": "Tested whether recent capex is earning: rolling 3y incremental ROIC went from +0.53/+0.63 (FY19-21 boom) to NEGATIVE (-0.36, -0.13, -0.24) in the last three windows \u2014 new capital is not yet producing profit.",
+    "narrative": "The tell is incremental ROIC. Average ROCE (16.6%) still looks fine, but the MARGINAL return on the last three years of capital has been negative \u2014 capacity was added into a softening cycle. Revenue growth decelerated to 4.3% (5y). Balance sheet is pristine (debt-free), cash conversion healthy.",
+    "incremental_roic": -0.24,
+    "cfo_to_ebitda": null,
+    "fcf_to_pat": 0.47,
+    "working_capital_days": null
+  },
+  "forensic_accountant": {
+    "agent": "forensic_accountant",
+    "agent_version": "1.0.0",
+    "ticker": "ALKYLAMINE",
+    "as_of": "2026-07-23",
+    "observations": [
+      {
+        "text": "\u03a3CFO/\u03a3PAT 1.27; CWIP/assets 7.7%->6.9%; borrowings \u20b9135cr->\u20b91cr.",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "inferences": [],
+    "speculations": [],
+    "open_questions": [],
+    "disconfirming_search": "Ran the cash-reality tells (CFO not converting, ageing CWIP, cash-vs-interest): none fired. This is an honest set of books.",
+    "narrative": "Forensically clean. Profit converts to cash (\u03a3CFO/\u03a3PAT 1.27), CWIP is stable at ~7% of assets (no perpetual-WIP siphoning), and the company is debt-free. No manipulation signals; no veto.",
+    "verdict": "PASS",
+    "flags": [],
+    "veto": false
+  },
+  "valuation_modeler": {
+    "agent": "valuation_modeler",
+    "agent_version": "1.0.0",
+    "ticker": "ALKYLAMINE",
+    "as_of": "2026-07-23",
+    "observations": [
+      {
+        "text": "P/E 51.5x; reverse-DCF implied 10y FCF CAGR ~24-28% vs 5y revenue CAGR 4.3%.",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "inferences": [],
+    "speculations": [],
+    "open_questions": [],
+    "disconfirming_search": "Reverse-DCF FIRST: solved for the growth the \u20b99,279cr price already demands before doing any bull case.",
+    "narrative": "At P/E 51.5x the price demands ~24-28% FCF CAGR for a decade (reverse DCF). The company delivered 4.3% revenue CAGR over 5 years with negative recent incremental ROIC. That gap is the whole story: you are paying a super-cycle multiple for trough fundamentals. Expected value is roughly flat-to-down unless a new up-cycle arrives.",
+    "reverse_dcf_implied_growth": 0.25,
+    "base_case_value_per_share": null,
+    "scenarios": [
+      {
+        "name": "bull",
+        "probability": 0.2,
+        "return_multiple": 2.2
+      },
+      {
+        "name": "base",
+        "probability": 0.45,
+        "return_multiple": 1.1
+      },
+      {
+        "name": "bear",
+        "probability": 0.25,
+        "return_multiple": 0.7
+      },
+      {
+        "name": "disaster",
+        "probability": 0.1,
+        "return_multiple": 0.4
+      }
+    ]
+  },
+  "thesis_synthesizer": {
+    "agent": "thesis_synthesizer",
+    "agent_version": "1.0.0",
+    "ticker": "ALKYLAMINE",
+    "as_of": "2026-07-23",
+    "observations": [
+      {
+        "text": "Feasibility 4x/6y: required reinvestment 2.53x NOPAT -> NEEDS_EXTERNAL_FUNDING.",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "inferences": [],
+    "speculations": [],
+    "open_questions": [],
+    "disconfirming_search": "Searched for a self-funding multibagger path: even 4x/6y needs 2.5x NOPAT reinvested at 10% ROIC -> external funding/dilution. No self-funded path exists at current returns.",
+    "narrative": "Under the firm's one question \u2014 can this plausibly 5-10x self-funded in 5-8 years \u2014 the answer is NO at \u20b91,812. It is a high-quality, honest, debt-free business at a demanding valuation and a returns trough. Reject as a multibagger thesis; revisit if the cycle and incremental ROIC inflect.",
+    "return_multiple_if": "A 4-5x needs ~26% earnings CAGR AND a re-rating; at ~10% ROIC that requires 2.5x NOPAT reinvested (external funding), and the price already embeds ~25% growth \u2014 so most of the upside is pre-paid.",
+    "three_load_bearing_assumptions": [
+      "A fresh amines/acetonitrile up-cycle restoring spreads and utilisation (not in the numbers).",
+      "Recent capex turning incremental ROIC positive (currently negative).",
+      "The 51x multiple holding \u2014 i.e. no de-rating toward the sector's cyclical reality."
+    ],
+    "feasibility_verdict": "FAIL as a self-funded multibagger: NEEDS_EXTERNAL_FUNDING at 4x/6y, and valuation already prices ~25% growth against 4.3% delivered."
+  },
+  "red_team": {
+    "agent": "red_team",
+    "agent_version": "1.0.0",
+    "ticker": "ALKYLAMINE",
+    "as_of": "2026-07-23",
+    "observations": [
+      {
+        "text": "Bear drawdown from multiple reversion alone ~40-50% at unchanged earnings.",
+        "kind": "observation",
+        "citations": [],
+        "confidence": null
+      }
+    ],
+    "inferences": [],
+    "speculations": [],
+    "open_questions": [],
+    "disconfirming_search": "Attacked the bull case directly rather than listing generic risks.",
+    "narrative": "The bull case rests entirely on a cycle turn that the numbers do not yet show, financed at a multiple that assumes the turn is certain. The asymmetry is unfavourable: limited margin of safety, clear de-rating risk.",
+    "bear_case": "You are paying 51x earnings for a spread-cyclical commodity-specialty whose 5y revenue CAGR is 4.3% and whose last three years of capex earned negative incremental returns. A reversion of the multiple toward 25-30x alone is a ~40-50% drawdown before any earnings disappointment.",
+    "base_rate_of_failure": 0.6,
+    "kill_criteria": [
+      "Incremental ROIC stays negative through FY27 (capex not paying off).",
+      "Revenue growth remains sub-8% for two more years (no cycle recovery).",
+      "P/E compresses below 30x (multiple normalises to cyclical reality).",
+      "A large debt-funded capex that breaks the debt-free balance sheet."
+    ]
+  }
+}

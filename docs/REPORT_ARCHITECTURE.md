@@ -1,0 +1,83 @@
+# REPORT_ARCHITECTURE.md — the publishable research report (dual-verdict)
+
+> **Owner directive (2026-07-30).** The firm publishes a professional report on a company **whatever the
+> verdict** — not only when fraud is found. A company that passes the full pipeline gets a published
+> positive thesis; a clean-but-overpriced company gets a published reject note; a red-flagged company gets
+> a published caution report. The two short-seller reports in the repo root were *method references only*
+> — the firm's product is its own report line, both directions, on Indian companies of every business
+> structure. Ratified as ADR-0016.
+
+## 1. Why dual-verdict publishing is load-bearing (not cosmetic)
+
+- **A published "clean" is a claim, not an absence.** Saying "we found nothing" is only credible if the
+  report shows **what was checked and how** — so every published report carries the full *Verified-Clean
+  Checklist* (§3.5): every deterministic check that ran, its inputs' fact_ids, and its result — passes
+  included. A clean verdict with an invisible process is worth nothing.
+- **Symmetric evidentiary bar.** A positive report must survive the same red-team attack, the same
+  citation/arithmetic/consistency validators, and the same evidence-graph invariants (R1–R6) as a negative
+  one. Optimism is not a lower standard.
+- **Symmetric falsifiability.** Positive reports carry **kill criteria** (dated events that would kill the
+  thesis). Negative/caution reports carry **rehabilitation criteria** (dated, observable events that would
+  reverse the caution). Both feed `memory/predictions.jsonl` and are Brier-scored — published verdicts are
+  the firm's calibration record, in public.
+- **The funnel decides *whether* to publish, the verdict decides *what*.** ~3,000 companies enter; most
+  exit at Gates A–C with a one-line funnel record in `data/gold/rejected/` (not a report — proportionality).
+  A full published report is produced for any company that (a) completes the deep pipeline, or (b) triggers
+  a forensic finding worth documenting at any stage.
+
+## 2. Verdict taxonomy (every published report carries exactly one)
+
+| Verdict | Meaning | Publishable output |
+|---|---|---|
+| `COMPOUNDER` | Passed forensics, feasibility (§6.3), valuation discipline, red team | Full positive thesis + kill criteria |
+| `QUALITY_WRONG_PRICE` | Forensically clean, good business; fails valuation/feasibility today | Reject note + re-entry triggers (the ALKYLAMINE case — already our house pattern) |
+| `WATCH` | Structural promise, thesis not yet provable (often `EMERGING` track, ADR-0008) | Short note + what evidence would upgrade it |
+| `FORENSIC_CAUTION` | Deterministic red flags + narrative corroboration | Caution report: evidence chain, replication steps, rehabilitation criteria |
+| `INSUFFICIENT_DISCLOSURE` | Legally-public data missing/unreadable after primary-source effort | Opacity itself published as the finding (ADR-0014) |
+
+Hard rule (SPEC §1): no verdict ever says "buy"/"sell" or gives a target-price recommendation. Positive =
+"this thesis, these assumptions, these kill criteria." Negative = "this evidence, these questions the
+company should answer." The `hedge`/`legal-framing` standards apply to both.
+
+## 3. Report structure (fixed order — the order is the argument)
+
+1. **Header block** — company, ISIN/ticker, `as_of`, run_id, verdict class, numeric confidence, agent
+   versions, and the standing disclaimer (research artifact, not advice; no position language).
+2. **Executive summary** — the one question, the verdict, the three load-bearing points, each with its
+   evidence grade shown inline. One page, no more.
+3. **Business model in plain language** — how money actually flows, atomic unit economics, where this
+   company sits in its value chain. Written so a non-expert can follow the rest.
+4. **The numbers** — computed-fact tables (every figure carries `[fact:...]`), 10-yr trends, common-size
+   statements, sector-specific KPIs (per the business-model playbook, ADAPTIVE_FORENSICS.md).
+5. **Forensic section — including the passes.** The Verified-Clean Checklist: every deterministic check
+   run with inputs and results; notes-coverage % (line-by-line discipline, ADR-0017); disclosure gaps;
+   related-party map; auditor/CARO summary. In a `FORENSIC_CAUTION` report this section leads; in a
+   `COMPOUNDER` report it is the credibility backbone.
+6. **Management & governance** — promise-vs-delivery scorecard, capital-allocation record, pledge
+   trajectory, board interlocks (entity graph).
+7. **Valuation** — reverse-DCF first (what the price already assumes), then scenarios with probabilities
+   summing to 1, sensitivity on the two variables that matter.
+8. **Thesis and anti-thesis** — the synthesizer's case and the red team's best attack, both shown. A
+   report that hides the bear case (or, for a caution report, the bull rebuttal) does not ship.
+9. **Kill / rehabilitation criteria** — dated, observable, resolvable from future filings without
+   judgment. Minimum counts per SPEC §7.1.
+10. **Predictions logged** — the falsifiable claims this report commits to, with probabilities.
+11. **Evidence appendix** — claim → evidence chains from the evidence graph, replication instructions
+    ("how a third party reproduces this"), source list with grades, and anything `UNAVAILABLE` stated as
+    such.
+
+## 4. Validators that gate publication (all blocking)
+
+Existing: citation, arithmetic, consistency, hedge, evidence-graph R1–R6. Added by this architecture:
+- **verified-clean completeness** — a `COMPOUNDER`/`QUALITY_WRONG_PRICE` report must enumerate every
+  check in the applicable playbook; a skipped check must say why (never silently absent).
+- **symmetry** — positive reports must contain kill criteria; negative reports must contain
+  rehabilitation criteria; both must contain the opposing case (§3.8).
+- **legal framing** — forensic claims render as evidence-indicates language with replication steps;
+  unhedged accusation of fraud as fact = build failure.
+
+## 5. Formats
+
+`reports/{TICKER}/{run_id}/report.md` + `report.json` (the structured object the validators check) —
+extending the existing `reports/ALKYLAMINE.md` + `.json` pattern. Markdown is the publishable artifact;
+JSON is the auditable one. Both git-tracked (Law 6).

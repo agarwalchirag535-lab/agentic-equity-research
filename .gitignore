@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets
+.env
+
+# Data artifacts — bronze/silver/gold are large & reproducible; keep the dirs, not the contents.
+data/bronze/*
+data/silver/*
+data/gold/*
+!data/**/.gitkeep
+*.db
+*.parquet
+
+# Run traces & generated reports (git-track a curated sample only)
+runs/*
+reports/*
+!runs/.gitkeep
+!reports/.gitkeep
+
+# LLM disk cache
+.cache/
+
+# OS / tooling noise
+.DS_Store
+.coverage
+coverage.xml
+htmlcov/
+
+# Third-party reference reports (methodology source material, not project source — large, and
+# copyright belongs to their publishers). Kept locally; docs/FORENSIC_METHODOLOGY.md cites them.
+/*.pdf

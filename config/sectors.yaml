@@ -1,0 +1,20 @@
+# sectors.yaml — sector taxonomy + per-sector KPI sets + sector_class for forensic branching (ADR-0002).
+# sector_class drives quality.py: FINANCIAL suppresses Beneish/Piotroski/accruals and uses lender checks.
+
+sector_class:
+  FINANCIAL:      [banks, nbfc, housing_finance, insurance, microfinance, broking, amc]
+  NON_FINANCIAL:  [chemicals, pharma, capital_goods, auto_ancillary, it_services, fmcg,
+                   cement, metals, textiles, consumer_durables, logistics, real_estate,
+                   defence, power, agri, hospitality, retail, media, telecom]
+
+# Per-sector KPI definitions downstream agents MUST use (a lender is not analysed like a chemicals co).
+kpis:
+  banks:          [nim, casa_ratio, gnpa, nnpa, provision_coverage, credit_cost, roa, cet1, slippage]
+  nbfc:           [nim, aum_growth, gnpa, provision_coverage, cost_of_funds, spread, roa, gearing]
+  chemicals:      [gross_margin, capacity_utilisation, asset_turns, roic, working_capital_days, ebitda_per_tonne]
+  pharma:         [gross_margin, r_and_d_pct, us_anda_pipeline, price_erosion, roic]
+  it_services:    [ebit_margin, utilisation, attrition, revenue_per_employee, deal_tcv, dso]
+  capital_goods:  [order_book, book_to_bill, execution_cycle, ebitda_margin, roce, negative_working_capital]
+  auto_ancillary: [content_per_vehicle, capacity_utilisation, roic, client_concentration, ebitda_margin]
+  fmcg:           [volume_growth, gross_margin, ad_spend_pct, distribution_reach, roce]
+  default:        [revenue_growth, ebitda_margin, roic, cfo_pat, working_capital_days, net_debt_ebitda]

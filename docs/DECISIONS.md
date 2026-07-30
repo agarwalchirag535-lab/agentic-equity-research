@@ -1,0 +1,315 @@
+# DECISIONS.md — Architecture Decision Record log
+
+Append-only. Each entry: context → decision → consequences. Newest last.
+
+---
+
+### ADR-0001 — Python lives under `src/firm/`; content stays at repo root
+**Context.** SPEC Law 6 mandates `python -m firm run`, but SPEC §3 placed `core/`, `adapters/`,
+`schemas/` at the repo root with no `firm` package — the documented entrypoint could not resolve.
+**Decision.** All importable Python moves under `src/firm/`. Non-code content (`agents/` markdown,
+`config/` yaml, `docs/`, `data/`, `memory/`, `evals/`, `reports/`, `runs/`) stays at repo root.
+`pyproject.toml` sets `pythonpath=["src"]` and a `firm` console script.
+**Consequences.** `python -m firm` and `firm` both work; a clean split between code and content; the
+100%-coverage gate targets `firm.core.compute` unambiguously.
+
+---
+
+### ADR-0002 — Forensic models branch by sector; financials get lender-specific checks
+**Context.** SPEC's `forensic_accountant` applies Beneish M-score, Piotroski F, and conventional
+accruals to the entire universe, but the universe includes banks/NBFCs/insurers. Those models assume
+gross margin, inventory, and a non-financial accrual structure that lenders don't have. Literature
+confirms the M-score loses reliability for financial-sector firms.
+**Decision.** `core/compute/quality.py` reads a `sector_class` (`FINANCIAL` vs `NON_FINANCIAL`) and
+suppresses inapplicable models for financials, substituting GNPA/NNPA drift, provision coverage,
+restructured-book, and slippage checks. `config/sectors.yaml` maps sectors to `sector_class`.
+**Consequences.** No false forensic verdicts on banks; a second, smaller lender-forensic path to build.
+
+---
+
+### ADR-0003 — Benford's Law is demoted to a non-load-bearing flag
+**Context.** SPEC §5 lists Benford among forensic tools. Benford requires large transaction-level
+datasets; a company's ~50–200 reported, largely-derived summary numbers violate its assumptions and
+produce false positives.
+**Decision.** Benford stays available as an optional **grade-F** signal that can never, alone, trigger
+a forensic veto or a hard fail. It is excluded from the deterministic Gate-B kill set.
+**Consequences.** Fewer false alarms; the veto rests on stronger signals (accruals, CFO/PAT, M-score).
+
+---
+
+### ADR-0004 — Homes for monitoring, evolution, and the deterministic screener
+**Context.** Stage 9 monitoring, the weekly post-mortem, prediction resolution, and the
+`prompt-evolution` job (SPEC §7) had no directory; the `screener` is code but sat among LLM agents.
+**Decision.** Add `core/monitoring/` (prediction resolver, watch triggers, Brier scoring),
+`core/evolution/` (clustered-lessons → agent-diff proposals), and `core/screen/` (deterministic
+universe screen). `screener` is NOT an `agents/*.md` file.
+**Consequences.** Every referenced job has an owner; the 14 agent count in SPEC §11 is unchanged.
+
+---
+
+### ADR-0005 — Gate B is deterministic (no LLM in the quick-kill)
+**Context.** SPEC §8 Gate B ("forensic quick-kill") on ~400 companies risked being an LLM call.
+**Decision.** Gate B uses only `core/compute/quality.py` (pure math). The LLM `forensic_accountant`
+runs later, at Stage 4/5, on ~150 survivors, for narrative/related-party/auditor work.
+**Consequences.** Order-of-magnitude cheaper filtering; clean Law-1 boundary.
+
+---
+
+### ADR-0006 — Add "cash-reality" forensic checks
+**Context.** The project owner's primary interest: catching companies where the cash isn't real and
+the cash-flow statement contradicts the P&L. SPEC has CFO/PAT<0.7 and contingent-liability checks but
+lacks the sharpest "is the cash there?" tests.
+**Decision.** `quality.py` adds: cash-vs-interest-income consistency, simultaneous high-cash +
+high-cost-debt, multi-year cumulative CFO/PAT, and ageing-CWIP checks. Thresholds in
+`config/thresholds.yaml`.
+**Consequences.** Directly detects the fraud pattern the firm most cares about; needs a risk-free /
+cost-of-debt reference (see PLAN OQ#3).
+
+---
+
+### ADR-0007 — Institutional signals are quality-weighted, not binary
+**Context.** SPEC's `ownership_flows_analyst` tracks which funds enter/exit but treats all entries
+alike.
+**Decision.** Weight an entry by the fund's historical small-cap track record and its size relative to
+its own fund. "Smart money entered" becomes a scored input to the thesis, and institutional *absence*
+is explicitly disambiguated (undiscovered opportunity vs. looked-and-passed).
+**Consequences.** A track-record data set per fund is now a Phase-5 dependency.
+
+---
+
+### ADR-0011 — Primary audited documents (grade A) are ingested; screener is a grade-B cross-check
+**Context.** Screener (ADR-0009) gives fast summary tables, but real analysis — and *especially* the
+forensic work — lives in the primary sources: the auditor's report, key audit matters, related-party
+transactions, contingent liabilities, notes to accounts, MD&A, and concall transcripts. Numbers alone
+don't reveal fraud; the notes do. These are public by law (company site + BSE/NSE).
+**Decision.** `adapters/india/filings.py` fetches the audited annual-report PDF (and concalls, same
+mechanism) → bronze; extracts text (pypdf) → silver; and locates the forensic-critical sections
+(`forensic_sections`: auditor opinion, qualified/emphasis, KAM, related-party, contingent liabilities,
+auditor resignation). The annual report is **grade A**; concall transcripts **grade C**; screener stays
+as the grade-B quantitative cross-check. The forensic_accountant reads primary source, not an aggregator.
+Also added common-size statement analysis (deterministic) for statement-level deep dives.
+**Proven:** pulled Alkyl Amines' FY2025-26 audited AR (137pp, filed 2026-06-09) from NSE archives and
+extracted a clean read — unqualified opinion, no auditor resignation, arm's-length RPTs, litigation the
+sole KAM, routine contingent liabilities — which **confirmed** the deterministic screen. Written into
+`reports/ALKYLAMINE.md`.
+**Caveat.** PDF *table* extraction (exact contingent-liability figures, segment tables) is noisy with
+pypdf; qualitative sections extract cleanly. Structured numeric extraction from AR tables (and OCR for
+scanned filings) is future work; screener remains the numeric source until then.
+
+---
+
+### ADR-0010 — Claude Code (subscription) is the agent runtime; no API key required
+**Context.** The owner has no LLM API key and works on a Claude Code Pro plan. The spec assumed agents
+call a paid API (`AnthropicAdapter`/`OpenAIAdapter`). That is neither available nor necessary.
+**Decision.** The firm's Law-1 split (deterministic compute vs LLM narration) means the narration can
+come from Claude Code itself. Two runtimes, both keyless:
+1. **`ClaudeCodeAdapter`** (`core/llm/provider.py`) — shells out to the headless `claude -p` CLI on the
+   subscription. Use when running inside a Claude Code terminal. Subprocess runner is injectable → unit
+   tested without the CLI. `config/models.yaml` provider defaults to `claude_code`.
+2. **Claude-in-the-loop** — the pipeline computes everything deterministically and emits an agent
+   *prompt packet* (`core/agents/packet.py`: house style + agent mandate + computed facts + schema);
+   Claude Code answers in-conversation and the output is schema-validated. This is what produced the
+   first real artifact: `reports/RELIANCE.md` / `.json` — three agent outputs (financial, forensic,
+   thesis) grounded in live FY26 screener data, each validated against its Pydantic schema (Law 4).
+**Consequences.** Zero marginal cost on the Pro plan; subject to subscription rate limits (fine for a
+handful of companies, not a 3,000-name batch). The paid adapters remain for anyone who later wants
+unattended batch runs. Numbers still come only from `core/compute` (Law 1) regardless of runtime.
+
+---
+
+### ADR-0009 — screener.in is the primary fundamentals source; broker API for market data
+**Context.** The project owner has no data and directed us to pull from public sources (screener,
+moneycontrol, BSE/NSE), with a broker API available. Probed live: screener.in serves the full 10-year
+consolidated P&L / balance sheet / cash flow / quarterly / shareholding / ratios **without login**
+(verified — parsed 336 facts for RELIANCE end-to-end). NSE's direct API blocks non-browser requests.
+**Decision.**
+- **Fundamentals (10-yr financials + shareholding): screener.in**, graded **B** (aggregator of audited
+  filings; provenance points to screener, ideally cross-checked against the primary AR at grade A).
+  Implemented in `adapters/india/screener.py` (pure parser tested against a saved HTML fixture; live
+  `fetch` separated out; SSL via certifi).
+- **Prices / liquidity / corporate actions: a broker API or `jugaad-data`/`bse`** — best for the
+  market-data side (ADV, mcap, GSM/ASM). A broker API does **not** provide deep financials or concalls.
+- **Concalls / annual-report PDFs: BSE/NSE announcement feeds + IR pages** (later).
+**Point-in-time caveat (Law 3).** screener is a *current snapshot* — honest for as-of=today (all shown
+data predates today), NOT for historical eval (Phase 6), which needs archived filings. Stated in
+`docs/PLAN.md` §9.
+**ToS caveat.** Automated access to screener/moneycontrol may be restricted by their terms; usage is for
+the owner's personal research, behind an adapter, with caching and rate limits. A paid data licence or
+the broker API is the clean path if this scales.
+**Consequences.** A working live fundamentals pipeline today; the broker choice + key is still needed for
+the market-data adapter (owner sets the key in `.env` — Claude never handles it).
+
+---
+
+### ADR-0008 — Short-history companies get a real "emerging" pipeline, not a black hole
+**Context.** SPEC routes companies with <5 years of history to `INSUFFICIENT_HISTORY` and a "separate
+lighter pipeline" that SPEC never designs. For a *multibagger discovery* engine that is a serious blind
+spot: recent IPOs and new-age businesses — where much future compounding hides — would effectively be
+unseen. The project owner explicitly flagged this: "some listed companies don't have enough track record
+but may have a good business for the future — will you not see them?"
+**Decision.** Companies are **routed, never dropped**. `core/screen/pipeline.py` classifies each into
+`MAIN` (≥ `min_history_years`) or `EMERGING` (< `min_history_years`). EMERGING is a first-class,
+cheaper track that produces a real thesis with kill criteria, but changes method:
+- **Suppress multi-year-trend forensics** (10-yr accrual trends, decade cumulative CFO/PAT) — no data.
+  **Keep point-in-time cash-reality checks** (cash-vs-interest, cash+debt paradox) — those read a single
+  balance sheet and work fine (ADR-0006).
+- **Lean on** the DRHP/IPO prospectus (grade A), unit economics + cohorts (SPEC §5), bottom-up TAM,
+  promoter/management track record **in their other ventures**, anchor / pre-IPO institutional quality,
+  and the §6.3 feasibility gate using whatever ROIC exists (even 2–3 yrs).
+- **Wider confidence intervals**, and the thesis must state "short history — execution/re-rating
+  dependent" explicitly (house style).
+- **Own gate thresholds** (`config` `emerging` block) — cannot demand 10-yr history or 12 concalls.
+- **Graduates to MAIN** automatically once history reaches `min_history_years`; re-checked every quarter.
+**Consequences.** No good young business is silently excluded; a second, lighter agent path and an
+`emerging` threshold set to build; the DRHP becomes a required grade-A source for this track
+(DATA_SOURCES).
+
+---
+
+### ADR-0012 — Originate-to-sell forensic checks apply by business model, not by sector label
+**Context.** Reverse-engineering two short-seller reports (`docs/FORENSIC_METHODOLOGY.md`) showed the
+frauds hid in a *lender* profile even when the issuer called itself something else: Carvana ("a used-car
+dealer") was, per its own former directors, "more of a subprime finance business than a car dealership."
+The firm's forensic branch keyed everything off a coarse `FINANCIAL` / `NON_FINANCIAL` label (ADR-0002),
+which would apply lender checks to Carvana's NON_FINANCIAL label — i.e. never.
+**Decision.** Added a third forensic category in `core/compute/quality.py` — **originate-to-sell /
+lender earnings-quality checks** — that fires whenever the *inputs are present* (a loan/receivable book,
+loan-sale gains, provisions), regardless of `sector_class`. Checks: `gain_on_sale_reliance` (Carvana:
+gain-on-loan-sale = 2.2× net income), `provision_book_divergence` (Sezzle: provisions +130% on a +6%
+book), `reserve_suppression_flag` (Sezzle: provision rate cut 3.5%→1.2% to manufacture profit),
+`held_for_sale_reserve_flag` (Carvana: growing on-book loans with ~zero CECL reserve). Thresholds in
+`config/thresholds.yaml` → `originate_to_sell`. These apply in `forensic_screen` unconditionally.
+**Consequences.** A "dealer" that is really a lender is no longer invisible to the lender checks.
+Two HIGH originate-to-sell flags hard-fail (the Carvana/Sezzle profile). Validated live on real
+primary-source data (`docs/VALIDATION_TIER0.md`): PASS on Bajaj Finance, REVIEW on CreditAccess Grameen's
+FY25 stress — no false positive, and the reserve-suppression check correctly stayed off for a conservative
+provisioner. 100% compute coverage retained.
+
+---
+
+### ADR-0013 — Exogenous-series divergence scanner (the P1 generative engine)
+**Context.** Both reports' hypotheses were generated the same way (`FORENSIC_METHODOLOGY.md` §3 P1): a
+reported metric moving *confidently against* the exogenous force that should drive it — Carvana's
+gross-profit-per-unit +209% while the Manheim used-car index fell 20.3%; Sezzle's revenue +71% while its
+own merchant and customer counts fell. Exogenous forces are not issuer-manipulable, so a decoupling is
+either a genuine edge or an artifact, and the base rate favours artifact. The firm had no such detector.
+**Decision.** Added `core/compute/divergence.py` (pure stdlib, no numpy — the compute layer keeps zero
+third-party runtime deps so it stays trivially offline-testable): `realized_correlation`,
+`divergence_flag` (flags a metric that is *confidently, |corr|≥threshold* correlated in the *wrong*
+direction with its driver), and `cochange_divergence` (two-point sign check for start/end readings).
+Threshold in `config/thresholds.yaml` → `divergence.min_abs_correlation`. Needs an exogenous-series
+source (`config/exogenous.yaml`, PLAN follow-up).
+**Consequences.** The cheapest, highest-value forensic add and fully deterministic (Law 1). Correctly
+flags the Carvana GPU-vs-Manheim divergence in a back-test against the source report. 100% covered.
+
+---
+
+### ADR-0014 — Missing legally-public disclosure is a signal, never a silent skip
+**Context.** Project-owner directive: for a listed company, all mandated data is public by law; when an
+agent cannot find it, the historical failure mode was silently prioritising a secondary/aggregator source
+or leaving a blank — masking the real question, "why is this not disclosed / what is being hidden?"
+**Decision.** Added `disclosure_completeness(required, present)` to `core/compute/quality.py` (returns the
+missing fields + a flag) and a `disclosure_gap` signal in `ForensicMetrics`/`forensic_screen` (MEDIUM →
+REVIEW). Ingestion adapters must pass the set of *found* mandatory disclosures so an unexplained gap
+surfaces as a flag rather than a blank. Live test underscored the plumbing risk: primary-filing PDFs are
+often image/dynamic-render and not cleanly text-extractable, so the ingestion layer needs OCR / direct
+PDF parsing or it will silently fall back to secondary sources — the exact failure this ADR guards against
+(`docs/VALIDATION_TIER0.md`).
+**Consequences.** Opacity becomes an explicit, gradable forensic input. A follow-up is required on the
+`adapters/` side (OCR / robust PDF parsing) so "unavailable" reflects genuine non-disclosure, not a
+parser giving up.
+
+---
+
+### ADR-0015 — Harden primary-source ingestion (OCR fallback, primary-first policy, disclosure-gap wiring)
+**Context.** The live validation (`docs/VALIDATION_TIER0.md`) reproduced the owner's #1 pain: primary
+filings (Bajaj Finance, CreditAccess investor decks) are image/dynamic-render PDFs whose text layer is
+near-empty, so a naive `extract_text` returns almost nothing — and an agent then silently substitutes a
+*secondary* source. ADR-0014 flagged this as the plumbing to fix under Track 1.
+**Decision.** Three market-agnostic additions (all pure/injectable, 100%-tested offline):
+1. `adapters/base/extract.py` — `extract_document()` detects a text-poor PDF (chars/page below a floor),
+   falls back to an injectable `OcrBackend` (per-page merge: keep good text-layer pages, OCR the image
+   ones), and when still unreadable returns `complete=False` — an explicit **signal**, never a silent
+   blank. Real Tesseract backend in `adapters/base/ocr_tesseract.py` (optional extras, pragma-no-cover).
+2. `adapters/base/sourcing.py` — `resolve_primary_first()` prefers the most-primary grade (A>B>C>D) among
+   sources for the *same* fact, and `assess_sourcing()` raises `secondary_only=True` when a fact rests
+   only on an aggregator/media where a primary should exist. Screener stays a grade-B *cross-check*,
+   never the source of record for a claim that has an audited primary.
+3. `adapters/india/filings.disclosure_gaps()` bridges the AR section-finder to the Track-0
+   `disclosure_completeness` check: a missing mandated section (auditor opinion, related-party, contingent
+   liabilities, KAM) flags `disclosure_gap` — whether from non-disclosure or an unreadable filing.
+**Consequences.** An unreadable or under-sourced primary filing now surfaces as a flag, closing the
+silent-fallback hole. **Still open (the hard part):** provenance-locked *numeric* extraction from AR
+tables — binding each figure to `(doc_id, page)` — remains noisy (ADR-0011); scaffolding is in place
+(page-level text), robust table→(label, value, page) parsing is the next Track-1 piece.
+
+---
+
+### ADR-0016 — Dual-verdict publishing: the firm publishes on PASS as well as FAIL
+**Context.** Owner directive (2026-07-30): the product is the firm's own professional report line —
+published when a company passes ("good fundamentals, good management, here is the thesis") just as much
+as when red flags are found. The reference short-seller reports were method examples only; a
+fraud-only publisher was never the goal, and the SPEC's output (thesis + kill criteria) already implied
+positive artifacts.
+**Decision.** `docs/REPORT_ARCHITECTURE.md` defines the publishable report: a five-class verdict taxonomy
+(`COMPOUNDER` / `QUALITY_WRONG_PRICE` / `WATCH` / `FORENSIC_CAUTION` / `INSUFFICIENT_DISCLOSURE`), a fixed
+11-section structure, and symmetric standards — positive reports must show the **Verified-Clean Checklist**
+(every check run, passes included; a clean verdict with an invisible process is worthless) and carry kill
+criteria; negative reports must carry **rehabilitation criteria** and the bull rebuttal. Same validators,
+same evidence-graph invariants, same red-team, both directions. Never "buy"/"sell" (SPEC §1 unchanged).
+**Consequences.** Publication gates gain three validators (verified-clean completeness, symmetry, legal
+framing). Published verdicts feed predictions → Brier scoring, making the firm's public calibration part
+of the memory loop. The gate funnel still decides *whether* a full report exists (Gates A–C exits get a
+one-line record, not a report).
+
+---
+
+### ADR-0017 — Business-model-adaptive forensics + enforceable line-by-line note coverage
+**Context.** Owner directive (2026-07-30): n companies, n business structures — the system must adapt its
+investigation to the structure it is reading, and must read statements and notes-to-accounts line by
+line, not by keyword windows. Current state: checks are model-aware for lenders only (ADR-0002/0012),
+and `filings.py` spot-checks six sections. Calibration evidence so far is n=2 US lender-shaped reports —
+a generalisation risk if left as-is.
+**Decision.** `docs/ADAPTIVE_FORENSICS.md`: (1) deterministic **business-model detection** from statement
+shape (loan book, contract assets, inventory intensity, gross-vs-net pattern…) → model tags →
+config-driven **playbooks** (which checks apply/suppress per model + model-specific checks) across 10
+initial models (manufacturer, lender, bank, EPC, retail/jewellery, trader, IT, pharma, real estate,
+platform); conglomerates = union of playbooks. (2) The **notes-walker**: enumerate every numbered note,
+classify against a fixed taxonomy (incl. Schedule III 2021 mandatory disclosures — struck-off-company
+transactions, CWIP/receivable ageing, benami, wilful-default), force a `{clean, flag, unknown}`
+**disposition per note** with figures bound to (doc_id, page); a report cannot publish below 100% note
+coverage. (3) **CARO 2020 clause parsing** — any adverse clause auto-flags with the clause quoted.
+**Consequences.** Universal checks SPEC named but never coded (receivable/inventory-days divergence,
+other-income share, gross-vs-net) become the next compute work; numeric table extraction (ADR-0015
+remainder) becomes a hard prerequisite for the notes-walker; per-model thresholds are explicitly
+provisional until the Phase-6 golden set (which must span fraud types beyond lenders) calibrates them.
+
+---
+
+### ADR-0018 — Point-in-time source of record: BSE/NSE archives + official filings (owner decision, closes PLAN OQ#1)
+**Context.** PLAN OQ#1 — the authoritative source for historical, point-in-time filings — had been open
+since Phase 0. screener.in (ADR-0009) is a *current snapshot*: honest for as-of=today, useless for the
+Phase-6 golden-set eval, which needs archived filings carrying their original `published_at`. The owner
+decided (2026-07-30): **BSE/NSE archives + official company filings, free tier.**
+**Decision.** The exchange archives become the point-in-time spine: BSE corporate-announcement archives
+(announcement JSON with exchange receipt timestamps; attachment PDFs under
+`bseindia.com/xml-data/corpfiling/AttachHis/…`) and NSE archives (`nsearchives.nseindia.com`, already used
+for the Alkyl Amines AR, ADR-0011). `published_at` = the **exchange dissemination timestamp**, not the
+fetch date — which is exactly what Law 3 needs for honest historical eval. Implemented behind the existing
+`FilingsSource` protocol in `adapters/india/exchange.py` (pure parser fixture-tested; injectable fetcher;
+NSE's bot-blocking handled with browser-like headers and treated as best-effort). Grades: the announcement
+row = B (exchange filing); an audited AR/results attachment = A. screener remains the grade-B quantitative
+cross-check only.
+**Consequences.** The golden-set eval becomes buildable without a paid licence. Rate limits and endpoint
+fragility are real (both exchanges change/block APIs) — hence adapter-isolated with cached bronze copies
+(SHA-256, immutable) so a dead endpoint never destroys already-archived history. Bulk backfill must be
+polite (throttled, cached, resumable).
+**Verified live (2026-07-30, RELIANCE/500325):** announcements API returns dated rows with PDF
+attachments (both AttachLive and AttachHis serve 200/`application/pdf`; downloaded size matched the
+API's `Fld_Attachsize` byte-for-byte). Annual-report endpoint **lists** 1997–2026 but rows before 2012
+carry no authorise date and/or no PDF link — the honest dated-and-downloadable depth is **2012–2026
+(15 years)**, above the 10-yr target. The parser drops undated/linkless rows by design: an AR that
+cannot be dated or fetched is not archive material. Real API responses are frozen as
+`tests/fixtures/bse_*.json` so the parsers are tested against the production schema.
+Implemented: `adapters/india/exchange.py` (`BseFilingsSource` implements `FilingsSource`; 100% cov).
+
