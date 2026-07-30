@@ -12,6 +12,9 @@ whether a report may ship:
      criteria; both carry the opposing case. Optimism gets no easier standard than pessimism.
   P3 legal framing — a forensic finding renders as evidence-indicates language with a replication path,
      never as an unhedged accusation of fraud, and never resting only on grade C/D.
+  P4 line-item integrity (ADR-0022) — every unanswered analyst question names what would answer it, every
+     suppressed one says why, and a positive verdict may not ship while high-severity questions the
+     filings were asked remain unanswerable from them.
 
 Empty result = the report may publish.
 """
@@ -20,10 +23,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Any, Mapping
 
 from firm.schemas._base import Grade
 from firm.schemas.report import (
+    AnswerStatus,
     CheckOutcome,
+    GapKind,
     ResearchReport,
     Verdict,
 )
@@ -41,13 +47,22 @@ _HEDGES = (
     "consistent with", "raises the question", "evidence indicates", "may ", "might ", "could ",
     "should clarify", "warrants",
 )
-_MIN_KILL_CRITERIA = 3
-_MIN_REHAB_CRITERIA = 1
+
+def _policy() -> Mapping[str, Any]:
+    """Publication thresholds from `config/thresholds.yaml` (CLAUDE.md: no magic numbers in code).
+
+    Imported lazily so the validator keeps working in a unit test that never touches the filesystem —
+    a caller may pass `policy=` explicitly and this is never reached.
+    """
+    from firm.core.config import report_policy
+
+    return report_policy()
 
 
 @dataclass(frozen=True)
 class PublicationViolation:
     rule: str      # 'P1_incomplete_checklist' | 'P2_asymmetric' | 'P3_legal_framing'
+                   # | 'P4_line_item_integrity'
     field: str
     detail: str
 
@@ -101,15 +116,20 @@ def verified_clean_completeness(report: ResearchReport) -> list[PublicationViola
     return out
 
 
-def symmetry(report: ResearchReport) -> list[PublicationViolation]:
+def symmetry(
+    report: ResearchReport, *, policy: Mapping[str, Any] | None = None
+) -> list[PublicationViolation]:
     """P2: falsifiability and the opposing case are required in BOTH directions."""
     out: list[PublicationViolation] = []
+    pol = policy if policy is not None else _policy()
+    min_kill = int(pol["min_kill_criteria"])
+    min_rehab = int(pol["min_rehabilitation_criteria"])
 
     if report.is_positive:
-        if len(report.kill_criteria) < _MIN_KILL_CRITERIA:
+        if len(report.kill_criteria) < min_kill:
             out.append(PublicationViolation(
                 "P2_asymmetric", "kill_criteria",
-                f"a positive verdict needs >= {_MIN_KILL_CRITERIA} dated kill criteria, "
+                f"a positive verdict needs >= {min_kill} dated kill criteria, "
                 f"got {len(report.kill_criteria)}",
             ))
         if not any(c.load_bearing for c in report.kill_criteria):
@@ -117,11 +137,11 @@ def symmetry(report: ResearchReport) -> list[PublicationViolation]:
                 "P2_asymmetric", "kill_criteria",
                 "at least one kill criterion must be load_bearing",
             ))
-    if report.is_negative and len(report.rehabilitation_criteria) < _MIN_REHAB_CRITERIA:
+    if report.is_negative and len(report.rehabilitation_criteria) < min_rehab:
         out.append(PublicationViolation(
             "P2_asymmetric", "rehabilitation_criteria",
             "a negative/withholding verdict must state what would reverse it "
-            f"(>= {_MIN_REHAB_CRITERIA} rehabilitation criteria)",
+            f"(>= {min_rehab} rehabilitation criteria)",
         ))
 
     # Both directions must engage the other side of the argument.
@@ -181,10 +201,67 @@ def legal_framing(report: ResearchReport) -> list[PublicationViolation]:
     return out
 
 
-def validate_report(report: ResearchReport) -> list[PublicationViolation]:
+def line_item_integrity(
+    report: ResearchReport, *, policy: Mapping[str, Any] | None = None
+) -> list[PublicationViolation]:
+    """P4: the line-by-line interrogation must be honest about its own gaps (ADR-0022).
+
+    Three things, each closing a way the section could look thorough while saying nothing:
+
+    1. An UNANSWERED question must name what would answer it (`needs`) or say why not (`reason`). A
+       question printed with a blank answer is worse than an omitted one — it implies the analyst looked.
+    2. A NOT_APPLICABLE question must carry the reason it was suppressed, exactly as P1 requires of a
+       suppressed check. Otherwise "n/a" becomes a way to make an inconvenient question disappear.
+    3. A **positive** verdict may not ship while high-severity questions are unanswered. This is the
+       backstop for the verdict ladder, not a substitute for it: `choose_verdict` already downgrades on
+       the same input, so reaching here means the ladder and the gate disagree, which is a bug worth
+       failing the run over rather than publishing through.
+    """
+    out: list[PublicationViolation] = []
+    pol = policy if policy is not None else _policy()
+    unanswered_high: list[str] = []
+
+    for section in report.line_items:
+        for answer in section.answers:
+            if answer.status is AnswerStatus.UNANSWERED:
+                if not answer.needs and not answer.reason:
+                    out.append(PublicationViolation(
+                        "P4_line_item_integrity", f"line_items.{section.line_item}.{answer.question_id}",
+                        "unanswered question states neither what would answer it nor why it could not be "
+                        "answered — that reads as an answered question with no finding",
+                    ))
+                # Only DISCLOSURE gaps may block: a CAPABILITY gap is our unfinished extractor, and
+                # failing a report over it would make the firm's own backlog the company's problem.
+                if answer.severity == "high" and answer.gap is GapKind.DISCLOSURE:
+                    unanswered_high.append(f"{section.line_item}.{answer.question_id}")
+            elif answer.status is AnswerStatus.NOT_APPLICABLE and not answer.reason:
+                out.append(PublicationViolation(
+                    "P4_line_item_integrity", f"line_items.{section.line_item}.{answer.question_id}",
+                    "NOT_APPLICABLE without a reason — a suppressed question must say why, or 'n/a' "
+                    "becomes a way to drop an inconvenient one",
+                ))
+
+    ceiling = int(pol["max_unanswered_high_line_items"])
+    if report.is_positive and len(unanswered_high) > ceiling:
+        out.append(PublicationViolation(
+            "P4_line_item_integrity", "line_items",
+            f"{len(unanswered_high)} high-severity question(s) unanswerable from the filings "
+            f"(ceiling {ceiling}) under a "
+            f"{report.verdict.value} verdict: {', '.join(unanswered_high[:6])}"
+            f"{' …' if len(unanswered_high) > 6 else ''} — a compounding claim cannot rest on lines "
+            "nobody could read",
+        ))
+    return out
+
+
+def validate_report(
+    report: ResearchReport, *, policy: Mapping[str, Any] | None = None
+) -> list[PublicationViolation]:
     """Run every publication gate. Empty list = the report may ship."""
+    pol = policy if policy is not None else _policy()
     return [
         *verified_clean_completeness(report),
-        *symmetry(report),
+        *symmetry(report, policy=pol),
         *legal_framing(report),
+        *line_item_integrity(report, policy=pol),
     ]

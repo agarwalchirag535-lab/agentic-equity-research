@@ -438,3 +438,81 @@ what was easy to fetch. Costs: agent prompts must now avoid restating numbers wi
 (strict, and intentional); `working_capital_days`, Beneish and the lender checks stay `UNAVAILABLE` until
 the AR-notes numeric extraction improves; `Criterion` objects still are not logged as predictions
 (Phase 5).
+
+### ADR-0022 — Line-by-line interrogation: publish the questions, not just the answers
+**Context.** The first real artifact through the Phase-2 pipeline
+(`reports/ALKYLAMINE/2026-07-23-433c94208117/`) was arithmetically sound and analytically shallow. It
+reported `revenue_cagr 0.11` and moved on. The owner's objection, verbatim: *"we can't just see the revenue,
+we have to see WHY the revenue is increasing... if the debt is increasing we can't consider it wrong, we
+have to find the answer why the debt is increasing"* — along with the substance a revenue line actually
+requires: what the company does, where the revenue comes from, whether the buyer base is concentrated or
+spread, whether related parties are involved, and whether growth is volume or price. That is a correct
+diagnosis of a real defect: a ratio table with narration is a screener with prose attached. The research is
+the *cause*, and the report never asked for one.
+
+**Decision 1 — the question is the unit of work, not the answer.** `config/line_items.yaml` holds the
+analyst questions per statement line (revenue, margins, other income, debt, capital allocation, working
+capital, cash, tax, related parties). `core/pipeline/interrogate.py` resolves each one exactly three ways
+and never by silence: **ANSWERED** (a provenance-locked derivation answers it, rendered with its fact ids),
+**UNANSWERED** (printed anyway, with `needs:` naming the exact filing row that would close it), or
+**NOT_APPLICABLE** (invalid for the detected business model, suppressed with a reason — ADR-0002/0017). A
+question dropped is a question that looks answered — the same defect ADR-0021 fixed for the forensic checks,
+one layer up.
+
+**Decision 2 — derivations that answer "why", not "what".** Four screener rows the pipeline already ingested
+were read by nothing: `EPS in Rs`, `Expenses`, `Dividend Payout %`, `Cash from Investing Activity`. From
+them: `dilution_drag` (PAT CAGR − EPS CAGR — the firm's question is a 5–10x *per share*, and aggregate growth
+flatters a serial issuer), `self_funding_ratio` and `debt_funded_investment_share` (the cash-flow identity
+answering *what the debt bought* — capacity, or distributions), `expense_cagr` / `opm_delta_window` (the
+deterministic half of "why did the margin move"), `payout_share_of_cfo`, `effective_tax_rate_latest`. On
+ALKYLAMINE these produced findings the previous report could not: growth was **not** bought with equity
+(drag ≈ 0.1pp), and operating cash covered **1.48×** the entire FY15–FY26 investment programme while
+borrowings *fell* ₹134cr. "Why is the debt increasing?" — it isn't.
+
+**Decision 3 — refuse to narrate a meaningless number.** ALKYLAMINE's implied cost of debt computes to 100%
+because year-end borrowings are near zero against a full year of interest. Arithmetically correct,
+informationally empty, and a `bands:` clause would have dressed it in confident prose. `plausible:` declares
+the range in which a ratio carries information; outside it the question is UNANSWERED and says why. A
+confidently-worded garbage number is worse than no answer, because the prose lends authority to a degenerate
+denominator.
+
+**Decision 4 — DISCLOSURE gaps and CAPABILITY gaps are not the same thing, and only one may move a
+verdict.** The subtlest decision here, and the first implementation got it wrong. An unanswered question is
+either (a) one the pipeline put to the sources, which did not carry the row — evidence about the *company*,
+allowed to degrade the verdict; or (b) one the firm has no extractor for, so it was never really asked —
+evidence about *us*. `DerivedSet.missing` discriminates them exactly and automatically: a metric lands there
+only because `derive_metrics` tried to build it and found an input absent. The first cut consulted all
+unanswered questions and turned every verdict into `INSUFFICIENT_DISCLOSURE`, including for the clean
+synthetic acceptance company; three failing tests said so. A firm that marks companies down for its own
+unfinished note-parser will reject every good business it cannot yet read and call that rigour. So CAPABILITY
+gaps lower `report_confidence` — the honest place for "we know less" as against "they disclosed less" — and
+only DISCLOSURE gaps reach the ladder. ALKYLAMINE's confidence fell 0.21 → 0.14 accordingly.
+
+**Decision 5 — ladder position is load-bearing.** The line-item rung sits *below* the short-history rung. A
+three-year-old company cannot have a three-year incremental return on capital, and calling that a disclosure
+failure would punish a business for its age; ADR-0008 routes short history to `WATCH`, never dropped. What
+remains at that rung is the real case: a company with the history, clean checks and a passing feasibility
+gate whose *business* is still unread.
+
+**Decision 6 — P4, and two magic numbers retired.** A new publication gate requires every UNANSWERED question
+to name what would answer it, every NOT_APPLICABLE to say why, and blocks a positive verdict carrying
+unanswered high-severity DISCLOSURE questions — a backstop for the ladder, so a disagreement between the two
+fails the run rather than publishing through. `_MIN_KILL_CRITERIA` and `_MIN_REHAB_CRITERIA` were module
+constants in Python, which CLAUDE.md forbids; both now live in `thresholds.yaml`.
+
+**Also fixed here.** `_as_fraction` reads the stored `unit` instead of guessing from magnitude. The old
+`v / 100 if v > 1 else v` idiom (present in the ROIC path) silently mangles exactly the anomalous inputs a
+forensic report exists to surface: a 120% effective tax rate or a 150% payout ratio became 1.2% and 1.5%.
+And `make cov` invoked a bare `python`, which does not exist on stock macOS — the Phase-1 coverage gate had
+been failing before it measured anything, so 100% on `core/compute` was an assertion rather than a check.
+
+**Consequences.** The report now leads with the business rather than the fraud tests, and its
+`disclosure_backlog` is a deduplicated, ordered extraction list generated by the questions themselves — so
+"improve the data layer" (STATUS §3A) stops being a vague instruction and becomes a worklist. 563 tests
+pass; `core/compute` holds at 100%, now verifiably. Costs: on a screener snapshot ALKYLAMINE answers only
+32% of its questions and most of the remainder are CAPABILITY gaps — the registry asks for more than the
+firm can currently read, which is the intended pressure but leaves `max_unanswered_high_line_items`
+effectively inert until the AR extractors land. `receivable_days`, `receivable_days_delta` and
+`inventory_days` are named in the registry with no derivation behind them, guarded by an explicit allowlist
+in `tests/test_line_item_registry.py` so a typo cannot hide there. Every band threshold in the new registry
+is PROVISIONAL until the Phase-6 golden set calibrates it.

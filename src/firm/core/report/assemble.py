@@ -30,11 +30,16 @@ from firm.core.compute.multibagger import FeasibilityResult, GateVerdict
 from firm.core.compute.quality import ForensicScreenResult, Severity
 from firm.core.pipeline.checks import CheckEvaluation
 from firm.core.pipeline.derive import DerivedSet
+from firm.core.pipeline.interrogate import Interrogation
 from firm.core.report.criteria import kill_criteria, rehabilitation_criteria
 from firm.schemas._base import Citation, Confidence, Grade
 from firm.schemas.evidence import EvidenceGraph
 from firm.schemas.report import (
+    AnswerStatus,
     CheckOutcome,
+    GapKind,
+    LineItemAnswer,
+    LineItemSection,
     ReportClaim,
     ResearchReport,
     Verdict,
@@ -77,6 +82,7 @@ def choose_verdict(
     history_years: int,
     min_history_years: int,
     forensic_veto: bool = False,
+    interrogation: Interrogation | None = None,
 ) -> VerdictDecision:
     """The deterministic verdict ladder. No LLM votes; `forensic_veto` is the one agent-supplied input.
 
@@ -126,6 +132,32 @@ def choose_verdict(
             f"only {history_years}y of history (floor {min_history_years}y) — structural promise, thesis "
             "not yet provable"
         ))
+
+    # Line-by-line sufficiency (ADR-0022), and its position in the ladder is load-bearing.
+    #
+    # It sits BELOW the short-history rung deliberately: a three-year-old company cannot have a three-year
+    # incremental return on capital, and calling that a disclosure failure would punish a young business
+    # for its age. ADR-0008 says short history is routed to WATCH, never dropped, so WATCH must be reached
+    # first. What remains here is the real case — a company with the history, clean checks and a passing
+    # feasibility gate whose *business* is still unread: revenue undecomposed, buyers unknown,
+    # related-party flows unseen. A thesis on that is a thesis about a ratio table.
+    #
+    # Only DISCLOSURE gaps are consulted. CAPABILITY gaps (no extractor written yet) are excluded on
+    # purpose: charging a company for our unfinished note-parser would reject every good business we
+    # cannot yet read and call it rigour. Those lower `report_confidence` instead — the honest place for
+    # "we know less" as opposed to "they disclosed less".
+    if interrogation is not None:
+        ceiling = int(policy["max_unanswered_high_line_items"])
+        blocking = interrogation.undisclosed_high
+        if len(blocking) > ceiling:
+            named = ", ".join(f"{a.line_item}.{a.question_id}" for a in blocking[:5])
+            return VerdictDecision(Verdict.INSUFFICIENT_DISCLOSURE, (
+                f"{len(blocking)} high-severity line-item question(s) put to the filings and unanswerable "
+                f"from them (ceiling {ceiling}), line-by-line coverage {interrogation.coverage:.0%}: "
+                f"{named}{' …' if len(blocking) > 5 else ''} — the ratios are clean but the business is "
+                "unread"
+            ))
+
     return VerdictDecision(Verdict.COMPOUNDER, (
         f"clean on every check that could run, notes fully dispositioned, and the feasibility gate "
         f"returned {feasibility.verdict.value}: {feasibility.rationale}"
@@ -164,26 +196,40 @@ def load_bearing_points(
 
 
 def report_confidence(
-    graph: EvidenceGraph, evaluation: CheckEvaluation, notes: NotesReview
+    graph: EvidenceGraph,
+    evaluation: CheckEvaluation,
+    notes: NotesReview,
+    interrogation: Interrogation | None = None,
 ) -> Confidence:
     """Numeric confidence justified by what was actually evidenced, not by tone (house style §5).
 
     Starts from the share of the applicable playbook that could be evaluated, is scaled by the share of
-    notes read substantively, and is capped by the weakest grade the graph relies on. A report resting on
-    grade C/D cannot claim high confidence however many claims it stacks up.
+    notes read substantively, scaled again by line-by-line coverage, and capped by the weakest grade the
+    graph relies on. A report resting on grade C/D cannot claim high confidence however many claims it
+    stacks up.
+
+    Line-item coverage enters *here* rather than in the verdict on purpose (ADR-0022). A question we never
+    built the extractor for is a limit on what this report knows, not a fact about the company — so it
+    belongs in a graded number that says "we know less", never in a categorical judgment that says "they
+    disclosed less".
     """
     evaluated = 1.0 - evaluation.unavailable_share
     grades = {e.citation.grade for e in graph.evidence.values()}
     lowest = _lowest_grade([e.citation for e in graph.evidence.values()]) if grades else Grade.D
     cap = {Grade.A: 0.90, Grade.B: 0.75, Grade.C: 0.55, Grade.D: 0.40}[lowest]
-    value = min(cap, round(evaluated * (0.5 + 0.5 * notes.substantive_share), 2))
+    # Coverage damps rather than dominates: half weight, so a thorough forensic pass on a partly-read set
+    # of lines still earns a usable number instead of collapsing to zero.
+    line_cover = interrogation.coverage if interrogation is not None else 1.0
+    value = min(cap, round(evaluated * (0.5 + 0.5 * notes.substantive_share)
+                           * (0.5 + 0.5 * line_cover), 2))
     return Confidence(
         value=max(0.0, min(1.0, value)),
         evidence_count=len(graph.evidence),
         lowest_grade_relied_on=lowest,
         rationale=(
             f"{evaluated:.0%} of the applicable playbook was evaluable, "
-            f"{notes.substantive_share:.0%} of notes carry a substantive disposition, and the weakest "
+            f"{notes.substantive_share:.0%} of notes carry a substantive disposition, "
+            f"{line_cover:.0%} of the line-by-line questions could be answered, and the weakest "
             f"grade relied on is {lowest.value} (cap {cap:.2f})"
         ),
     )
@@ -201,6 +247,42 @@ def build_checklist(
         notes_undispositioned=list(notes.undispositioned),
         disclosure_gaps=list(notes.disclosure_gaps),
     )
+
+
+def build_line_items(interrogation: Interrogation | None) -> list[LineItemSection]:
+    """Project the line-by-line interrogation onto the report contract (ADR-0022).
+
+    Straight projection, deliberately: every judgment already happened in `interrogate.py` against
+    thresholds in `config/line_items.yaml`, so there is nowhere here for a second opinion to creep in.
+    """
+    if interrogation is None:
+        return []
+    return [
+        LineItemSection(
+            line_item=d.line_item,
+            label=d.label,
+            why=d.why,
+            coverage=d.coverage,
+            answers=[
+                LineItemAnswer(
+                    question_id=a.question_id,
+                    question=a.question,
+                    status=AnswerStatus(a.status.value),
+                    severity=a.severity,
+                    gap=GapKind(a.gap.value),
+                    finding=a.finding,
+                    metric=a.metric,
+                    value=a.value,
+                    citation=a.citation,
+                    fact_ids=list(a.fact_ids),
+                    needs=list(a.needs),
+                    reason=a.reason,
+                )
+                for a in d.answers
+            ],
+        )
+        for d in interrogation.dossiers
+    ]
 
 
 def _unavailable_items(evaluation: CheckEvaluation) -> list[str]:
@@ -245,6 +327,7 @@ def assemble_report(
     policy: Mapping[str, Any],
     feasibility: FeasibilityResult | None = None,
     self_fund_ceiling: float = 1.0,
+    interrogation: Interrogation | None = None,
 ) -> ResearchReport:
     """Build the report object. Publication gates run separately (`core/report/render.write_report`).
 
@@ -261,13 +344,16 @@ def assemble_report(
         as_of=as_of,
         run_id=run_id,
         verdict=decision.verdict,
-        confidence=report_confidence(graph, evaluation, notes),
+        confidence=report_confidence(graph, evaluation, notes, interrogation),
         agent_versions=dict(agent_versions),
         executive_summary=narration.executive_summary,
         load_bearing_points=load_bearing_points(graph, load_bearing_ids),
         business_model_plain=narration.business_model_plain,
         computed_facts=computed,
         fact_citations=citations,
+        line_items=build_line_items(interrogation),
+        line_item_coverage=interrogation.coverage if interrogation else 0.0,
+        disclosure_backlog=list(interrogation.needs_index()) if interrogation else [],
         checklist=checklist,
         forensic_narrative=narration.forensic_narrative,
         management_narrative=narration.management_narrative,

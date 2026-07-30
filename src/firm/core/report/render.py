@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 from firm.core.validators.publication import validate_report
-from firm.schemas.report import CheckOutcome, ResearchReport
+from firm.schemas.report import AnswerStatus, CheckOutcome, ResearchReport
 
 _OUTCOME_MARK = {
     CheckOutcome.PASS: "✅ pass",
@@ -101,6 +101,53 @@ def render_markdown(report: ResearchReport) -> str:
                    if cite else "**UNCITED**")
             out.append(f"| {metric} | {value:,.2f} | {src} |")
         out.append("")
+
+    # 4b. line-by-line (ADR-0022). Placed before the forensic checklist on purpose: a reader should meet
+    # the business — where revenue comes from, what the debt bought — before meeting the fraud tests.
+    if r.line_items:
+        out += [
+            "## Line by line — why each number moved",
+            "",
+            (
+                f"_Every question a competent analyst must ask of each statement line. "
+                f"**{r.line_item_coverage:.0%}** of the applicable questions could be answered from "
+                f"the sources read as-of {r.as_of.isoformat()}; the rest are printed unanswered with "
+                f"the exact filing row that would close them, because a question dropped is a question "
+                f"that looks answered._"
+            ),
+            "",
+        ]
+        for section in r.line_items:
+            answered = [a for a in section.answers if a.status is AnswerStatus.ANSWERED]
+            unanswered = [a for a in section.answers if a.status is AnswerStatus.UNANSWERED]
+            not_applicable = [a for a in section.answers if a.status is AnswerStatus.NOT_APPLICABLE]
+            out += [f"### {section.label}", ""]
+            if section.why:
+                out += [f"_{section.why}_", ""]
+            out += [
+                (f"**Answered: {len(answered)} of {len(answered) + len(unanswered)}** "
+                 f"({section.coverage:.0%})"),
+                "",
+            ]
+            for a in answered:
+                cite = f" `[fact:{a.citation.fact_id}]`" if a.citation else ""
+                out += [f"- **{a.question}**", f"  → {a.finding}{cite}"]
+            for a in unanswered:
+                out += [f"- **{a.question}** — ⚠️ **unanswered** ({a.severity})",
+                        f"  → {a.reason}"]
+                out += [f"     - needs: {need}" for need in a.needs]
+            for a in not_applicable:
+                out += [f"- ~~{a.question}~~ — n/a: {a.reason}"]
+            out.append("")
+        if r.disclosure_backlog:
+            out += [
+                "### What would close the gaps",
+                "",
+                ("_Deduplicated from every unanswered question above — this is the extraction "
+                 "backlog, in the order the questions were asked, not a wish list._"),
+                "",
+            ]
+            out += [f"{i}. {need}" for i, need in enumerate(r.disclosure_backlog, 1)] + [""]
 
     # 5. forensic — passes included; this is the credibility backbone
     out += ["## Forensic review", ""]

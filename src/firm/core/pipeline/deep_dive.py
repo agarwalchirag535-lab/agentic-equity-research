@@ -8,6 +8,7 @@ published through the new pipeline." This module is that pipeline.
       → derivations, each carrying its input facts (Law 2)
         → optional audited-filing walk: grade-A figures + enumerated notes (owner directive 1 & 6)
           → business-model detection → playbook (ADR-0017)
+            → line-by-line interrogation: every analyst question per statement line (ADR-0022)
             → every selected check evaluated explicitly (PASS/FLAG/UNAVAILABLE/NOT_APPLICABLE)
               → deterministic Gate-B forensic screen + §6.3 feasibility gate (Law 1)
                 → three Tier-2 agents narrate, and ONLY narrate
@@ -64,6 +65,7 @@ from firm.core.compute.models import (
 from firm.core.config import (
     REPO_ROOT,
     forensic_thresholds,
+    line_item_registry,
     load_thresholds,
     model_detection_thresholds,
     model_forensic_thresholds,
@@ -78,6 +80,7 @@ from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs, evaluate_checks
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
 from firm.core.pipeline.filing import FilingSource, FilingWalk, disposition_notes, walk_filing
+from firm.core.pipeline.interrogate import Interrogation, interrogate
 from firm.core.report.assemble import (
     Narration,
     NotesReview,
@@ -140,6 +143,7 @@ class DeepDiveResult:
     models: tuple[BusinessModel, ...]
     playbook: Playbook
     notes: NotesReview
+    interrogation: Interrogation
     graph: EvidenceGraph
     fragments: tuple[Fragment, ...]
     outputs: tuple[AgentOutputBase, ...]
@@ -536,6 +540,11 @@ def run_deep_dive(
     models = tuple(detect_models(statement_shape(facts, derived), model_detection_thresholds()))
     playbook = build_playbook(models, model_playbooks())
 
+    # ---- 2b. line-by-line interrogation (ADR-0022) ------------------------------------------------
+    # Runs before the checks because it is the wider net: the forensic playbook asks whether the numbers
+    # are honest, this asks whether anyone has established what the numbers mean. Both feed the verdict.
+    interrogation = interrogate(derived, [m.value for m in models], line_item_registry())
+
     # ---- 3. evaluate every selected check, then the deterministic screens (Law 1) -----------------
     external = walk.external if walk is not None else ExternalInputs()
     evaluation = evaluate_checks(
@@ -618,6 +627,7 @@ def run_deep_dive(
         policy=policy, history_years=derived.years,
         min_history_years=int(thresholds["screen"]["min_history_years"]),
         forensic_veto=bool(getattr(forensic_out, "veto", False)) if forensic_out else False,
+        interrogation=interrogation,
     )
     report = assemble_report(
         ticker=ticker, company_name=company_name or ticker, as_of=as_of, run_id=run_id,
@@ -628,6 +638,7 @@ def run_deep_dive(
         forensic=thresholds["forensic"], policy=policy,
         feasibility=feasibility,
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
+        interrogation=interrogation,
     )
 
     publication_violations = tuple(validate_report(report))
@@ -638,7 +649,8 @@ def run_deep_dive(
     return DeepDiveResult(
         ticker=ticker, as_of=as_of, run_id=run_id, report=report, decision=decision, derived=derived,
         evaluation=evaluation, screen=screen, feasibility=feasibility, models=models,
-        playbook=playbook, notes=notes, graph=graph, fragments=tuple(run.fragments),
+        playbook=playbook, notes=notes, interrogation=interrogation, graph=graph,
+        fragments=tuple(run.fragments),
         outputs=tuple(run.outputs.values()), graph_violations=graph_violations,
         publication_violations=publication_violations, markdown_path=md_path, json_path=json_path,
     )

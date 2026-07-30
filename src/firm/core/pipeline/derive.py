@@ -60,11 +60,18 @@ TOTAL_ASSETS = "balance_sheet:Total Assets"
 CASH = "balance_sheet:Cash Equivalents"
 RECEIVABLES = "balance_sheet:Trade Receivables"
 INVENTORY = "balance_sheet:Inventories"
+#: Lines the interrogation layer (ADR-0022) needs to answer *why* a number moved rather than only what it
+#: is. All four are already in the screener snapshot and were previously read by nothing.
+EPS = "pnl:EPS in Rs"
+EXPENSES = "pnl:Expenses"
+DIVIDEND_PAYOUT_PCT = "pnl:Dividend Payout %"
+CFI = "cashflow:Cash from Investing Activity"
 
 READ_METRICS: tuple[str, ...] = (
     SALES, PAT, OPERATING_PROFIT, DEPRECIATION, INTEREST, TAX_PCT, OTHER_INCOME, PBT,
     CFO, FCF, BORROWINGS, EQUITY_CAPITAL, RESERVES, CWIP, FIXED_ASSETS, TOTAL_ASSETS,
     CASH, RECEIVABLES, INVENTORY,
+    EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
 )
 
 
@@ -228,10 +235,50 @@ class _Builder:
         self.values[metric] = Derivation(metric, float(value), formula, tuple(inputs))
 
 
+def _as_fraction(fact: Fact) -> float:
+    """A percent-named row as a fraction, using the stored `unit` rather than guessing from magnitude.
+
+    Rows like `pnl:Tax %` and `pnl:Dividend Payout %` arrive as `unit="ratio"` already scaled (0.26 for
+    26%), while an extractor reading a printed percentage off an annual-report page yields 26.0. Both must
+    land on the same scale before any arithmetic touches them.
+
+    The obvious shortcut — `v / 100 if v > 1 else v` — is wrong exactly where it matters: an effective tax
+    rate of 120% (prior-period adjustments) or a payout ratio of 150% (paying out of reserves) are real,
+    and the shortcut silently turns them into 1.2% and 1.5%. Both are anomalies a forensic report should
+    surface, so the one input that must not be mangled is the anomalous one. `unit` removes the guess.
+    """
+    return fact.value if fact.unit == "ratio" else fact.value / 100.0
+
+
 def _cagr(first: float, last: float, years: int) -> float | None:
     if years <= 0 or first <= 0 or last <= 0:
         return None
     return (last / first) ** (1.0 / years) - 1.0
+
+
+def _cum(
+    b: _Builder,
+    facts: CompanyFacts,
+    metric: str,
+    source: str,
+    periods: Sequence[str],
+    formula: str,
+    *,
+    sign: float = 1.0,
+) -> Derivation | None:
+    """Sum ``source`` across every period that has it, recording the gap when none does.
+
+    ``sign=-1`` flips a cash-flow line that is negative for an outflow (CFI), so the derived figure reads
+    as the *cost* of the programme rather than as a negative number the reader has to re-interpret.
+    Returns the `Derivation` so a caller can build a ratio on it without re-summing.
+    """
+    usable = [p for p in periods if facts.fact(source, p) is not None]
+    if not usable:
+        b.missing.setdefault(metric, (f"{source} (no period in the window discloses it)",))
+        return None
+    inputs = [facts.fact(source, p) for p in usable]
+    b.add(metric, sign * sum(facts.value(source, p) for p in usable), formula, inputs)
+    return b.values.get(metric)
 
 
 def derive_metrics(facts: CompanyFacts) -> DerivedSet:
@@ -262,9 +309,9 @@ def derive_metrics(facts: CompanyFacts) -> DerivedSet:
     invested_inputs = b.need("roic_latest", (BORROWINGS, fN), (EQUITY_CAPITAL, fN), (RESERVES, fN),
                              (OPERATING_PROFIT, fN), (DEPRECIATION, fN), (TAX_PCT, fN))
     if invested_inputs is not None:
-        borrow, eq, res, op, dep, tax = (f.value for f in invested_inputs)
+        borrow, eq, res, op, dep = (f.value for f in invested_inputs[:5])
         invested = borrow + eq + res
-        nopat = RO.nopat(op - dep, tax / 100.0 if tax > 1 else tax)
+        nopat = RO.nopat(op - dep, _as_fraction(invested_inputs[5]))
         b.add("roic_latest", RO.roic(nopat, invested) if invested > 0 else None,
               f"NOPAT({fN}) / (Borrowings + Equity Capital + Reserves)({fN})", invested_inputs)
 
@@ -334,6 +381,94 @@ def derive_metrics(facts: CompanyFacts) -> DerivedSet:
     else:
         b.missing["fcf_to_pat_cum"] = (f"{FCF} (no period with both FCF and PAT)",)
 
+    # ---- WHY a line moved, not just what it is (ADR-0022) ---------------------------------------
+    # Everything below answers a *causal* question with arithmetic instead of adjectives. Each one exists
+    # because a report that says "revenue grew 11%" and stops is a screener with prose attached: the
+    # analyst question is always "grew on what — volume, price, an acquisition, or an accounting choice?"
+    # These are the ones a screener snapshot can answer honestly; the rest are asked and left explicitly
+    # unanswered by `interrogate.py`, which names the annual-report row that would close each gap.
+    #
+    # No thresholds here, deliberately: this module produces raw values and `config/line_items.yaml` owns
+    # every band that turns a value into a judgment (SPEC §3 — no policy numbers in Python).
+
+    # Per-share reality. Aggregate profit growth flatters a company that bought its growth with equity:
+    # PAT can compound at 13% while EPS compounds at 9%, and the 4-point wedge is the shareholder's.
+    # The firm's question is a 5-10x *per share*, so the wedge is load-bearing, not a footnote.
+    if (got := b.need("eps_cagr", (EPS, f0), (EPS, fN))) is not None:
+        b.add("eps_cagr", _cagr(got[0].value, got[1].value, span),
+              f"({EPS} {fN} / {EPS} {f0})^(1/{span}) - 1", got)
+    pat_c, eps_c = b.values.get("pat_cagr"), b.values.get("eps_cagr")
+    if pat_c is not None and eps_c is not None:
+        b.add("dilution_drag", pat_c.value - eps_c.value,
+              f"PAT CAGR - EPS CAGR, {f0}-{fN} (positive = per-share growth lagged aggregate growth)",
+              tuple(pat_c.inputs) + tuple(eps_c.inputs))
+    elif eps_c is None:
+        b.missing.setdefault("dilution_drag", (f"{EPS} at {f0} and {fN}",))
+
+    # Cost growth against revenue growth: the deterministic half of "why did the margin move?". The other
+    # half (which cost line moved — material, power, employee) needs the P&L expense breakup from the AR;
+    # the screener collapses it to a single `Expenses` row, so that question is asked and left unanswered.
+    if (got := b.need("expense_cagr", (EXPENSES, f0), (EXPENSES, fN))) is not None:
+        b.add("expense_cagr", _cagr(got[0].value, got[1].value, span),
+              f"({EXPENSES} {fN} / {EXPENSES} {f0})^(1/{span}) - 1", got)
+    if (got := b.need("opm_delta_window", (OPERATING_PROFIT, f0), (SALES, f0),
+                      (OPERATING_PROFIT, fN), (SALES, fN))) is not None:
+        op0, s0, opN, sN = (f.value for f in got)
+        b.add("opm_delta_window", (opN / sN) - (op0 / s0) if s0 and sN else None,
+              f"OPM {fN} - OPM {f0} (margin trajectory across the window)", got)
+
+    # Effective tax rate, raw. A rate persistently far from statutory is either a real incentive the notes
+    # must name, or profit booked where it is not taxed — the interrogation config decides which band.
+    if (got := b.need("effective_tax_rate_latest", (TAX_PCT, fN))) is not None:
+        b.add("effective_tax_rate_latest", _as_fraction(got[0]), f"{TAX_PCT} {fN}", got)
+
+    # ---- "why is the debt increasing?" ----------------------------------------------------------
+    # Rising debt is not a finding; unexplained rising debt is. The cash-flow identity attributes the
+    # change deterministically: over the window the company spent `investing_outflow_cum` on its
+    # investment programme, generated `cfo_cum_window` from operations, and moved borrowings by
+    # `debt_delta_window`. Those three fix whether new debt funded capacity (defensible), or funded
+    # distributions and working capital (the pattern that precedes a balance-sheet accident).
+    if (got := b.need("debt_delta_window", (BORROWINGS, f0), (BORROWINGS, fN))) is not None:
+        b.add("debt_delta_window", got[1].value - got[0].value,
+              f"Borrowings {fN} - Borrowings {f0}", got)
+
+    cfo_sum = _cum(b, facts, "cfo_cum_window", CFO, with_core, f"Σ CFO, {f0}-{fN}")
+    # CFI is negative for an outflow, so the *cost* of the investment programme is -Σ CFI. A positive
+    # result means net investor; negative means the company was a net seller of assets over the window.
+    cfi_sum = _cum(b, facts, "investing_outflow_cum", CFI, with_core, f"-Σ CFI, {f0}-{fN}", sign=-1.0)
+
+    debt_delta = b.values.get("debt_delta_window")
+    if cfi_sum is not None and cfi_sum.value > 0:
+        if cfo_sum is not None:
+            b.add("self_funding_ratio", cfo_sum.value / cfi_sum.value,
+                  f"Σ CFO / -Σ CFI, {f0}-{fN} (>=1 means operations paid for the investment programme)",
+                  tuple(cfo_sum.inputs) + tuple(cfi_sum.inputs))
+        if debt_delta is not None:
+            b.add("debt_funded_investment_share", debt_delta.value / cfi_sum.value,
+                  f"ΔBorrowings / -Σ CFI, {f0}-{fN} (share of the investment programme debt paid for)",
+                  tuple(debt_delta.inputs) + tuple(cfi_sum.inputs))
+    else:
+        for metric in ("self_funding_ratio", "debt_funded_investment_share"):
+            b.missing.setdefault(metric, (
+                f"{CFI} over {f0}-{fN} summing to a net outflow (the window shows no net investment)",))
+
+    # Distributions competing with the capex programme: a company borrowing while paying out is making a
+    # capital-allocation choice that has to be named rather than averaged away.
+    div_periods = [p for p in with_core if facts.fact(DIVIDEND_PAYOUT_PCT, p) and facts.fact(PAT, p)]
+    if div_periods:
+        inputs = ([facts.fact(DIVIDEND_PAYOUT_PCT, p) for p in div_periods]
+                  + [facts.fact(PAT, p) for p in div_periods])
+        paid = sum(
+            facts.value(PAT, p) * _as_fraction(facts.fact(DIVIDEND_PAYOUT_PCT, p)) for p in div_periods
+        )
+        b.add("dividend_cum_window", paid,
+              f"Σ (Dividend Payout % × PAT), {div_periods[0]}-{div_periods[-1]}", inputs)
+        if cfo_sum is not None and cfo_sum.value > 0:
+            b.add("payout_share_of_cfo", paid / cfo_sum.value,
+                  f"Σ dividends / Σ CFO, {f0}-{fN}", inputs + list(cfo_sum.inputs))
+    else:
+        b.missing.setdefault("dividend_cum_window", (f"{DIVIDEND_PAYOUT_PCT} (no period with PAT)",))
+
     incremental = _incremental_roic(facts, with_core)
     if incremental is None:
         b.missing["incremental_roic_3y"] = ((
@@ -365,8 +500,7 @@ def _incremental_roic(
     def nopat_of(period: str) -> float:
         op = facts.value(OPERATING_PROFIT, period)
         dep = facts.value(DEPRECIATION, period)
-        tax = facts.value(TAX_PCT, period)
-        return RO.nopat(op - dep, tax / 100.0 if tax > 1 else tax)
+        return RO.nopat(op - dep, _as_fraction(facts.fact(TAX_PCT, period)))
 
     def invested_of(period: str) -> float:
         return (facts.value(BORROWINGS, period) + facts.value(EQUITY_CAPITAL, period)

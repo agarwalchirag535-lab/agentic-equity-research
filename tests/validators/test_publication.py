@@ -2,22 +2,30 @@
 
 from datetime import date
 
+from firm.core.config import report_policy
 from firm.core.validators.publication import (
     legal_framing,
+    line_item_integrity,
     symmetry,
     validate_report,
     verified_clean_completeness,
 )
 from firm.schemas._base import Confidence, Grade
 from firm.schemas.report import (
+    AnswerStatus,
     CheckOutcome,
     CheckRecord,
     Criterion,
+    GapKind,
+    LineItemAnswer,
+    LineItemSection,
     ReportClaim,
     ResearchReport,
     Verdict,
     VerifiedCleanChecklist,
 )
+
+POLICY = report_policy()
 
 CONF = Confidence(value=0.7, evidence_count=6, lowest_grade_relied_on=Grade.A, rationale="6 grade-A facts")
 
@@ -214,3 +222,83 @@ def test_checklist_outcome_lookup():
     cl = _clean_checklist()
     assert cl.outcome_of("cumulative_cfo_pat") is CheckOutcome.PASS
     assert cl.outcome_of("nope") is None
+
+
+# ------------------------------------------------------------------------------------------------
+# P4 line-item integrity (ADR-0022)
+
+
+def _answer(**kw):
+    defaults = dict(
+        question_id="q1", question="Where does revenue come from?",
+        status=AnswerStatus.UNANSWERED, severity="high", gap=GapKind.DISCLOSURE,
+        needs=["Ind AS 108 segment note"], reason="the sources read do not disclose it",
+    )
+    defaults.update(kw)
+    return LineItemAnswer(**defaults)
+
+
+def _section(*answers, line_item="revenue"):
+    return LineItemSection(line_item=line_item, label="Revenue", coverage=0.0, answers=list(answers))
+
+
+def test_p4_unanswered_question_must_say_what_would_answer_it():
+    """A question printed with a blank answer is worse than an omitted one — it implies someone looked."""
+    report = _report(line_items=[_section(_answer(needs=[], reason=""))])
+    rules = {v.rule for v in line_item_integrity(report, policy=POLICY)}
+    assert "P4_line_item_integrity" in rules
+
+
+def test_p4_accepts_a_reason_without_needs_and_needs_without_a_reason():
+    """Either one discharges the duty: name the fix, or say why there isn't one."""
+    only_needs = _report(verdict=Verdict.WATCH, rehabilitation_criteria=[_criterion()],
+                         line_items=[_section(_answer(reason=""))])
+    only_reason = _report(verdict=Verdict.WATCH, rehabilitation_criteria=[_criterion()],
+                          line_items=[_section(_answer(needs=[]))])
+    assert not line_item_integrity(only_needs, policy=POLICY)
+    assert not line_item_integrity(only_reason, policy=POLICY)
+
+
+def test_p4_not_applicable_must_carry_the_reason_it_was_suppressed():
+    """Otherwise 'n/a' becomes the way to drop an inconvenient question — the P1 rule, one layer up."""
+    report = _report(verdict=Verdict.WATCH, rehabilitation_criteria=[_criterion()], line_items=[
+        _section(_answer(status=AnswerStatus.NOT_APPLICABLE, gap=GapKind.NONE, needs=[], reason=""))])
+    assert [v.rule for v in line_item_integrity(report, policy=POLICY)] == ["P4_line_item_integrity"]
+
+
+def test_p4_blocks_a_compounder_whose_business_could_not_be_read():
+    """A compounding claim may not rest on lines the filings were asked about and could not answer."""
+    report = _report(line_items=[_section(_answer())])
+    violations = line_item_integrity(report, policy=POLICY)
+    assert any("compounding claim cannot rest" in v.detail for v in violations)
+
+
+def test_p4_does_not_charge_a_company_for_the_firms_own_missing_extractor():
+    """The distinction the module exists to protect: a CAPABILITY gap is ours, and must not block.
+
+    If it did, the firm would reject every good business it has not yet built a parser for, and call that
+    rigour. Confidence carries this instead.
+    """
+    report = _report(line_items=[_section(_answer(gap=GapKind.CAPABILITY))])
+    assert not line_item_integrity(report, policy=POLICY)
+
+
+def test_p4_lets_a_withheld_verdict_publish_its_own_gaps():
+    """INSUFFICIENT_DISCLOSURE exists to report exactly this, so the gate must not block it."""
+    report = _report(
+        verdict=Verdict.INSUFFICIENT_DISCLOSURE,
+        checklist=_clean_checklist(records=[
+            CheckRecord(name="cumulative_cfo_pat", outcome=CheckOutcome.PASS, detail="1.15"),
+            CheckRecord(name="receivables_divergent", outcome=CheckOutcome.UNAVAILABLE,
+                        reason="receivables not disclosed"),
+        ]),
+        rehabilitation_criteria=[_criterion()],
+        line_items=[_section(_answer())],
+    )
+    assert not line_item_integrity(report, policy=POLICY)
+
+
+def test_p4_is_wired_into_validate_report():
+    """The gate has to be in the aggregate, not merely defined — an unwired gate is decoration."""
+    report = _report(line_items=[_section(_answer())])
+    assert "P4_line_item_integrity" in {v.rule for v in validate_report(report, policy=POLICY)}

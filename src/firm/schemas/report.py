@@ -82,6 +82,60 @@ class VerifiedCleanChecklist(BaseModel):
         return None
 
 
+class AnswerStatus(str, Enum):
+    ANSWERED = "ANSWERED"
+    UNANSWERED = "UNANSWERED"          # asked, and the sources read cannot answer it — `needs` says what would
+    NOT_APPLICABLE = "NOT_APPLICABLE"  # invalid for the detected business model
+
+
+class GapKind(str, Enum):
+    """Whose gap an unanswered question is — the distinction decides what the verdict may conclude.
+
+    DISCLOSURE  the pipeline asked and the sources did not carry the row: evidence about the COMPANY, and
+                allowed to degrade the verdict.
+    CAPABILITY  no extractor exists yet, so the question was never actually put: evidence about US. It
+                lowers confidence and joins the backlog, but must never be charged to the company —
+                otherwise the firm rejects every business it cannot yet read and calls that rigour.
+    """
+
+    DISCLOSURE = "DISCLOSURE"
+    CAPABILITY = "CAPABILITY"
+    NONE = "NONE"
+
+
+class LineItemAnswer(BaseModel):
+    """One analyst question about one statement line, and what the sources could say (ADR-0022).
+
+    The published question is the unit of work, not the published answer. A report that prints only what
+    it could answer is indistinguishable from one where nothing else needed asking — so an `UNANSWERED`
+    question ships with the exact primary-source row that would close it, and a `NOT_APPLICABLE` one
+    ships with the reason it was suppressed.
+    """
+
+    question_id: str
+    question: str
+    status: AnswerStatus
+    severity: str = Field(default="medium", description="high | medium | low")
+    gap: GapKind = Field(default=GapKind.NONE, description="UNANSWERED only — whose gap it is")
+    finding: str = ""                                     # deterministic sentence, ANSWERED only
+    metric: str | None = None
+    value: float | None = None
+    citation: Citation | None = None
+    fact_ids: list[str] = Field(default_factory=list)
+    needs: list[str] = Field(default_factory=list)        # what would answer it, UNANSWERED only
+    reason: str = ""
+
+
+class LineItemSection(BaseModel):
+    """Every question asked of one statement line (revenue, debt, working capital...)."""
+
+    line_item: str
+    label: str
+    why: str = ""
+    coverage: float = Field(default=0.0, ge=0.0, le=1.0)
+    answers: list[LineItemAnswer] = Field(default_factory=list)
+
+
 class Criterion(BaseModel):
     """A dated, observable, filing-resolvable event. Kill (for positives) or rehabilitation (negatives).
 
@@ -132,6 +186,12 @@ class ResearchReport(BaseModel):
     # 4. numbers
     computed_facts: dict[str, float] = Field(default_factory=dict)
     fact_citations: dict[str, Citation] = Field(default_factory=dict)
+
+    # 4b. line-by-line interrogation (ADR-0022) — why each line moved, not just what it is
+    line_items: list[LineItemSection] = Field(default_factory=list)
+    line_item_coverage: float = Field(default=0.0, ge=0.0, le=1.0)
+    #: Distinct primary-source rows that would close an unanswered question — the extraction backlog.
+    disclosure_backlog: list[str] = Field(default_factory=list)
 
     # 5. forensic — including the passes
     checklist: VerifiedCleanChecklist = Field(default_factory=VerifiedCleanChecklist)

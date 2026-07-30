@@ -77,6 +77,18 @@ report:
   min_note_review_share: 0.50
   # A fired flag at or above this severity makes the verdict FORENSIC_CAUTION (2=MEDIUM, 3=HIGH, 4=SEVERE).
   caution_min_severity: 3
+  # --- publication gates (core/validators/publication.py) ---------------------------------------
+  # Were module constants in Python until 2026-07-30, which CLAUDE.md forbids ("every hardcoded number
+  # lives in config/thresholds.yaml. Nowhere else.").
+  min_kill_criteria: 3
+  min_rehabilitation_criteria: 1
+  # --- line-by-line interrogation (ADR-0022) ----------------------------------------------------
+  # How many HIGH-severity line-item questions may remain unanswered before the honest verdict is
+  # INSUFFICIENT_DISCLOSURE rather than a thesis. Zero is deliberate and follows from the firm's own
+  # premise: a company whose revenue cannot be decomposed into volume and price, whose buyer
+  # concentration is unknown and whose related-party flows are unread has not been researched, however
+  # clean its ratios look. On a screener snapshot alone nothing should ever reach COMPOUNDER.
+  max_unanswered_high_line_items: 0
 
 screen:
   # SPEC §1 universe band and §8 Gate A liquidity/history floors

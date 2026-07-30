@@ -104,8 +104,17 @@ def clean_series(roic_boost: float = 1.0) -> dict[str, list[float]]:
         "pnl:Tax %": [25, 25, 25, 25, 25, 25],
         "pnl:Other Income": [6, 7, 8, 9, 10, 12],
         "pnl:Profit before tax": [80, 96, 113, 133, 157, 173],
+        # Expenses = Sales - Operating Profit, so the margin questions have a cost series to compare.
+        "pnl:Expenses": [490, 570, 650, 725, 795, 830],
+        # Share count held flat, so EPS tracks PAT exactly: this company did NOT buy its growth with
+        # equity, and `dilution_drag` should come out at ~0 (ADR-0022 capital_allocation.capital_dilution).
+        "pnl:EPS in Rs": [6.0, 7.2, 8.5, 10.0, 11.8, 13.0],
+        "pnl:Dividend Payout %": [20, 20, 20, 20, 20, 20],
         "cashflow:Cash from Operating Activity": [66, 80, 95, 112, 130, 145],
         "cashflow:Free Cash Flow": [40, 50, 60, 70, 85, 95],
+        # Investing outflow smaller than cumulative CFO, so `self_funding_ratio` > 1 and the debt
+        # questions resolve to "the programme was paid for out of operating cash".
+        "cashflow:Cash from Investing Activity": [-40, -45, -50, -60, -100, -110],
         "balance_sheet:Borrowings": [80, 75, 70, 60, 50, 40],
         "balance_sheet:Equity Capital": [10, 10, 10, 10, 10, 10],
         "balance_sheet:Reserves": [v / roic_boost for v in (300, 350, 410, 480, 560, 650)],
@@ -130,8 +139,17 @@ def fraud_series() -> dict[str, list[float]]:
         "pnl:Tax %": [25, 25, 25, 25, 25, 25],
         "pnl:Other Income": [8, 12, 18, 25, 32, 40],
         "pnl:Profit before tax": [78, 97, 120, 145, 166, 186],
+        "pnl:Expenses": [490, 565, 640, 710, 780, 800],
+        # PAT compounds 20%/yr while EPS compounds ~12%: the share count rose because the cash gap had to
+        # be plugged from somewhere. `dilution_drag` should be materially positive — the wedge shareholders
+        # funded and did not keep. This is the half of the fraud pattern a cash-only test cannot see.
+        "pnl:EPS in Rs": [6.0, 7.0, 8.0, 9.0, 9.8, 10.5],
+        "pnl:Dividend Payout %": [10, 10, 8, 5, 5, 0],
         "cashflow:Cash from Operating Activity": [30, 28, 25, 20, 15, 10],
         "cashflow:Free Cash Flow": [-10, -20, -30, -45, -60, -80],
+        # Operating cash covers almost none of a large investing programme: the shortfall is exactly what
+        # the rising borrowings above are funding, which is what `debt_what_it_funded` should surface.
+        "cashflow:Cash from Investing Activity": [-60, -80, -110, -140, -170, -200],
         "balance_sheet:Borrowings": [100, 130, 170, 230, 300, 400],
         "balance_sheet:Equity Capital": [10, 10, 10, 10, 10, 10],
         "balance_sheet:Reserves": [300, 360, 430, 510, 600, 700],

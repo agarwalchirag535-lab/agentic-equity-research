@@ -29,8 +29,10 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 368 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
-to the compute layer only, per `pyproject.toml`) · the Phase-2 modules
+**Tests:** 563 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
+invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
+resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
 (`pipeline/{derive,checks,filing,deep_dive}`, `report/{criteria,assemble}`, `agents/evidence`) at **98%**
 line coverage (derive 97%, filing 100%).
 
@@ -111,9 +113,30 @@ CLI: `firm deep-dive` (provider `local|claude_code|anthropic|openai`) and `firm 
 analysis), `ADAPTIVE_FORENSICS.md` (business-model playbooks + line-by-line spec),
 `REPORT_ARCHITECTURE.md` (the publishable report), `VALIDATION_TIER0.md` (live calibration evidence).
 
+## 2b. Line-by-line depth (ADR-0022, 2026-07-30)
+
+The owner's critique of the first report was that it was beginner-level: it said revenue grew 11% and never
+asked *why* — volume or price, one buyer or many, arm's length or related-party — and reported debt levels
+without asking what the debt bought. `config/line_items.yaml` + `core/pipeline/interrogate.py` now put ~35
+analyst questions to every company across 10 statement lines, each ANSWERED with its fact ids, UNANSWERED
+with the filing row that would close it, or NOT_APPLICABLE with the reason it was suppressed.
+
+The distinction that makes it honest: a **DISCLOSURE** gap (asked, the filing did not carry it) may degrade
+the verdict; a **CAPABILITY** gap (no extractor built yet) may not — it lowers confidence instead. Charging
+a company for the firm's own unfinished note-parser would reject every good business we cannot yet read.
+
 ## 3. What is REMAINING (priority order)
 
 ### A. Close the data gap the first real report exposed ← **the highest-value next step**
+**As of ADR-0022 this backlog generates itself.** Every report now emits `disclosure_backlog`: the
+deduplicated, ordered list of primary-source rows that would answer a question the pipeline had to leave
+unanswered. Read it off the latest report rather than from prose here —
+`reports/ALKYLAMINE/<run>/report.md` §"What would close the gaps" is the live worklist (16 entries on the
+2026-07-23 run, led by tonnage/realisation, customer concentration, and the Ind AS 24 related-party note).
+The three metrics named in `config/line_items.yaml` with no derivation behind them —
+`receivable_days`, `receivable_days_delta`, `inventory_days` — are allowlisted in
+`tests/test_line_item_registry.py`; deleting an entry from that allowlist is how you'd start the work.
+
 The ALKYLAMINE run (§6a) returned `INSUFFICIENT_DISCLOSURE` because 4 of 7 applicable checks had no
 inputs. Every one of those inputs is in the audited annual report, which the pipeline can already walk —
 what is missing is the *numeric extraction quality* on real ARs (ADR-0011) plus a couple of series:

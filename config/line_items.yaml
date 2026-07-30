@@ -1,0 +1,518 @@
+# line_items.yaml — the line-by-line interrogation registry (ADR-0022).
+#
+# WHY THIS FILE EXISTS
+# The first published report stated "revenue compounded at 11%" and stopped. That is a screener with
+# prose attached. An analyst reading a revenue line does not ask whether it went up; they ask *on what* —
+# volume or price, one buyer or many, arm's-length or related-party, organic or acquired. A debt line that
+# rose is not a finding either: the question is what the money bought. Owner directive (2026-07-30):
+# "we can't just see the revenue, we have to see WHY the revenue is increasing... if the debt is
+# increasing we can't consider it wrong, we have to find the answer why the debt is increasing."
+#
+# So every line item below carries the QUESTIONS a competent analyst must answer, and the pipeline
+# answers each one of three ways — never by silence:
+#   ANSWERED    — a deterministic derivation answers it, and the report prints the number with its facts
+#   UNANSWERED  — nothing in the sources read can answer it, and `needs:` names the exact annual-report
+#                 row that would. This is the honest form of "I don't know" (house standard) AND the
+#                 shopping list for the extraction backlog.
+#   NOT_APPLICABLE — the question is invalid for this business model (`models:` / `exclude_models:`).
+#
+# CONTRACT
+#   metric:        a key in `DerivedSet` (core/pipeline/derive.py). Its absence -> UNANSWERED.
+#   against:       a second metric rendered alongside, for "X versus Y" questions.
+#   unit:          pct | pp | ratio | inr_cr | x  — controls formatting only.
+#   template:      the finding sentence. {v} = metric, {a} = `against` metric, {window} = period span.
+#   bands:         POLICY. First band whose `at_least` (or `at_most`) matches appends its `says` clause.
+#                  Every number in this file is a threshold and belongs here, never in Python (SPEC §3).
+#   needs:         what would answer the question. REQUIRED when a question can be UNANSWERED.
+#   severity:      high | medium | low — how much an unanswered question should cost the verdict.
+#   models:        answer only for these detected models. exclude_models: never ask for these.
+#
+# Every threshold here is PROVISIONAL until the Phase-6 golden set calibrates it.
+
+version: 1.0.0
+
+# Indian corporate tax rate under s.115BAA (22% + surcharge + cess). Used only as the comparison point
+# for the effective-rate question; it is a fact about the tax code, not a forensic threshold.
+statutory:
+  corporate_tax_rate: 0.2517
+
+line_items:
+  # ------------------------------------------------------------------------------------------------
+  - id: revenue
+    label: "Revenue — where the money actually comes from"
+    why: >
+      Every other line depends on this one, and it is the easiest to inflate: revenue can be booked gross
+      instead of net, recognised early, routed through a related party, or bought outright. Growth with no
+      stated cause is the single most common way a promoter story survives contact with a spreadsheet.
+    questions:
+      - id: revenue_rate
+        question: "At what rate did revenue actually compound, and over what window?"
+        metric: revenue_cagr
+        unit: pct
+        template: "Revenue compounded at {v} across {window}."
+        bands:
+          - at_least: 0.15
+            says: "fast enough that a 5x in 5-8 years does not require a re-rating"
+          - at_least: 0.08
+            says: "real growth, but below the rate a self-funded 5x needs from growth alone"
+          - says: "too slow to carry a compounding thesis without a margin or multiple story"
+        severity: high
+
+      - id: revenue_volume_or_price
+        question: >
+          Is the growth VOLUME or PRICE? A processor whose revenue rose on realisation has no compounding
+          claim — the price reverses. One whose tonnage rose has a capacity story that can repeat.
+        needs:
+          - "tonnes / units sold per year (MD&A production-and-sales table, or the segment note)"
+          - "realisation per unit (segment revenue / segment volume) to separate price from mix"
+        severity: high
+        exclude_models: [LENDER, BANK, SERVICES_IT]
+
+      - id: revenue_buyer_concentration
+        question: >
+          Is revenue concentrated in a few buyers? One customer at 30% of sales is not a customer, it is a
+          counterparty risk with pricing power over the entire P&L.
+        needs:
+          - "customer-concentration disclosure (Ind AS 108 segment note: revenue from customers >10%)"
+          - "trade-receivable concentration in the credit-risk note (Ind AS 107)"
+        severity: high
+
+      - id: revenue_related_party_share
+        question: >
+          How much revenue is transacted with related parties? Revenue sold to an entity the promoter also
+          controls is not third-party demand; it is a number the promoter can choose.
+        needs:
+          - "related-party transactions note (Ind AS 24) — sales-of-goods line, by party"
+          - "the related-party balance outstanding at year end, to see whether the sale was ever collected"
+        severity: high
+
+      - id: revenue_vs_receivables
+        question: >
+          Did receivables grow faster than revenue? Sales that turn into a receivable instead of cash are
+          the classic signature of channel-stuffing and of revenue booked to hit a number.
+        metric: receivable_days_delta
+        unit: pp
+        template: "Receivable days moved {v} across {window}."
+        needs:
+          - "balance_sheet:Trade Receivables per year (audited balance sheet — the screener omits it)"
+        severity: high
+        exclude_models: [LENDER, BANK]
+
+      - id: revenue_organic_or_acquired
+        question: "Is the growth organic, or did it arrive with an acquisition?"
+        needs:
+          - "business-combination note (Ind AS 103) — consideration paid, revenue acquired"
+          - "consolidated-vs-standalone revenue gap, to size what the subsidiaries contribute"
+        severity: medium
+
+      - id: revenue_recognition_policy
+        question: >
+          Did the revenue-recognition policy change during the window, and did the change flatter the
+          trend? A policy change is disclosed exactly once and then never mentioned again.
+        needs:
+          - "significant-accounting-policies note, revenue paragraph, compared across two annual reports"
+        severity: medium
+
+  # ------------------------------------------------------------------------------------------------
+  - id: margins
+    label: "Margins — whether the growth is worth having"
+    why: >
+      A margin is an outcome, not a decision. It moves because a cost line moved, because price moved, or
+      because the mix moved — and only the first two are inside management's control. Growth bought with
+      margin is how a commodity processor looks like a compounder for exactly one cycle.
+    questions:
+      - id: margin_direction
+        question: "Did the operating margin expand or compress across the window?"
+        metric: opm_delta_window
+        unit: pp
+        template: "Operating margin moved {v} between the first and last year of {window}."
+        bands:
+          - at_least: 0.02
+            says: "expansion, which is what pricing power or operating leverage looks like"
+          - at_least: -0.02
+            says: "essentially flat — the growth was volume, not pricing"
+          - says: "compression: the company grew by accepting worse economics"
+        severity: high
+
+      - id: cost_vs_revenue_growth
+        question: "Did costs compound faster than revenue? That is margin compression, stated causally."
+        metric: expense_cagr
+        against: revenue_cagr
+        unit: pct
+        template: "Expenses compounded at {v} against revenue at {a} across {window}."
+        severity: medium
+
+      - id: margin_which_cost_line
+        question: >
+          WHICH cost line moved — raw material, power, employee, or other expenses? "Margins fell" is not
+          an analysis; "the material cost ratio rose 400bps because the feedstock spread inverted" is.
+        needs:
+          - "P&L expense breakup (cost of materials consumed, employee benefits, power & fuel, other)"
+          - "the same breakup for the prior year, as printed in the comparative column"
+        severity: high
+
+      - id: margin_price_mix_or_scale
+        question: "If the margin expanded, was it price, mix, or scale? Only scale is durable at a commodity."
+        needs:
+          - "segment-wise revenue and result (Ind AS 108) to separate mix from price"
+          - "capacity and utilisation, to attribute the balance to operating leverage"
+        severity: medium
+        exclude_models: [LENDER, BANK]
+
+  # ------------------------------------------------------------------------------------------------
+  - id: other_income
+    label: "Other income — whether the profit is from the business"
+    why: >
+      Other income is where a weak operating year gets rescued. It is also where a promoter parks
+      treasury gains, forex swings and one-off asset sales without ever labelling them non-recurring.
+    questions:
+      - id: other_income_weight
+        question: "How much of pre-tax profit is other income rather than the business?"
+        metric: other_income_share
+        unit: pct
+        template: "Other income is {v} of pre-tax profit."
+        bands:
+          - at_least: 0.25
+            says: "the business is not carrying its own result"
+          - at_least: 0.10
+            says: "material enough to be understood, not large enough to be the story"
+          - says: "immaterial — the operating business is producing the profit"
+        severity: medium
+
+      - id: other_income_composition
+        question: >
+          WHAT is the other income — interest on real cash, a forex gain, a government incentive, or a
+          one-off asset sale? Each has a completely different persistence.
+        needs:
+          - "other-income breakup note (interest / dividend / forex / profit on sale of assets / other)"
+          - "prior-year comparative for the same note, to see which components recur"
+        severity: high
+
+  # ------------------------------------------------------------------------------------------------
+  - id: debt
+    label: "Debt — not whether it rose, but what it bought"
+    why: >
+      Owner directive: rising debt is not a finding. Debt that funded capacity which then earned above its
+      cost is good capital allocation; debt that funded dividends, working-capital leakage or interest on
+      earlier debt is the beginning of a balance-sheet accident. The cash-flow identity distinguishes them
+      deterministically, so there is no excuse for reporting the level and stopping.
+    questions:
+      - id: debt_direction
+        question: "Did borrowings rise or fall across the window, and by how much?"
+        metric: debt_delta_window
+        unit: inr_cr
+        template: "Borrowings moved {v} across {window}."
+        bands:
+          - at_least: 0.0
+            says: "debt rose — the next two questions decide whether that is a problem"
+          - says: "debt fell, so the company deleveraged while doing whatever else it did"
+        severity: high
+
+      - id: debt_what_it_funded
+        question: >
+          What share of the investment programme did debt pay for? This is the direct answer to "why is
+          the debt increasing" — it rose to buy assets, or it rose for something else.
+        metric: debt_funded_investment_share
+        unit: pct
+        template: "Debt funded {v} of the {window} investment programme."
+        bands:
+          - at_least: 0.70
+            says: "the capex cycle was overwhelmingly debt-financed — the return on it must clear the cost of debt"
+          - at_least: 0.30
+            says: "a materially debt-funded cycle, so the incremental return on capital is load-bearing"
+          - at_least: 0.0
+            says: "mostly funded from operations, with debt at the margin"
+          - says: "borrowings FELL while the company invested — the programme was paid for out of operating cash"
+        severity: high
+
+      - id: debt_self_funding
+        question: >
+          Did operations pay for the investment programme, or did someone else? A self-funded compounder
+          is the entire premise of this firm; a company whose growth needs external capital every cycle is
+          a different instrument with a different risk.
+        metric: self_funding_ratio
+        unit: x
+        template: "Operating cash covered {v} of the investment programme across {window}."
+        bands:
+          - at_least: 1.0
+            says: "self-funded: operations paid for growth with cash left over"
+          - at_least: 0.7
+            says: "nearly self-funded — the shortfall is what debt or equity had to close"
+          - says: "growth was externally funded, so dilution or leverage is structural, not incidental"
+        severity: high
+
+      - id: debt_cost_sanity
+        question: "What is the implied cost of debt, and is it consistent with the company's standing?"
+        metric: cost_of_debt_latest
+        unit: pct
+        template: "Implied cost of debt is {v} (interest / borrowings)."
+        # Interest paid is a flow across the year; borrowings is a year-end snapshot. When the company
+        # repaid most of its debt before 31 March the ratio explodes and means nothing — so declare the
+        # window in which it is informative and refuse to narrate outside it.
+        plausible:
+          min: 0.02
+          max: 0.30
+          because: >
+            interest is paid across the year while borrowings is a year-end balance, so a company that
+            repaid its debt before the close produces a meaningless rate — the average balance from the
+            borrowings note is required instead
+        needs:
+          - "borrowings note — opening and closing balance per tranche, to compute interest on the AVERAGE balance"
+          - "the interest rate stated per facility, which is the disclosed rate rather than an implied one"
+        bands:
+          - at_least: 0.18
+            says: "well above secured bank rates for a company of this size, which needs explaining from the borrowings note"
+          - at_least: 0.06
+            says: "consistent with secured bank funding"
+          - says: "below prevailing bank rates — subsidised, related-party, or not the balance the interest was paid on"
+        severity: medium
+
+      - id: debt_coverage
+        question: "Can operating profit service the interest?"
+        metric: interest_coverage_latest
+        unit: x
+        template: "Interest coverage is {v}."
+        # Above ~50x the company has no meaningful debt and the ratio stops being a solvency measure; it
+        # is reported as "no debt to service" by the band rather than as a spuriously precise multiple.
+        plausible:
+          max: 50.0
+          because: >
+            coverage this high means borrowings are immaterial rather than well-serviced; the informative
+            statement is that there is essentially no debt to service, which the debt-direction question
+            already establishes
+        needs:
+          - "borrowings note — to confirm the debt is genuinely immaterial rather than reclassified"
+        bands:
+          - at_least: 5.0
+            says: "servicing is not a constraint"
+          - at_least: 2.0
+            says: "adequate, but a down-cycle would tighten it"
+          - says: "thin — a single bad year threatens the covenant, not just the margin"
+        severity: high
+
+      - id: debt_maturity_profile
+        question: >
+          When does the debt fall due? A company with a comfortable coverage ratio and a bullet repayment
+          inside twelve months has a liquidity problem the ratio cannot see.
+        needs:
+          - "borrowings note — repayment schedule by year, secured vs unsecured, and the interest rate on each tranche"
+          - "current-vs-non-current split of borrowings from the balance sheet"
+        severity: high
+
+      - id: debt_security_and_covenants
+        question: "What is pledged against the debt, and are there covenants close to breaching?"
+        needs:
+          - "borrowings note — nature of security, assets charged"
+          - "CERSAI / ROC charge register for charges the notes do not mention"
+          - "any covenant-breach or default disclosure, including the CARO clause on repayment defaults"
+        severity: high
+
+      - id: debt_off_balance_sheet
+        question: >
+          What is owed that is not on the balance sheet? Guarantees given for a promoter entity are the
+          cheapest way to move risk into a listed company without moving a rupee of reported debt.
+        needs:
+          - "contingent liabilities note — guarantees given, by beneficiary"
+          - "related-party note cross-check: is the beneficiary an entity the promoter controls?"
+        severity: high
+
+  # ------------------------------------------------------------------------------------------------
+  - id: capital_allocation
+    label: "Capital allocation — what management did with the cash"
+    why: >
+      This is the only line item that measures management rather than the business. Over a decade the
+      allocation record is the most reliable statement of intent a promoter ever makes, and it is
+      arithmetic rather than an interview.
+    questions:
+      - id: capital_incremental_return
+        question: >
+          What did the LAST cycle of capital actually earn? Average ROIC is a legacy number; the
+          incremental figure is the one that says whether the next rupee should be deployed here.
+        metric: incremental_roic_3y
+        unit: pct
+        template: "The rolling three-year incremental return on capital is {v}."
+        bands:
+          - at_least: 0.20
+            says: "new capital is earning more than the existing base — this is what compounding looks like"
+          - at_least: 0.12
+            says: "new capital earns its keep without widening the moat"
+          - at_least: 0.0
+            says: "new capital earns less than the cost of equity: growth is destroying value slowly"
+          - says: "the last capex cycle destroyed value outright, whatever the average return still shows"
+        severity: high
+
+      - id: capital_dilution
+        question: >
+          Did per-share value compound with the company, or was the growth bought with equity? The firm's
+          question is a 5-10x PER SHARE; aggregate profit growth flatters a serial issuer.
+        metric: dilution_drag
+        unit: pp
+        template: "Aggregate profit compounded {v} faster than per-share profit across {window}."
+        bands:
+          - at_least: 0.03
+            says: "a material wedge — shareholders funded part of this growth and did not keep it"
+          - at_least: 0.005
+            says: "a small wedge, worth naming but not load-bearing"
+          - says: "per-share growth tracked aggregate growth: the growth was not bought with equity"
+        severity: high
+
+      - id: capital_distribution_vs_reinvestment
+        question: "How much operating cash went out as dividend rather than into the business?"
+        metric: payout_share_of_cfo
+        unit: pct
+        template: "Dividends absorbed {v} of operating cash across {window}."
+        bands:
+          - at_least: 0.50
+            says: "more than half of operating cash left the company — this is a yield instrument, not a compounder"
+          - at_least: 0.15
+            says: "a real distribution alongside reinvestment"
+          - says: "almost everything was retained, so the incremental return on capital is the whole thesis"
+        severity: medium
+
+      - id: capital_programme_size
+        question: "How large was the investment programme in absolute terms?"
+        metric: investing_outflow_cum
+        unit: inr_cr
+        template: "Net investing outflow across {window} was {v}."
+        severity: low
+
+      - id: capital_maintenance_vs_growth
+        question: >
+          How much of the capex was maintenance and how much was growth? Without the split, a negative
+          incremental return cannot be distinguished from ordinary asset replacement — and that is the
+          difference between a value-destroying expansion and a company simply keeping the lights on.
+        needs:
+          - "PPE note — additions by asset class, and the depreciation charge as the maintenance floor"
+          - "MD&A or capex-guidance statement naming the expansion projects and their cost"
+        severity: high
+
+  # ------------------------------------------------------------------------------------------------
+  - id: working_capital
+    label: "Working capital — where cash hides before it disappears"
+    why: >
+      Working capital is the bridge between reported profit and cash, so it is where an inflated profit
+      must eventually show up. Every question here needs three balance-sheet rows the screener does not
+      carry, which is why they are all unanswered today rather than quietly omitted.
+    questions:
+      - id: wc_receivable_days
+        question: "How long does the company take to collect, and is that lengthening?"
+        metric: receivable_days
+        unit: x
+        template: "Receivable days stand at {v}."
+        needs:
+          - "balance_sheet:Trade Receivables per year (audited balance sheet)"
+          - "receivables ageing schedule (Schedule III mandatory since FY22) — the >3-year bucket is the tell"
+        severity: high
+        exclude_models: [LENDER, BANK]
+
+      - id: wc_inventory_days
+        question: "Is inventory building faster than sales, and is any of it obsolete?"
+        metric: inventory_days
+        unit: x
+        template: "Inventory days stand at {v}."
+        needs:
+          - "balance_sheet:Inventories per year, with the raw/WIP/finished split"
+          - "inventory write-down or provision disclosure in the notes"
+        severity: high
+        exclude_models: [LENDER, BANK, SERVICES_IT]
+
+      - id: wc_payable_stretch
+        question: >
+          Is the company funding itself by paying suppliers late? A stretching payable cycle is a
+          liquidity signal that arrives before any ratio breaks.
+        needs:
+          - "balance_sheet:Trade Payables per year"
+          - "MSME payables-ageing disclosure (Schedule III) — overdue amounts to small suppliers"
+        severity: medium
+        exclude_models: [LENDER, BANK]
+
+  # ------------------------------------------------------------------------------------------------
+  - id: cash
+    label: "Cash — whether the balance is real"
+    why: >
+      The sharpest single test in the forensic library: cash that exists earns interest at a rate you can
+      compute, and cash that does not exist earns nothing. A company holding a large balance while paying
+      high interest on debt is either badly run or not holding the balance it reports.
+    questions:
+      - id: cash_earns_interest
+        question: "Does the reported cash balance earn a plausible rate of interest?"
+        needs:
+          - "balance_sheet:Cash and Cash Equivalents per year (audited balance sheet)"
+          - "interest income broken out of other income, so the implied yield can be computed"
+        severity: high
+
+      - id: cash_alongside_costly_debt
+        question: "Is the company holding cash while paying materially more to borrow?"
+        needs:
+          - "balance_sheet:Cash and Cash Equivalents"
+          - "borrowings note with the interest rate per tranche"
+        severity: high
+
+      - id: cash_restrictions
+        question: >
+          Is the cash actually available? Margin money, unpaid-dividend accounts and lien-marked deposits
+          are reported inside cash and cannot be spent.
+        needs:
+          - "cash-and-bank note — restricted balances, margin money, deposits under lien"
+        severity: medium
+
+  # ------------------------------------------------------------------------------------------------
+  - id: tax
+    label: "Tax — the cheapest cross-check on reported profit"
+    why: >
+      Tax is paid to a party with no interest in the share price. A profit that is reported but not taxed
+      has to be explained by a disclosed incentive; if there is no such incentive, the profit is the thing
+      in doubt.
+    questions:
+      - id: tax_effective_rate
+        question: "What is the effective tax rate, and how far is it from the statutory rate?"
+        metric: effective_tax_rate_latest
+        unit: pct
+        template: "The effective tax rate is {v} against a statutory 25.17%."
+        bands:
+          - at_least: 0.30
+            says: "above statutory — usually prior-period adjustments or disallowances, and the notes should say which"
+          - at_least: 0.20
+            says: "consistent with the statutory rate, so reported profit is being taxed as profit"
+          - at_least: 0.10
+            says: "materially below statutory — a real incentive must be named in the notes, or the profit is in question"
+          - says: "almost untaxed: either a disclosed holiday or profit that the tax authority does not agree exists"
+        severity: high
+
+      - id: tax_reconciliation
+        question: "WHY does the effective rate differ from statutory, line by line?"
+        needs:
+          - "tax-reconciliation note (Ind AS 12) — statutory rate to effective rate, by cause"
+          - "deferred-tax movement, and whether a deferred-tax asset is being recognised on losses"
+        severity: medium
+
+  # ------------------------------------------------------------------------------------------------
+  - id: related_party
+    label: "Related parties — the channel every promoter-level fraud uses"
+    why: >
+      Almost no Indian small-cap fraud is invented inside the audited statements; it is routed through an
+      entity the promoter also controls, at a price nobody negotiated. This line item is unanswerable
+      without the notes, which is precisely why an unwalked annual report cannot produce a clean verdict.
+    questions:
+      - id: rp_quantum
+        question: "What is the total value of related-party transactions, by type and by party?"
+        needs:
+          - "related-party note (Ind AS 24) — sales, purchases, loans given/taken, guarantees, remuneration"
+          - "the year-end outstanding balance per party, not just the transaction value"
+        severity: high
+
+      - id: rp_promoter_lending
+        question: "Has the company lent money to, or guaranteed borrowing for, a promoter entity?"
+        needs:
+          - "Schedule III mandatory row: loans and advances to promoters, directors and KMP"
+          - "contingent liabilities note — guarantees given on behalf of related parties"
+        severity: high
+
+      - id: rp_pricing
+        question: >
+          Were related-party transactions at arm's length, and who says so? The audit committee's approval
+          is a governance fact; an independent valuation is evidence.
+        needs:
+          - "audit-committee report on related-party approvals"
+          - "any transfer-pricing or independent-valuation reference in the notes"
+        severity: medium
