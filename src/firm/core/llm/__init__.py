@@ -10,11 +10,12 @@ from firm.core.llm.provider import (
     LocalAdapter,
     OpenAIAdapter,
     Provider,
+    StaticProvider,
     build_provider,
 )
 
 __all__ = [
     "DiskCache", "make_key",
     "AnthropicAdapter", "CachingProvider", "ClaudeCodeAdapter", "LLMRequest", "LLMResponse",
-    "LocalAdapter", "OpenAIAdapter", "Provider", "build_provider",
+    "LocalAdapter", "OpenAIAdapter", "Provider", "StaticProvider", "build_provider",
 ]

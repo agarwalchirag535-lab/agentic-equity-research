@@ -91,6 +91,30 @@ Existing: citation, arithmetic, consistency, hedge, evidence-graph R1–R6. Adde
   accident. Uncited numbers render as `**UNCITED**` rather than passing as sourced.
 - 28 tests, all three modules 100% covered.
 
+## 5a. Status — WIRED (Phase 2, ADR-0021)
+
+The report is no longer assembled by hand. `core/pipeline/deep_dive.py` produces it end to end:
+
+- **§4 numbers** come from `core/pipeline/derive.py`, where each figure carries its formula, its input
+  `Fact`s, and a citation graded at the **worst** input grade — so a ratio can never look better-sourced
+  than the facts underneath it.
+- **§5 checklist** comes from `core/pipeline/checks.py`, which records an explicit outcome for every check
+  the playbook selects. `UNAVAILABLE` names the missing inputs; `NOT_APPLICABLE` names the suppressing
+  business models. This is what makes P1 meaningful rather than satisfiable by omission.
+- **§2 load-bearing points** are the claims the evidence graph promoted (grade A/B support + confidence
+  floor), deduplicated and capped run-wide — the same set R1 checked.
+- **§9 criteria** are computed by `core/report/criteria.py` from metrics + `thresholds.yaml`, dated to the
+  next FY close plus the filing lag. A failed feasibility gate becomes the §2 re-entry trigger.
+- **the verdict** is the deterministic ladder in `core/report/assemble.py`; the forensic agent's veto can
+  only make it worse.
+- **§6 management and §7 valuation** state that the Phase-3/4 agents did not run, rather than rendering
+  empty — absent is not clean.
+
+One amendment to §4 above: the note-coverage gate now exempts `INSUFFICIENT_DISCLOSURE`, whose finding *is*
+the unreadable filing, and instead requires that verdict to be evidenced by an `UNAVAILABLE` check or a
+named disclosure gap — the same standard `FORENSIC_CAUTION` is held to. First published artifact:
+`reports/ALKYLAMINE/2026-07-23-433c94208117/`.
+
 ## 6. Formats
 
 `reports/{TICKER}/{run_id}/report.md` + `report.json` (the structured object the validators check) —

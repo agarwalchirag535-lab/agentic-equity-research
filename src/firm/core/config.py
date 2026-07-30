@@ -53,6 +53,21 @@ def model_forensic_thresholds() -> dict[str, float]:
     return load_thresholds()["model_forensic"]
 
 
+def cash_reality_thresholds() -> dict[str, float]:
+    """Reference rates + ratios for the ADR-0006 cash-reality checks (cash yield, debt paradox, CWIP)."""
+    return load_thresholds()["forensic"]
+
+
+def financial_forensic_thresholds() -> dict[str, float]:
+    """Lender-specific check thresholds (ADR-0002) — used when the playbook selects them."""
+    return load_thresholds()["financial_forensic"]
+
+
+def report_policy() -> dict[str, Any]:
+    """Verdict selection, load-bearing promotion, and criteria dating policy (Phase 2, ADR-0021)."""
+    return load_thresholds()["report"]
+
+
 def load_playbooks() -> dict[str, Any]:
     """Business-model detection thresholds + per-model check playbooks (ADR-0017)."""
     return load_yaml("forensic_playbooks.yaml")

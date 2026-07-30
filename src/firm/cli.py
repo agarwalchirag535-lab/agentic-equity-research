@@ -126,7 +126,11 @@ def forensic(
     Reads Net Profit and CFO series from the fact store, computes cumulative ΣCFO/ΣPAT (does a decade of
     profit become cash?) and the latest CFO/PAT, and prints the Gate-B forensic verdict."""
     from firm.core.compute.quality import (
-        ForensicMetrics, SectorClass, cfo_pat_ratio, cumulative_cfo_pat_ratio, forensic_screen,
+        ForensicMetrics,
+        SectorClass,
+        cfo_pat_ratio,
+        cumulative_cfo_pat_ratio,
+        forensic_screen,
     )
     from firm.core.config import forensic_thresholds
     from firm.core.facts.store import FactStore
@@ -182,6 +186,134 @@ def analyze(
     m = compute_company_metrics(store, ticker, date.today())
     store.close()
     typer.echo(json.dumps(m, indent=2, default=str))
+
+
+@app.command("deep-dive")
+def deep_dive(
+    ticker: str = typer.Option(..., "--ticker", help="NSE/BSE symbol, e.g. ALKYLAMINE"),
+    as_of: str = typer.Option("", "--as-of", help="point-in-time date (YYYY-MM-DD); default today"),
+    db: str = typer.Option("data/firm.db", "--db"),
+    provider: str = typer.Option(
+        "local", "--provider",
+        help="local | claude_code | anthropic | openai (or use --answers for Claude-in-the-loop)"),
+    answers: str = typer.Option(
+        "", "--answers", help="directory of {agent}.json answers (ADR-0010 path, no API key needed)"),
+    model: str = typer.Option("analysis", "--model", help="model role key from config/models.yaml"),
+    company: str = typer.Option("", "--company", help="display name for the report header"),
+    reports_root: str = typer.Option("reports", "--reports-root"),
+    force: bool = typer.Option(
+        False, "--force", help="write the report even if a publication gate fails (debugging only)"),
+) -> None:
+    """Phase 2: run the three Tier-2 agents onto the evidence graph and publish the dual-verdict report.
+
+    Deterministic first: facts → derivations → business-model playbook → every check evaluated → Gate-B
+    forensic screen → §6.3 feasibility. Then the agents narrate (they never produce a number), their
+    claims become evidence-graph fragments checked against R1-R6, and the report ships only if the P1/P2/P3
+    publication gates pass. Output: reports/{TICKER}/{run_id}/report.md + report.json.
+    """
+    import os
+
+    from firm.core.llm.provider import build_provider
+    from firm.core.pipeline.deep_dive import read_answers, run_deep_dive
+    from firm.core.report.render import write_report
+
+    run_date = date.fromisoformat(as_of) if as_of else date.today()
+    prepared = read_answers(answers) if answers else None
+    key_env = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}.get(provider)
+    llm = build_provider(provider, os.environ.get(key_env) if key_env else None)
+
+    store = FactStore(db)
+    try:
+        result = run_deep_dive(
+            store, ticker, run_date, provider=llm, answers=prepared,
+            company_name=company or ticker, model=model, reports_root=reports_root,
+            write=not force,
+        )
+    finally:
+        store.close()
+
+    typer.echo(f"{ticker} as-of {run_date} · run {result.run_id}")
+    typer.echo(f"  models: {[m.value for m in result.models] or 'none matched (universal checks only)'}")
+    typer.echo(f"  screen: {result.screen.verdict.value}"
+               + (f" — flags: {', '.join(f.name for f in result.screen.flags)}"
+                  if result.screen.flags else " — no flags"))
+    checked = len(result.evaluation.expected)
+    typer.echo(f"  checks: {checked} applicable, "
+               f"{result.evaluation.unavailable_share:.0%} unavailable · "
+               f"notes {result.notes.notes_total} enumerated, coverage {result.notes.coverage:.0%}, "
+               f"substantive {result.notes.substantive_share:.0%}")
+    typer.echo(f"  VERDICT: {result.report.verdict.value} — {result.decision.rationale}")
+
+    for violation in result.graph_violations:
+        typer.echo(f"  graph violation {violation.rule} @ {violation.node_id}: {violation.detail}")
+    for violation in result.publication_violations:
+        typer.echo(f"  publication gate {violation.rule} @ {violation.field}: {violation.detail}")
+
+    if result.published:
+        typer.echo(f"  published: {result.markdown_path}")
+        return
+    if force:
+        md, _ = write_report(result.report, reports_root, force=True)
+        typer.echo(f"  ⚠ FORCED draft written (failed gates): {md}")
+        return
+    typer.echo("  NOT PUBLISHED — fix the violations above (a report that fails a gate never ships)")
+    raise typer.Exit(1)
+
+
+@app.command("packets")
+def packets(
+    ticker: str = typer.Option(..., "--ticker"),
+    as_of: str = typer.Option("", "--as-of"),
+    db: str = typer.Option("data/firm.db", "--db"),
+    out: str = typer.Option("", "--out", help="default runs/{ticker}-{as_of}/packets"),
+) -> None:
+    """Write the three agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
+
+    Answer each `{agent}.md` with a single JSON object, save it as `{agent}.json` beside it, then run
+    `firm deep-dive --answers <dir>`. This is how agents run on a subscription with no API key (ADR-0010).
+    """
+    from firm.core.compute import quality
+    from firm.core.compute.models import build_playbook, detect_models
+    from firm.core.config import (
+        forensic_thresholds,
+        load_thresholds,
+        model_detection_thresholds,
+        model_forensic_thresholds,
+        model_playbooks,
+        report_policy,
+        universal_forensic_thresholds,
+    )
+    from firm.core.pipeline import derive as D
+    from firm.core.pipeline.checks import evaluate_checks
+    from firm.core.pipeline.deep_dive import agent_facts_payload, statement_shape, write_packets
+    from firm.core.report.assemble import NotesReview
+
+    run_date = date.fromisoformat(as_of) if as_of else date.today()
+    store = FactStore(db)
+    facts = D.load_company_facts(store, ticker, run_date)
+    store.close()
+    derived = D.derive_metrics(facts)
+    models = detect_models(statement_shape(facts, derived), model_detection_thresholds())
+    playbook = build_playbook(models, model_playbooks())
+    thresholds = load_thresholds()
+    evaluation = evaluate_checks(
+        playbook, derived, facts, forensic=thresholds["forensic"],
+        universal=universal_forensic_thresholds(), model_specific=model_forensic_thresholds(),
+    )
+    screen = quality.forensic_screen(
+        quality.SectorClass.NON_FINANCIAL, evaluation.metrics, forensic_thresholds())
+
+    from firm.core.pipeline.deep_dive import feasibility_at_target
+
+    payload = agent_facts_payload(
+        derived, evaluation, screen, feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
+        models, NotesReview())
+    out_dir = out or f"runs/{ticker}-{run_date.isoformat()}/packets"
+    written = write_packets(payload, out_dir)
+    for path in written:
+        typer.echo(f"wrote {path}")
+    typer.echo(f"answer each as {out_dir}/<agent>.json, then: "
+               f"python -m firm deep-dive --ticker {ticker} --as-of {run_date} --answers {out_dir}")
 
 
 @app.command("run")

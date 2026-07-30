@@ -56,6 +56,28 @@ model_forensic:
   adjusted_ebitda_gap_max: 0.05       # (adjusted − statutory) EBITDA above this share of revenue = flag
   promoter_loan_max_share: 0.10       # loans to promoters/KMP above this share of advances = flag
 
+# Report assembly + publication policy (Phase 2, ADR-0021). Decides the verdict, promotes load-bearing
+# claims, and dates the kill/rehabilitation criteria. Every number here is policy, never code.
+report:
+  # Feasibility target the published verdict is judged against (SPEC §6.3 gate inputs).
+  target_return_multiple: 5
+  target_years: 7
+  # Kill / rehabilitation criteria (SPEC §7.1): dated, filing-resolvable, no LLM-authored numbers.
+  criteria_horizon_years: 1       # resolve against the NEXT annual filing
+  filing_lag_days: 210            # Indian AR lands within ~7 months of the 31-Mar FY close
+  criteria_headroom: 0.10         # a kill threshold sits this far inside the current value (10% relative)
+  # Promotion of an agent claim to a report load-bearing point (grade A/B support is also required — R1).
+  load_bearing_min_confidence: 0.60
+  load_bearing_max_points: 3
+  # Disclosure sufficiency: how much of the applicable playbook may be UNAVAILABLE before the honest
+  # verdict is INSUFFICIENT_DISCLOSURE rather than a thesis (owner directive 2 — missing data is a signal).
+  max_unavailable_share: 0.34
+  # Line-by-line honesty (ADR-0017): share of enumerated notes that must carry a SUBSTANTIVE disposition
+  # (clean/flag, not 'unknown'). 100% coverage with 100% 'unknown' is not reading the notes.
+  min_note_review_share: 0.50
+  # A fired flag at or above this severity makes the verdict FORENSIC_CAUTION (2=MEDIUM, 3=HIGH, 4=SEVERE).
+  caution_min_severity: 3
+
 screen:
   # SPEC §1 universe band and §8 Gate A liquidity/history floors
   mcap_min_cr: 300

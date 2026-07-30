@@ -145,6 +145,27 @@ class ClaudeCodeAdapter:
         )
 
 
+class StaticProvider:
+    """Returns a fixed, caller-supplied completion. Offline and deterministic.
+
+    Two real uses, not just tests: (1) the Claude-in-the-loop path (ADR-0010) — a packet is written to
+    disk, answered by whoever is holding the session, and fed back as the completion, so agents run on a
+    subscription with no API key; (2) replaying a recorded run byte-for-byte during debugging.
+    """
+
+    name = "static"
+
+    def __init__(self, text: str) -> None:
+        self._text = text
+
+    def complete(self, req: LLMRequest) -> LLMResponse:
+        return LLMResponse(
+            text=self._text, model=req.model,
+            input_tokens=_approx_tokens(req.system) + _approx_tokens(req.prompt),
+            output_tokens=_approx_tokens(self._text),
+        )
+
+
 class CachingProvider:
     """Wraps any provider with the Law-5 disk cache."""
 

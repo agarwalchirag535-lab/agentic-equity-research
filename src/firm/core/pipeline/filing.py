@@ -1,0 +1,228 @@
+"""Walk an audited filing into facts, notes dispositions and check inputs (Phase 2, ADR-0021).
+
+The primary-source path, made concrete. Owner directive 1 says the audited annual report is the source of
+record and screener.in is a grade-B cross-check; this module is where that stops being an aspiration:
+
+* the figures the forensic checks need (receivables, inventory, revenue, cash) are read from the filing
+  itself, bound to `(page, line)` by `adapters/base/tables.py`, and **written into the fact store as
+  grade-A facts** — so a report citing them cites the filing, not an aggregator;
+* the notes to accounts are **enumerated** and every one is **dispositioned** (ADR-0017), with the
+  disposition derived from the deterministic checks that touch that note's category;
+* mandated disclosures that are absent (Schedule III rows, auditor's report sections) come back as
+  `disclosure_gaps` — a signal, never a blank (ADR-0014).
+
+The honesty problem this module has to solve explicitly: 100% note coverage is a publication gate (P1),
+and coverage counts *dispositioned* notes. Marking every note `unknown` would satisfy the gate while
+reading nothing. So `NotesReview.substantive_share` reports the share of notes whose disposition is
+`clean`/`flag` — i.e. a deterministic check actually looked at them — and the verdict ladder consults
+that share, not just coverage. Coverage proves enumeration; substantive share proves reading.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+from typing import Mapping, Sequence
+
+from firm.adapters.base.tables import ExtractedValue, find_row
+from firm.adapters.india.filings import disclosure_gaps, forensic_sections
+from firm.adapters.india.notes import (
+    Note,
+    NoteDisposition,
+    caro_candidate_flags,
+    coverage,
+    enumerate_notes,
+    parse_caro_clauses,
+    scan_schedule_iii,
+    schedule_iii_gaps,
+)
+from firm.core.facts.store import Document, FactStore
+from firm.core.pipeline import derive as D
+from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs
+from firm.core.report.assemble import NotesReview
+from firm.schemas.report import CheckOutcome
+
+#: Filing rows the Phase-2 checks need: metric key -> (label keywords, excluded keywords).
+#: `exclude` matters: "Trade Receivables ageing schedule" is a Schedule III table, not the balance.
+FILING_ROWS: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    D.RECEIVABLES: (("trade receivable", "sundry debtor"), ("ageing", "schedule")),
+    D.INVENTORY: (("inventories", "inventory"), ("ageing", "policy")),
+    D.SALES: (("revenue from operations", "revenue from operation"), ("note", "policy")),
+    D.CASH: (("cash and cash equivalent",), ("ageing", "policy")),
+}
+
+#: Note taxonomy category -> the deterministic checks that read that note. A note whose category has no
+#: check cannot be dispositioned by code, and says so.
+NOTE_CHECKS: Mapping[str, tuple[str, ...]] = {
+    "receivables": ("receivables_divergent",),
+    "inventory": ("inventory_divergent",),
+    "cash": ("cash_interest_inconsistent", "cash_debt_paradox"),
+    "ppe_cwip": ("ageing_cwip",),
+    "other_income": ("other_income_heavy",),
+    "revenue": ("revenue_inflation", "cfo_pat"),
+    "related_party": ("promoter_lending",),
+    "loans_advances": ("promoter_lending",),
+    "schedule_iii_disclosures": ("disclosure_gap",),
+    "provisions": ("provision_book_divergent", "reserve_suppression"),
+    "ecl_impairment": ("provision_coverage_low", "gnpa_drift"),
+    "borrowings": ("cash_debt_paradox",),
+}
+
+
+@dataclass(frozen=True)
+class FilingSource:
+    """An extracted, dated filing. `published_at` is the exchange dissemination date (ADR-0018, Law 3)."""
+
+    doc_id: str
+    source_url: str
+    published_at: date
+    pages: tuple[str, ...]
+    period: str                      # the FY the filing reports, e.g. 'FY26'
+    prior_period: str | None = None  # the comparative column, e.g. 'FY25'
+    grade: str = "A"
+    extractor_version: str = "ar-walk@1.0.0"
+    sha256: str = ""
+
+
+@dataclass(frozen=True)
+class FilingWalk:
+    """Everything a filing contributes to a run."""
+
+    notes: tuple[Note, ...]
+    external: ExternalInputs
+    registered_fact_ids: tuple[str, ...]
+    caro_flags: tuple[tuple[str, str], ...]
+    missing_disclosures: tuple[str, ...]
+    rows: Mapping[str, ExtractedValue]
+
+
+def register_filing_facts(
+    store: FactStore, ticker: str, filing: FilingSource
+) -> tuple[dict[str, ExtractedValue], tuple[str, ...]]:
+    """Read the needed rows out of the filing and store them as grade-A, locator-bound facts (Law 2).
+
+    A row that is not present is simply not stored — the check that needed it then reports UNAVAILABLE
+    with the input named, which is the behaviour owner directive 2 requires.
+    """
+    store.add_document(Document(
+        doc_id=filing.doc_id, source_url=filing.source_url, sha256=filing.sha256,
+        published_at=filing.published_at, fetched_at=filing.published_at,
+        grade=filing.grade, extractor_version=filing.extractor_version,
+    ))
+    rows: dict[str, ExtractedValue] = {}
+    fact_ids: list[str] = []
+    for metric, (keywords, excluded) in FILING_ROWS.items():
+        row = find_row(filing.pages, keywords, exclude=excluded)
+        if row is None or not row.values:
+            continue
+        rows[metric] = row
+        columns = [(filing.period, row.values[0])]
+        if filing.prior_period and len(row.values) > 1:
+            columns.append((filing.prior_period, row.values[1]))
+        for period, value in columns:
+            fact_id = f"{filing.doc_id}:{metric}:{period}"
+            store.add_fact(
+                fact_id=fact_id, doc_id=filing.doc_id, ticker=ticker, metric=metric,
+                period=period, value=value, unit=row.unit_hint or "INR_cr", locator=row.locator,
+            )
+            fact_ids.append(fact_id)
+    return rows, tuple(fact_ids)
+
+
+def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWalk:
+    """Enumerate the notes, scan the mandated disclosures, and register the filing's figures as facts."""
+    rows, fact_ids = register_filing_facts(store, ticker, filing)
+    notes = tuple(enumerate_notes(filing.pages))
+
+    text = "\n".join(filing.pages)
+    sections_missing, _ = disclosure_gaps(forensic_sections(text))
+    schedule_missing, _ = schedule_iii_gaps(scan_schedule_iii(filing.pages))
+    caro = tuple(caro_candidate_flags(parse_caro_clauses(text)))
+    missing = tuple(sorted({*sections_missing, *schedule_missing}))
+
+    def pair(metric: str) -> tuple[float, float] | None:
+        row = rows.get(metric)
+        if row is None or len(row.values) < 2:
+            return None
+        return row.values[0], row.values[1]
+
+    ids_by_check: dict[str, tuple[str, ...]] = {}
+    locators: dict[str, str] = {}
+    for check, metric in (("receivables_divergent", D.RECEIVABLES),
+                          ("inventory_divergent", D.INVENTORY),
+                          ("revenue_inflation", D.SALES),
+                          ("cash_interest_inconsistent", D.CASH),
+                          ("cash_debt_paradox", D.CASH)):
+        if metric in rows:
+            ids_by_check[check] = tuple(i for i in fact_ids if f":{metric}:" in i)
+            locators[check] = f"{filing.doc_id} {rows[metric].locator}"
+    if missing:
+        ids_by_check["disclosure_gap"] = ()
+        locators["disclosure_gap"] = filing.doc_id
+
+    external = ExternalInputs(
+        receivables=pair(D.RECEIVABLES),
+        inventory=pair(D.INVENTORY),
+        revenue=pair(D.SALES),
+        cash=rows[D.CASH].values[0] if D.CASH in rows else None,
+        disclosure_gaps=missing,
+        disclosure_scanned=True,
+        source_locators=locators,
+        fact_ids=ids_by_check,
+    )
+    return FilingWalk(notes, external, fact_ids, caro, missing, rows)
+
+
+def disposition_notes(
+    notes: Sequence[Note],
+    evaluation: CheckEvaluation,
+    *,
+    disclosure_gaps_found: Sequence[str] = (),
+) -> tuple[NotesReview, tuple[NoteDisposition, ...]]:
+    """Disposition every enumerated note from the outcome of the checks that read it (ADR-0017).
+
+    `flag` when a check on that note fired, `clean` when one ran and passed, `unknown` when the check's
+    inputs were absent or no deterministic check covers the category. Every note gets exactly one
+    disposition, so coverage is 100% by construction — and `substantive_share` is what stops that from
+    being a free pass.
+    """
+    dispositions: list[NoteDisposition] = []
+    substantive = 0
+    for note in notes:
+        checks = NOTE_CHECKS.get(note.category, ())
+        outcomes = {c: evaluation.outcome(c) for c in checks}
+        fired = [c for c, o in outcomes.items() if o is CheckOutcome.FLAG]
+        passed = [c for c, o in outcomes.items() if o is CheckOutcome.PASS]
+        absent = [c for c, o in outcomes.items() if o is CheckOutcome.UNAVAILABLE]
+
+        if fired:
+            status, rationale = "flag", f"check(s) fired on this note: {', '.join(fired)}"
+        elif passed:
+            status, rationale = "clean", f"check(s) ran and passed: {', '.join(passed)}"
+        elif absent:
+            status, rationale = "unknown", (
+                f"check(s) {', '.join(absent)} could not run — inputs not disclosed in the filing text"
+            )
+        else:
+            status, rationale = "unknown", (
+                f"no deterministic check covers category '{note.category}'; narrative review by an "
+                "analyst or agent is required before this note can be called clean"
+            )
+        if status in ("clean", "flag"):
+            substantive += 1
+        dispositions.append(NoteDisposition(
+            note_number=note.number, status=status, rationale=rationale,
+            figure_locators=[f"p.{note.page} l.{note.line}"],
+        ))
+
+    cov, undispositioned = coverage(notes, dispositions)
+    total = len(notes)
+    review = NotesReview(
+        coverage=cov,
+        undispositioned=tuple(undispositioned),
+        substantive_share=(substantive / total) if total else 0.0,
+        notes_total=total,
+        disclosure_gaps=tuple(disclosure_gaps_found),
+        scanned=True,
+    )
+    return review, tuple(dispositions)

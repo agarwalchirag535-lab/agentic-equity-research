@@ -354,3 +354,87 @@ non-vacuous: a typo'd name fails it).
 **Consequences.** The §2 matrix is now executable for EPC/IT/real-estate/platform models, not just
 lender/manufacturer. Remaining matrix items (same-store-growth gap, ECL stage migration, RERA/USFDA
 ground-truth cross-checks) need external data and are deferred with that reason stated.
+
+---
+
+### ADR-0021 — Phase 2: agents are wired to the evidence graph and the report, and are held to the laws by code
+**Context.** STATUS §3A named the real gap: nothing in `core/agents/` referenced `EvidenceGraph` or
+`ResearchReport`, so the compute layer, the six graph invariants and the three publication gates had never
+actually judged an agent's output. Phase 2 (SPEC §11) is `financial_statement_analyst`,
+`forensic_accountant`, `business_analyst` — "full schemas, full validators" — ending in a published
+report. Four sub-problems had to be decided, each of which the existing code left open.
+
+**Decision 1 — a derived number carries its own provenance.** Law 2 says "provenance or it doesn't exist",
+but a *ratio* had nowhere to put it. `core/pipeline/derive.py` introduces `Derivation(metric, value,
+formula, inputs)` where `inputs` are the actual `Fact` rows, and synthesises a `Citation` whose **grade is
+the worst input grade** and whose **`published_at` is the latest input date** — a ratio is exactly as
+reliable as its weakest input and exactly as recent as its newest one. A metric whose inputs are absent
+lands in `DerivedSet.missing` with the input names, never as a zero.
+
+**Decision 2 — "did not fire" and "was never evaluated" must be different values.** `ForensicMetrics`
+booleans default to `False`, so a check that never ran looked identical to a clean pass — fatal in a
+published Verified-Clean Checklist. `core/pipeline/checks.py` evaluates every playbook-selected check
+explicitly into `PASS` / `FLAG` / `UNAVAILABLE(reason naming the missing inputs)` /
+`NOT_APPLICABLE(reason naming the suppressing models)`, and builds the screen's `ForensicMetrics` **only
+from checks that ran**. A playbook check with no evaluator surfaces as `UNAVAILABLE`, never silently.
+
+**Decision 3 — an agent may narrate, and only narrate.** `core/pipeline/deep_dive.py` enforces this
+rather than requesting it: every numeric schema field an agent returns is re-checked against the compute
+layer with the arithmetic validator (a field the compute layer cannot produce **must** come back `null`);
+every number in **every string the agent authored** must carry a `[fact:...]` token resolving to a fact id
+known to the run; a citation to an unknown fact id is a `FragmentProblem`; and the forensic agent returning
+`PASS` over a deterministic `HARD_FAIL` is an `AgentDisciplineError`. One corrective retry is issued with
+the specific violations appended before the run fails. The citation surface is computed from the schema
+(`authored_texts()` walks every `str`/`list[str]`/claim-text field, skipping only the harness-set identity
+fields) rather than from a hand-written list of field names — an independent audit of the first version,
+which checked only `narrative` and the claim texts, walked fabricated percentages into a published
+`COMPOUNDER` report through `what_it_does` and `disconfirming_search`, both of which `render.py` publishes.
+A name list re-opens that hole every time a schema grows a field; deriving it from the schema does not.
+A re-audit then exposed two defects in `core/validators/citation.py` itself, both repaired here: its fact-id
+grammar excluded the colons that every real id contains (`derived:cum_cfo_pat`,
+`screener-X:pnl:Sales:FY26`), so *no* number could ever be legally cited and the validator passed by vacuum
+rather than by provenance; and its number pattern ignored digits glued to a preceding word, so "Rs9999
+crore" — ordinary Indian financial prose — carried an uncited figure through. Both are fixed, the citation
+window now bounds where a token may *start* rather than truncating the search, and a **value check** was
+added: a number citing a real fact must state that fact's figure (rounding to the precision written is
+accepted; changing the digits is not), because keeping the citation and altering the digits is the most
+plausible way an LLM corrupts a number it was handed.
+Load-bearing promotion is also code's decision, not the agent's:
+inference/observation only (never speculation), confidence above the config floor, ≥1 grade A/B citation —
+so R1 is satisfied by construction — then deduplicated by statement and capped run-wide.
+
+**Decision 4 — the verdict and the criteria are computed, not written.** `core/report/assemble.py` holds a
+fixed ladder: `FORENSIC_CAUTION` (a fired flag at or above the config severity, or the agent's veto) →
+`INSUFFICIENT_DISCLOSURE` (too much of the playbook unevaluable, or the notes not read) →
+`QUALITY_WRONG_PRICE` (the §6.3 gate fails) → `WATCH` (no gate result, or too little history) →
+`COMPOUNDER`. The forensic veto can only make a verdict worse. `core/report/criteria.py` generates the
+kill and rehabilitation `Criterion` objects from computed metrics plus `thresholds.yaml`, dated to the next
+FY close plus the statutory filing lag, with a tripwire set inside today's value but never below the
+published policy floor — because a criterion is a *number* and Law 1 forbids an LLM authoring one. A failed
+feasibility gate becomes the re-entry trigger REPORT_ARCHITECTURE §2 asks for.
+
+**Two honesty mechanisms worth naming.** (a) `NotesReview.substantive_share`: 100% note coverage is a
+publication gate, and dispositioning every note `unknown` would satisfy it while reading nothing — so the
+verdict ladder consults the share of notes a real check actually looked at, and a coverage-without-reading
+run is `INSUFFICIENT_DISCLOSURE`. (b) Law 3 is applied to the **document**: a filing disseminated after
+`as_of` is not walked at all, because filtering only its facts would still leak its notes and auditor
+language into the run.
+
+**Amendment to ADR-0019.** P1 previously required 100% note coverage from every report, which made the
+`INSUFFICIENT_DISCLOSURE` verdict unpublishable — the gap that verdict reports was the thing blocking it.
+That verdict is now exempt from the coverage gate and must instead be *evidenced* by an `UNAVAILABLE` check
+or a named disclosure gap, exactly as `FORENSIC_CAUTION` must carry a `FLAG`.
+
+**Consequences.** Phase 2's acceptance test is met offline and deterministically: five companies produce
+five different verdicts, the accounting-fraud pattern (profit that never becomes cash, receivables
+absorbing the gap) produces `FORENSIC_CAUTION` with the flags shown, and every string in every agent output
+passes the citation validator. One deviation from SPEC's wording is stated rather than papered over: SPEC
+wants the fraud case to come *from the golden set*, which does not exist yet, so the case is a synthetic
+series built to the pattern the check library was back-tested against — the pipeline is exercised, the
+historical calibration claim remains Phase 6's. The first real artifact through the pipeline —
+`reports/ALKYLAMINE/2026-07-23-433c94208117/` — returned `INSUFFICIENT_DISCLOSURE` on grade-B screener data
+with four of seven checks unevaluable, which is the correct and useful answer rather than a thesis built on
+what was easy to fetch. Costs: agent prompts must now avoid restating numbers without citation tokens
+(strict, and intentional); `working_capital_days`, Beneish and the lender checks stay `UNAVAILABLE` until
+the AR-notes numeric extraction improves; `Criterion` objects still are not logged as predictions
+(Phase 5).
