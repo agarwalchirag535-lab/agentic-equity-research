@@ -738,3 +738,41 @@ One existing test had to change rather than the code: it seeded a grade-C invest
 grade-B screener and expected the derived ratio to inherit C. The resolver now declines to select a C source
 when a B exists, so to test worst-grade propagation the low-grade input must be the only source — the screener
 row is now withheld. The old test was asserting the resolver's bug as if it were the contract.
+
+### ADR-0030 — The roster is config, and a skipped agent is a published fact
+**Context.** Phase 3 grows the firm from three agents to fourteen. The run order was `PHASE2_AGENTS`, a tuple
+in `deep_dive.py` — right for three, wrong for fourteen. Sequencing is policy, and policy in Python is the
+least reviewable place for it (CLAUDE.md already requires every threshold to live in config).
+
+**Decision 1 — `config/roster.yaml`.** Each agent declares its SPEC §8 stage, the gate that must pass before
+it runs, the build phase that introduces it, and its data prerequisites. Ordering is by stage, then by file
+order within a stage.
+
+**Decision 2 — build order is enforced, not remembered.** `plan_run(..., max_phase=N)` refuses every agent
+above phase N, so a Phase-3 run cannot quietly recruit the Phase-4 judgment tier because a caller passed the
+wrong list. CLAUDE.md forbids skipping phases; this makes the prohibition executable.
+
+**Decision 3 — three kinds of skip, kept distinct.** They mean different things to a reader, so collapsing
+them would destroy the signal:
+* *out of phase* — the build has not reached it. Not a coverage gap; following the build order is not a
+  failure to look.
+* *gate not passed* — the funnel rejected the company upstream (SPEC §8). Also not a coverage gap.
+* *missing inputs* — the agent could have run and we could not feed it. **This alone** is a coverage gap, and
+  it reaches the report worded against the firm: *"…this is a gap in our coverage, not in the company's
+  disclosure"* (ADR-0019 — never charge a company for our own missing extractor).
+
+The alternative was to run whoever can run and let the rest fall away. That yields a report with no
+governance section and no visible reason for it, which is ADR-0027's false-clean problem again: a reader
+cannot distinguish "management looked fine" from "nobody looked at management".
+
+**A bug the tests caught immediately.** Gates are ordered A→E and a failure stops everything below. Checking
+only `gates[entry.gate]` meant that with Gate B failed and Gate C merely unevaluated, the Gate-C management
+agents fell through to the input check and were reported as coverage gaps — the firm blaming itself for not
+examining a company the funnel had already rejected. A run that never reaches Gate C cannot have a coverage
+gap at Gate C.
+
+**Consequence, measured on ALKYLAMINE.** Phase 2: 3 agents, 100% staffed. Phase 3: 5 agents run
+(`macro_strategist` and `unit_economics_analyst` join), **coverage 56%** — `sector_analyst` needs a peer set,
+`transcript_analyst` needs concalls, `management_analyst` needs guidance history, `ownership_flows_analyst`
+needs shareholding and pledge. None of those four are ingested, and the honest reading is that Phase 3 is
+half a data problem: wiring the prompts is the small part.

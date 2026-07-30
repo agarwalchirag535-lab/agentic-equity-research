@@ -1,0 +1,109 @@
+# The firm's agent roster — who runs, when, and on what (Phase 3, ADR-0030).
+#
+# Until now the run order was a tuple in `deep_dive.py` (`PHASE2_AGENTS`). Adding an agent meant editing
+# Python, which puts sequencing decisions in the least reviewable place. Sequencing is a *policy*, so it
+# belongs in config alongside every other threshold (CLAUDE.md: every hardcoded number lives in config).
+#
+# Fields
+#   stage   SPEC §8 pipeline stage; agents run in stage order, then in listed order within a stage.
+#   gate    the gate that must have PASSED before this agent runs. Gate B is the deterministic forensic
+#           kill: nothing downstream of it should burn tokens on a company that already hard-failed.
+#   phase   the build phase that introduces the agent (SPEC §11). The runner refuses agents above the
+#           phase it was asked for, so the build order is enforced by code and not by memory.
+#   requires  data prerequisites. An agent whose inputs do not exist is SKIPPED WITH A REASON and that
+#           reason reaches the report — never silently omitted. An absent agent and a clean agent must
+#           never look alike (the same rule as ADR-0027's false-clean problem).
+#
+# Prerequisite vocabulary, and what currently satisfies it:
+#   financials      screener snapshot or an ingested annual report          — available
+#   filing          an audited annual report walked this run                — available (ADR-0024)
+#   segments        segment note from the filing                            — available, unparsed
+#   peers           a peer set with comparable financials                   — NOT INGESTED
+#   transcripts     concall transcripts                                     — NOT INGESTED
+#   guidance        management guidance history                             — NOT INGESTED
+#   shareholding    quarterly shareholding pattern                          — NOT INGESTED
+#   pledge          promoter pledge disclosures                             — NOT INGESTED
+#   prices          price/volume history                                    — NOT INGESTED
+
+agents:
+  # ---- Stage 3: sector and business ------------------------------------------------------------
+  - name: sector_analyst
+    stage: SECTOR_BUSINESS
+    gate: B
+    phase: 3
+    requires: [financials, peers]
+  - name: business_analyst
+    stage: SECTOR_BUSINESS
+    gate: B
+    phase: 2
+    requires: [financials]
+  - name: macro_strategist
+    stage: SECTOR_BUSINESS
+    gate: B
+    phase: 3
+    requires: [financials]
+
+  # ---- Stage 4: deep financials ----------------------------------------------------------------
+  - name: financial_statement_analyst
+    stage: DEEP_FINANCIALS
+    gate: B
+    phase: 2
+    requires: [financials]
+  - name: forensic_accountant
+    stage: DEEP_FINANCIALS
+    gate: B
+    phase: 2
+    requires: [financials]
+  - name: unit_economics_analyst
+    stage: DEEP_FINANCIALS
+    gate: B
+    phase: 3
+    requires: [financials, segments]
+
+  # ---- Stage 5: management and ownership -------------------------------------------------------
+  # All three are blocked on ingestion that does not exist. They are listed anyway: a roster that hides
+  # what it cannot do is how a report ends up silently missing its governance section.
+  - name: management_analyst
+    stage: MANAGEMENT_OWNERSHIP
+    gate: C
+    phase: 3
+    requires: [financials, guidance, transcripts]
+  - name: transcript_analyst
+    stage: MANAGEMENT_OWNERSHIP
+    gate: C
+    phase: 3
+    requires: [transcripts]
+  - name: ownership_flows_analyst
+    stage: MANAGEMENT_OWNERSHIP
+    gate: C
+    phase: 3
+    requires: [shareholding, pledge]
+
+  # ---- Stage 6-8: judgment tier (Phase 4 — listed so the roster is the whole firm) --------------
+  - name: valuation_modeler
+    stage: VALUATION
+    gate: D
+    phase: 4
+    requires: [financials]
+  - name: red_team
+    stage: RED_TEAM
+    gate: D
+    phase: 4
+    requires: [financials]
+  - name: thesis_synthesizer
+    stage: SYNTHESIS
+    gate: E
+    phase: 4
+    requires: [financials]
+  - name: portfolio_manager
+    stage: SYNTHESIS
+    gate: E
+    phase: 4
+    requires: [financials, prices]
+
+  # ---- Stage 9: monitoring (Phase 5) -----------------------------------------------------------
+  - name: post_mortem
+    stage: MONITORING
+    gate: E
+    phase: 5
+    requires: [financials]
