@@ -24,6 +24,7 @@ import json
 
 import pytest
 
+from firm.core.monitoring.predictions import read_jsonl
 from firm.core.pipeline.deep_dive import AgentDisciplineError, authored_texts, run_deep_dive
 from firm.core.report.render import render_markdown
 from firm.core.validators import citation
@@ -47,6 +48,10 @@ def _run(store, ticker, series, *, answers, filing=None, periods=None, tmp_path=
         store, ticker, AS_OF, answers=answers, filing=filing,
         company_name=company or f"{ticker} Limited",
         reports_root=tmp_path, write=tmp_path is not None,
+        # Point the prediction ledger at the tmp dir: without this every run of the suite would append
+        # synthetic test companies to the repo's real memory/predictions.jsonl and corrupt the
+        # calibration record with theses the firm never published.
+        memory_root=tmp_path,
     )
 
 
@@ -331,3 +336,34 @@ def test_point_in_time_hides_a_filing_published_after_as_of(store):
         store, "PIT", AS_OF, answers=clean_answers("PIT"), filing=filing_for("PIT"), write=False)
     assert later.notes.notes_total > 0
     assert "receivables_divergent" in later.evaluation.expected
+
+
+def test_a_published_report_logs_its_kill_criteria_to_the_prediction_ledger(store, tmp_path):
+    """ADR-0023: the dated criteria stop being prose in a markdown file and become scoreable rows.
+
+    Also pins the isolation that matters: the ledger goes where the caller says, never to the repo's real
+    memory/ directory, or a test run would corrupt the calibration record with synthetic companies.
+    """
+    result = _run(store, "LEDGERCO", clean_series(roic_boost=1.6),
+                  answers=clean_answers("LEDGERCO"), filing=filing_for("LEDGERCO"), tmp_path=tmp_path)
+
+    assert result.published
+    ledger = tmp_path / "predictions.jsonl"
+    assert ledger.exists(), "a published report must log its predictions"
+    rows = read_jsonl(ledger)
+    assert {r.metric for r in rows} == {c.metric for c in result.report.kill_criteria}
+    assert all(r.run_id == result.run_id and r.ticker == "LEDGERCO" for r in rows)
+    assert any(r.load_bearing for r in rows)
+
+
+def test_a_blocked_report_logs_nothing_because_it_was_never_a_forecast(store, tmp_path):
+    """A run that fails a publication gate did not publish, so the firm never stood behind it.
+
+    Logging it would let the calibration record fill with theses that were withheld.
+    """
+    result = _run(store, "NOPUBCO", clean_series(roic_boost=1.6),
+                  answers=clean_answers("NOPUBCO"), filing=filing_for("NOPUBCO"), tmp_path=None)
+
+    assert not result.published
+    assert result.predictions == ()
+    assert not (tmp_path / "predictions.jsonl").exists()

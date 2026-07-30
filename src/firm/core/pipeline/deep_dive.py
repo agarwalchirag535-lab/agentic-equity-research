@@ -76,6 +76,7 @@ from firm.core.config import (
 from firm.core.facts.store import FactStore
 from firm.core.llm.cache import make_key
 from firm.core.llm.provider import Provider, StaticProvider
+from firm.core.monitoring.predictions import Prediction, log_report_predictions
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs, evaluate_checks
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
@@ -151,6 +152,8 @@ class DeepDiveResult:
     publication_violations: tuple[PublicationViolation, ...]
     markdown_path: Path | None = None
     json_path: Path | None = None
+    #: Kill criteria logged to the prediction ledger. Empty unless the report actually published.
+    predictions: tuple[Prediction, ...] = ()
 
     @property
     def published(self) -> bool:
@@ -507,6 +510,7 @@ def run_deep_dive(
     filing: FilingSource | None = None,
     model: str = "analysis",
     reports_root: str | Path = "reports",
+    memory_root: str | Path | None = None,
     agents_dir: str | Path | None = None,
     repo_root: str | Path | None = None,
     agents: Sequence[str] = PHASE2_AGENTS,
@@ -643,8 +647,14 @@ def run_deep_dive(
 
     publication_violations = tuple(validate_report(report))
     md_path = json_path = None
+    logged: tuple[Prediction, ...] = ()
     if write and not publication_violations and not graph_violations:
         md_path, json_path = write_report(report, reports_root)
+        # Phase 5 (ADR-0023): a published report's dated kill criteria become scoreable predictions.
+        # Only on publish — a report blocked by a gate was never a forecast, and logging it would let the
+        # calibration record fill up with theses the firm declined to stand behind.
+        ledger = Path(memory_root) if memory_root is not None else Path(repo) / "memory"
+        logged = tuple(log_report_predictions(report, ledger / "predictions.jsonl"))
 
     return DeepDiveResult(
         ticker=ticker, as_of=as_of, run_id=run_id, report=report, decision=decision, derived=derived,
@@ -653,6 +663,7 @@ def run_deep_dive(
         fragments=tuple(run.fragments),
         outputs=tuple(run.outputs.values()), graph_violations=graph_violations,
         publication_violations=publication_violations, markdown_path=md_path, json_path=json_path,
+        predictions=logged,
     )
 
 

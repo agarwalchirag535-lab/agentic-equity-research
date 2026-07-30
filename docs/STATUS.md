@@ -153,10 +153,15 @@ The three Tier-2 agents are wired; the pattern to copy is `PHASE2_AGENTS` + `NUM
 `core/orchestrator/` is the actual Phase-3 work; `management_analyst` / `ownership_flows_analyst` also need
 shareholding + pledge ingestion, which does not exist yet.
 
-### C. Phase 5 — finish the memory loop (small wire-up, high value)
-- `memory/predictions.jsonl` and `memory/lessons.jsonl` **do not exist yet**
-- the report's `Criterion` objects are now generated deterministically and are dated — logging them as
-  `Prediction` rows is a small, well-defined wire-up (`core/monitoring/predictions.py` is built)
+### C. Phase 5 — finish the memory loop
+- ✅ **done 2026-07-30 (ADR-0023):** a published report's kill criteria are logged to
+  `memory/predictions.jsonl`, idempotent by `(run_id, metric)`, at the report's own confidence as the
+  probability. Kill criteria only — rehabilitation criteria are counterfactuals the firm is not
+  forecasting. Blocked reports log nothing. `run_deep_dive(memory_root=...)` isolates the ledger in tests.
+- `memory/lessons.jsonl` **still does not exist**
+- `resolver.py` is built but **never invoked**: nothing resolves a prediction against a later filing, so
+  the ledger has inputs and no loop. This is the next Phase-5 step and it needs a second point-in-time
+  run of the same ticker to have anything to resolve against.
 - `core/monitoring/` (Brier, resolver, watch triggers) is built but nothing flows into it
 - **`core/evolution/` is completely empty** — the prompt-evolution job (SPEC §7.3) was never written
 

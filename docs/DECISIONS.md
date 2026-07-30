@@ -516,3 +516,49 @@ effectively inert until the AR extractors land. `receivable_days`, `receivable_d
 `inventory_days` are named in the registry with no derivation behind them, guarded by an explicit allowlist
 in `tests/test_line_item_registry.py` so a typo cannot hide there. Every band threshold in the new registry
 is PROVISIONAL until the Phase-6 golden set calibrates it.
+
+### ADR-0023 — Kill criteria become the prediction ledger, on publish only
+**Date** 2026-07-30 · **Status** accepted · **Extends ADR-0021 decision 4; opens Phase 5**
+
+**Context.** ADR-0021 made the kill and rehabilitation criteria *computed* — dated, numeric,
+filing-resolvable. Nothing consumed them. `core/monitoring/{predictions,resolver,brier}.py` was built and
+`memory/predictions.jsonl` did not exist, so the criteria were prose in a markdown file and the calibration
+loop (SPEC §7) had no input. STATUS §3C called this a small wire-up; the wiring is small and the two
+judgment calls inside it are not.
+
+**Decision 1 — kill criteria only.** A kill criterion is the firm's actual forecast: *this load-bearing
+number continues to hold, and if it stops the thesis is dead.* A rehabilitation criterion is its opposite —
+a counterfactual the firm expects **not** to occur, published so a future upgrade cannot be ad hoc. Logging
+both would fill the Brier record with events nobody forecast, and a calibration score computed over them
+would measure nothing. Rehabilitation criteria stay in the report and out of the ledger.
+
+**Decision 2 — `probability` is the report's own `Confidence.value`.** The field is required and a Brier
+score against an invented probability is worse than no Brier score. Law 1 forbids an LLM authoring the
+number, and manufacturing a per-criterion figure in code would be arbitrary precision with nothing behind
+it. `Confidence.value` already answers the right question — how much the firm believes the evidence beneath
+these claims, computed from playbook evaluability, note-review share, line-item coverage (ADR-0022) and the
+weakest grade relied on. It also creates the correct incentive: a shallow report logs a low-confidence
+prediction and is scored gently; a confident one is scored hard.
+
+**Decision 3 — log on publish, and only on publish.** A run blocked by a publication gate never shipped, so
+the firm never stood behind it. Logging it would let the ledger fill with theses that were deliberately
+withheld. `prediction_id = (run_id, metric)` makes the write idempotent (Law 5), so replaying a run appends
+nothing and the ledger records what was forecast once rather than how often the pipeline ran.
+
+**Decision 4 — attribution is to `core.report.criteria`, not to an agent.** These numbers are code's
+(ADR-0021 decision 4). Crediting an agent would be a lie that `brier_by_agent` then compounds into a
+per-agent score, punishing or rewarding a model for arithmetic it never touched.
+
+**A test-isolation bug found and fixed in the same change.** The first wiring defaulted the ledger path to
+`repo/memory/predictions.jsonl` unconditionally, so one run of the suite appended 35 synthetic predictions
+for ACME/YOUNGCO/CLEANCO to the real calibration record. `run_deep_dive` now takes `memory_root`, the e2e
+helper points it at `tmp_path`, and two tests pin the behaviour: a published report logs where it was told,
+a blocked one logs nothing. The ledger is the one artifact where silent test pollution would be invisible
+and permanent — every future Brier number would have been computed over fiction.
+
+**Consequences.** ALKYLAMINE's five kill criteria are now rows in `memory/predictions.jsonl`, dated
+2027-10-27, at p=0.14 (the report's confidence after ADR-0022's coverage damping). 573 tests pass. What is
+still missing for Phase 5 to close: `resolver.py` is never invoked against a later filing, so nothing is
+*resolved* yet; `memory/lessons.jsonl` does not exist; and `core/evolution/` is still empty. The ledger has
+inputs and no loop — but the inputs are real, dated and idempotent, which is the part that had to be right
+before anything scored them.
