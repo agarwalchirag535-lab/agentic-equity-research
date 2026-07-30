@@ -79,3 +79,30 @@ def test_missing_returns_only_what_is_absent():
     entry = RosterEntry("x", Stage.DEEP_FINANCIALS, Gate.B, 3, ("financials", "transcripts"))
     assert entry.missing(("financials",)) == ("transcripts",)
     assert entry.missing(("financials", "transcripts")) == ()
+
+
+def test_available_inputs_are_derived_from_the_documents_actually_ingested():
+    """Four agents were called "blocked on data that does not exist" while 28 shareholding patterns and
+    15 concall transcripts sat on the company's own website. Availability is now derived, not asserted."""
+    from firm.core.orchestrator.roster import available_inputs_from
+
+    manifest = {"documents": [
+        {"doc_class": "annual_report"}, {"doc_class": "shareholding"}, {"doc_class": "transcript"},
+    ]}
+    inputs = available_inputs_from(manifest)
+    # A shareholding pattern carries pledge as a COLUMN, so it satisfies both prerequisites.
+    assert "shareholding" in inputs and "pledge" in inputs
+    # Transcripts carry management's forward statements, which is what guidance means here.
+    assert "transcripts" in inputs and "guidance" in inputs
+
+    plan = plan_run(load_roster(), available_inputs=inputs, max_phase=3)
+    assert {"management_analyst", "transcript_analyst", "ownership_flows_analyst"} <= set(plan.names)
+    # sector_analyst still cannot run: a peer set is a different company's documents.
+    assert "sector_analyst" not in plan.names
+
+
+def test_an_empty_manifest_grants_nothing():
+    from firm.core.orchestrator.roster import available_inputs_from
+
+    assert available_inputs_from({"documents": []}) == ()
+    assert available_inputs_from({}) == ()

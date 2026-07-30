@@ -776,3 +776,43 @@ gap at Gate C.
 `transcript_analyst` needs concalls, `management_analyst` needs guidance history, `ownership_flows_analyst`
 needs shareholding and pledge. None of those four are ingested, and the honest reading is that Phase 3 is
 half a data problem: wiring the prompts is the small part.
+
+### ADR-0031 — Enumerate every IR section before calling an input unavailable
+**Context.** Phase 3 reported four agents "blocked on data that does not exist": `transcript_analyst`,
+`management_analyst`, `ownership_flows_analyst`, `sector_analyst`. That was wrong, and the owner said so.
+Discovery had only ever fetched **one** page — `/investors-type/financials/`. The company's own IR nav
+carried Corporate Governance, General Meetings, Announcements, Investor Center and Disclosure Reg 46, none of
+which had been opened. They hold **622 PDFs**, including 27 shareholding patterns, 15 concall transcripts, 12
+voting results and the credit-rating letters.
+
+Three of the four agents were never blocked. The firm had declared a capability gap without looking, which is
+precisely the failure ADR-0019 forbids in the other direction — and worse here, because it silently shrank
+the firm's own scope rather than a company's score.
+
+**Decision 1 — discovery crawls `IR_SECTIONS`, not one page.** Reg. 46 of the SEBI LODR enumerates what every
+listed company must publish on its website; the section list is derived from the regulation, so it
+generalises. `DOCUMENT_CLASSES` classifies links into annual report, shareholding, transcript, credit rating,
+voting result, presentation, quarterly result, governance and annual return, with rejects ordered before
+generals ("Annual Return" must be tested before "annual report").
+
+**Decision 2 — availability is derived from the manifest, never asserted.** `available_inputs_from()` maps
+ingested document classes to roster prerequisites, so the roster cannot claim more coverage than the ingest
+supports **or less**. A hand-passed list is what produced the false blockage. Two mappings are worth stating
+because they are not obvious: a shareholding pattern satisfies `pledge` as well, since SEBI's format carries
+pledge as a column ("Whether any shares held by promoters are pledge or otherwise encumbered?") rather than as
+a separate filing; and transcripts satisfy `guidance`, because management's forward statements are exactly
+what a promise-vs-delivery scorecard is built from.
+
+**Verified on the real documents.** The FY25 Q2 shareholding pattern yields
+`(A) Promoter & Promoter Group ... 71.96` and `pledge or otherwise encumbered? No` — the pledge question
+answered from the primary source rather than left open. The Nov-2019 transcript extracts 13 pages and 28,735
+characters of speaker-attributed Q&A, management against named analysts. (Its text layer shows character
+confusion — "Rabul Jain" for "Rahul Jain" — which is survivable for narrative use but must not be trusted for
+a name-matching related-party check.)
+
+**Consequence.** Phase-3 coverage rises from 56% to 89%: eight of nine agents run. Only `sector_analyst`
+remains blocked, and correctly — a peer set is *another company's* documents, which is an ingest of the same
+shape pointed at a different IR site, not a missing capability.
+
+**The rule this encodes.** Before recording any input as unavailable, enumerate every section the regulation
+requires the issuer to publish. "We did not find it" is a claim about our search, not about the world.

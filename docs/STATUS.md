@@ -127,6 +127,15 @@ a company for the firm's own unfinished note-parser would reject every good busi
 
 ## 3. What is REMAINING (priority order)
 
+### PHASE 3 IN PROGRESS — roster wired, 89% staffed (ADR-0030/0031)
+`config/roster.yaml` declares all 14 agents with stage, gate, phase and data prerequisites; `plan_run`
+enforces build order and reports three distinct kinds of skip. 54 governance documents ingested from the IR
+sections that discovery had never opened. Remaining in this phase:
+1. wire `deep_dive` to the roster (replace `PHASE2_AGENTS`) and surface `disclosure_gaps()` in the report
+2. parsers for shareholding (promoter %, pledge %, institutional trend) and transcripts (guidance extraction)
+3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
+
+
 ### 0. ~~RECENCY BEATS PROVENANCE~~ — FIXED 2026-07-30 (ADR-0029)
 Resolution is now `(grade, published_at DESC)`. FY26 Sales/receivables/inventory/cash resolve grade A from
 the filing. Derived ratios stay grade B by the worst-input rule, correctly, until the AR ingest widens.

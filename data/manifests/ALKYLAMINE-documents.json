@@ -1,0 +1,439 @@
+{
+  "ticker": "ALKYLAMINE",
+  "source": "https://alkylamines.com/investors-type/",
+  "retrieved_at": "2026-07-30",
+  "documents": [
+    {
+      "file": "ALKYLAMINE-credit_rating-Credit-Rating-December-29-2025.pdf",
+      "doc_class": "credit_rating",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2026/01/Credit-Rating-December-29-2025.pdf",
+      "sha256": "6acaac56cd862fad2f83f470d4aaae187c5704a3ace7aea11de63ca4d9cf386a",
+      "bytes": 685223
+    },
+    {
+      "file": "ALKYLAMINE-credit_rating-Intimation-Credit-Rating-2023.pdf",
+      "doc_class": "credit_rating",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/06/Intimation-Credit-Rating-2023.pdf",
+      "sha256": "e2c7e6c9c8553161a1a5f50b775ec037d12f17bdb52ca32d61c79b0ef2cd6b15",
+      "bytes": 567977
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Q3-SHP.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/07/Q3-SHP.pdf",
+      "sha256": "141477e726e698b62d5719072103c695ce1d9cf7883326de99d0c3dc2c4d951f",
+      "bytes": 520326
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-SHP.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/07/SHP.pdf",
+      "sha256": "9bdb8f982a46d3e22213d7410e8e83723bba9e332ffea28f19bc0bf8ffd5d555",
+      "bytes": 187358
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-2019-2020-Q3-Dec-2019.pdf",
+      "doc_class": "shareholding",
+      "period": "FY20",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-2019-2020-Q3-Dec-2019.pdf",
+      "sha256": "ff3b4ca94e56c58725ff12d30b26d2b43ca8559b8f6be64fe71cb07ab8db436f",
+      "bytes": 293165
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-2023-24-Q3.pdf",
+      "doc_class": "shareholding",
+      "period": "FY24",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/07/Shareholding-Pattern-2023-24-Q3.pdf",
+      "sha256": "8f9b1b312839403dde77d04f8058b07bc687b0fd6efb854dbb383c963d5ae115",
+      "bytes": 324500
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-December-2020.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-December-2020.pdf",
+      "sha256": "bb5d0ae6c8214238d1bc5206a676130aa79c2f510e19edce60d8da75a71bd807",
+      "bytes": 719914
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-December-2021-1.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-December-2021-1.pdf",
+      "sha256": "303563fe586f02e7068955066d4393fa65bafbe0ee16eee5aee04a67e7370092",
+      "bytes": 721069
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-December-2024.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/07/Shareholding-Pattern-December-2024.pdf",
+      "sha256": "e36d2363c521409b07bfb4137b4a40dba5f221e37192cd64cb2f9b71b53a546f",
+      "bytes": 324852
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-FY-2022-23-Q1.pdf",
+      "doc_class": "shareholding",
+      "period": "FY23",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/08/Shareholding-Pattern-FY-2022-23-Q1.pdf",
+      "sha256": "a9097ff684e8444626babc291cf90941cd02732152d780684a5f4f657c6fd4de",
+      "bytes": 303415
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-FY-2022-23-Q2.pdf",
+      "doc_class": "shareholding",
+      "period": "FY23",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/08/Shareholding-Pattern-FY-2022-23-Q2.pdf",
+      "sha256": "fb7ab4704c2c23cd358ed13e022366febf1e21a3595a22baecfb27cce47f6488",
+      "bytes": 270646
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-FY-2022-23-Q3.pdf",
+      "doc_class": "shareholding",
+      "period": "FY23",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/08/Shareholding-Pattern-FY-2022-23-Q3.pdf",
+      "sha256": "76e478021cffe7e20c2fe9c62a5ed693f323b8cb4e94e925f6556741e625fdd4",
+      "bytes": 320510
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-FY-2022-23-Q4.pdf",
+      "doc_class": "shareholding",
+      "period": "FY23",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/08/Shareholding-Pattern-FY-2022-23-Q4.pdf",
+      "sha256": "8d23b3cad0629faa4524d6505ddbf008bfab440a2a3ae5e32af0e0e4fb0243d4",
+      "bytes": 320320
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-FY-2023-24-Q1.pdf",
+      "doc_class": "shareholding",
+      "period": "FY24",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/07/Shareholding-Pattern-FY-2023-24-Q1.pdf",
+      "sha256": "33563802a311328d5264a3c8f6f4a2896f8c077fb4549ed6444d62eba36cfeaa",
+      "bytes": 325681
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-June-2019-1.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-June-2019-1.pdf",
+      "sha256": "f56bf153ffd8812f5cbeff0f0ff144ab96885f491799cb62fbfa39432ecd0c86",
+      "bytes": 720222
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-June-2020.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-June-2020.pdf",
+      "sha256": "0376409f4d11fbb033df3ecfef6b0ba8bf6ca66d60e282b2322880dcd2f0f31a",
+      "bytes": 719763
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-June-2021.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-June-2021.pdf",
+      "sha256": "e6df41446a0a645ba1c14b1742be81ad6155bd96112f8b04af8505861b1f5f07",
+      "bytes": 719584
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-June-2024.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/07/Shareholding-Pattern-June-2024.pdf",
+      "sha256": "50257f32baeef34775ff12295f7371c7ea664e68574b15edf6353462e7cb33b5",
+      "bytes": 325399
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-June-2025.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/07/Shareholding-Pattern-June-2025.pdf",
+      "sha256": "0011c5684950a8716277e978d5959c6661125a4395b047c45c85b46a82f06e68",
+      "bytes": 279231
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-March-2020.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-March-2020.pdf",
+      "sha256": "cc03d63861be87ebae0a751995018c486e866be8b47a599a28c2a80aa15d75e5",
+      "bytes": 719622
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-March-2021.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-March-2021.pdf",
+      "sha256": "01ebe0f62e5e0fc7a6739dbcc686ee0d25c2ab13473eeb586d3721dea92dee4e",
+      "bytes": 720061
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-March-2022.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-March-2022.pdf",
+      "sha256": "aa398851217365f91939a0bb8a542390cde9123dbfc9ca57d28b182095254ede",
+      "bytes": 719225
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-September-2019-1.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-September-2019-1.pdf",
+      "sha256": "71f779762b54478016b9470a8cd664a08b332df008d50eb178d033ed16e0e71e",
+      "bytes": 719814
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-September-2020.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-September-2020.pdf",
+      "sha256": "7f44462cf2007b5e7f7d05ef0e28c5f5f23d9555284a0304135acb681d8f042b",
+      "bytes": 719474
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-Pattern-September-2021-1.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Shareholding-Pattern-September-2021-1.pdf",
+      "sha256": "90ffa0eabd6d7b28d3cfe27e274aa273b8c5b050afcdcbf0e9166eb9d048352d",
+      "bytes": 719475
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-Shareholding-pattern-2023-24-Q2.pdf",
+      "doc_class": "shareholding",
+      "period": "FY24",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/07/Shareholding-pattern-2023-24-Q2.pdf",
+      "sha256": "259ea15622782afeaa9fb401aa54950dd77eeb80bc756fed53d2b1fdf06885ea",
+      "bytes": 326410
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-shareholding-pattern-2024-2025-Q2.pdf",
+      "doc_class": "shareholding",
+      "period": "FY25",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/07/shareholding-pattern-2024-2025-Q2.pdf",
+      "sha256": "4e04fa26af6932ec16a1b91228e399ea0567b999ae17c5f5b7358373414d4627",
+      "bytes": 325017
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-shareholding-pattern-Q4.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/07/shareholding-pattern-Q4.pdf",
+      "sha256": "a3b8f0d01953e443031179ffe7ef56642ade57bc2629b281a91151caf36e78e5",
+      "bytes": 326308
+    },
+    {
+      "file": "ALKYLAMINE-shareholding-shareholding-pattern-march-2024.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/07/shareholding-pattern-march-2024.pdf",
+      "sha256": "045f8cb5d0d594b11fa040b713d7af40847f209c3a099d135032a110b688941c",
+      "bytes": 325236
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Announcement-Concall-May-2022.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/05/Announcement-Concall-May-2022.pdf",
+      "sha256": "6ad274620ef14e6ef1fb0a807449295167697b86e5286cef08e472fbb2c239f7",
+      "bytes": 565112
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2020-21-Half-Yearly-1.pdf",
+      "doc_class": "transcript",
+      "period": "FY21",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Concall-Transcript-2020-21-Half-Yearly-1.pdf",
+      "sha256": "74eef370c37ecf0e4a1db58583ab34663c6c3bd297fef6b3638529ed9fdaf6f1",
+      "bytes": 1414003
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2021-22-Half-Yearly-1.pdf",
+      "doc_class": "transcript",
+      "period": "FY22",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Concall-Transcript-2021-22-Half-Yearly-1.pdf",
+      "sha256": "a66626510cb7c6319c02672224f73e20c0e3a90aeb15e731c841d40e35c94ca5",
+      "bytes": 6105931
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2022-23-Half-Yearly-1.pdf",
+      "doc_class": "transcript",
+      "period": "FY23",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/11/Concall-Transcript-2022-23-Half-Yearly-1.pdf",
+      "sha256": "6fae607a6ab81a396f34053bc3af336db580d8e66b50495a631fdc5dd705d726",
+      "bytes": 7133060
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2022-23-Half-Yearly-2.pdf",
+      "doc_class": "transcript",
+      "period": "FY23",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/11/Concall-Transcript-2022-23-Half-Yearly-2.pdf",
+      "sha256": "d974d13a7adc066db1cdf19213660538614c38b2aa557f3bd681f54fbbbf5f29",
+      "bytes": 8645144
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2023-24-Half-Yearly-1.pdf",
+      "doc_class": "transcript",
+      "period": "FY24",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/11/Concall-Transcript-2023-24-Half-Yearly-1.pdf",
+      "sha256": "be7f16bff7060e22eda981ea8a49bcf8c0d4b5bd5bb25d3719149729709412b6",
+      "bytes": 642630
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2023-24-Half-Yearly-2.pdf",
+      "doc_class": "transcript",
+      "period": "FY24",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/11/Concall-Transcript-2023-24-Half-Yearly-2.pdf",
+      "sha256": "16eb055e3d2d204b366c1ab5f136c7d9c4db3c2a36b026ecc0de479e5952967f",
+      "bytes": 10411627
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2024-25-Half-yearly-1.pdf",
+      "doc_class": "transcript",
+      "period": "FY25",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/11/Concall-Transcript-2024-25-Half-yearly-1.pdf",
+      "sha256": "9ef571cdbd3d131a1f86058196cd4e18d8d58a63ab521ad5ee43665799571f08",
+      "bytes": 8065637
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-Transcript-2024-25-Half-yearly-2.pdf",
+      "doc_class": "transcript",
+      "period": "FY25",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/11/Concall-Transcript-2024-25-Half-yearly-2.pdf",
+      "sha256": "72f613641566e22122379e55e1e2a8b7f9fe094924effe28a36bac659aeb5db9",
+      "bytes": 7229883
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Concall-transcript-2021-2022-Half-Yearly2-1.pdf",
+      "doc_class": "transcript",
+      "period": "FY22",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Concall-transcript-2021-2022-Half-Yearly2-1.pdf",
+      "sha256": "898d05b99f2de744ebb379114947b4831c65610de0228c0c801a52751c057ad8",
+      "bytes": 9764644
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Conference-Call-Transcript.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/11/Conference-Call-Transcript.pdf",
+      "sha256": "8c39e83a2fda0cb88ac74a7fcae4fc7d048ea4406007f412e108e6c509190eac",
+      "bytes": 842349
+    },
+    {
+      "file": "ALKYLAMINE-transcript-SETranscript.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/11/SETranscript.pdf",
+      "sha256": "c7cda4c00222a64a23fac132dcf0c1a50dd721fd157426441fbd05c9278e6bc4",
+      "bytes": 1058702
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Transcript-of-Conference-Call-28th-May-2021.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Transcript-of-Conference-Call-28th-May-2021.pdf",
+      "sha256": "dbe4f4ec53ca3714fc65ab8977ad68f731724e90c4212cdb9241311a564323a3",
+      "bytes": 1300200
+    },
+    {
+      "file": "ALKYLAMINE-transcript-Transcript-of-Conference-Call-7th-Nov-2019.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Transcript-of-Conference-Call-7th-Nov-2019.pdf",
+      "sha256": "9a6e650f43e7d37236c83626959634a5547820f46889acb223bf539888985c11",
+      "bytes": 1630945
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-44-th-AGM-Voting-results.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/07/44-th-AGM-Voting-results.pdf",
+      "sha256": "e559c3b0b97eed2cf5f5e310761108f8cebfa1fee9d77509e8641a12f8dc62ad",
+      "bytes": 10685435
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results-of-39th-AGM-6th-August-2019.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Voting-Results-of-39th-AGM-6th-August-2019.pdf",
+      "sha256": "71f3d4678990d82f469ee3aa9cb52c088f5a0c02e578b7bd619551baca09ac53",
+      "bytes": 2694208
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results-of-40th-AGM-14th-August-2020.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/04/Voting-Results-of-40th-AGM-14th-August-2020.pdf",
+      "sha256": "953ac42448bf3dbc3de3a2218b74a7c595d647c7597790a5d117f98101c07da7",
+      "bytes": 14237795
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results-of-41st-AGM-20th-July-2021.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Voting-Results-of-41st-AGM-20th-July-2021.pdf",
+      "sha256": "4b52ad5b830e6309d8aa5c57349cd897d402a65aa7e5b478e6b095b326260f62",
+      "bytes": 8855019
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results-of-42-nd-AGM-01-Aug-2022.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/08/Voting-Results-of-42-nd-AGM-01-Aug-2022.pdf",
+      "sha256": "b221b5f12f6a69fb2526fc5b22f5d24c3ae9a8d7b8e9f38aaad85ec5d9dc2554",
+      "bytes": 2565401
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results-of-43rd-AGM-11-Jul-2023.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/07/Voting-Results-of-43rd-AGM-11-Jul-2023.pdf",
+      "sha256": "cde6b9dccf478fa41fb0a6114872697bf76526d86172007485952ea288f16b1b",
+      "bytes": 12231309
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Voting-Results.pdf",
+      "sha256": "e7b1e8347b616b7856a0960a32157776fec5a11c585dc04234f25b4573e4f016",
+      "bytes": 514685
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/07/Voting-Results.pdf",
+      "sha256": "e7b1e8347b616b7856a0960a32157776fec5a11c585dc04234f25b4573e4f016",
+      "bytes": 514685
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/12/Voting-Results.pdf",
+      "sha256": "e7b1e8347b616b7856a0960a32157776fec5a11c585dc04234f25b4573e4f016",
+      "bytes": 514685
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-Voting-Results.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2026/07/Voting-Results.pdf",
+      "sha256": "e7b1e8347b616b7856a0960a32157776fec5a11c585dc04234f25b4573e4f016",
+      "bytes": 514685
+    },
+    {
+      "file": "ALKYLAMINE-voting_result-voting-results-2024.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/09/voting-results-2024.pdf",
+      "sha256": "1d26f738fe81bcba601aabb3de617c39b59dd0a33ad4aec6317ee57473a3df32",
+      "bytes": 8984337
+    }
+  ]
+}

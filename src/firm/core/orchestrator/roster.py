@@ -103,6 +103,36 @@ def load_roster(path: str | Path | None = None) -> tuple[RosterEntry, ...]:
     return tuple(sorted(entries, key=lambda e: e.stage.value))
 
 
+#: Document class in the documents manifest -> the roster prerequisites it satisfies. A shareholding
+#: pattern satisfies BOTH `shareholding` and `pledge`, because the SEBI format carries pledge as a column
+#: ("Whether any shares held by promoters are pledge or otherwise encumbered?") rather than as a separate
+#: filing. Concall transcripts satisfy `guidance` too: management's forward statements are what a
+#: promise-vs-delivery scorecard is built from.
+SATISFIES: Mapping[str, tuple[str, ...]] = {
+    "annual_report": ("financials", "filing", "segments"),
+    "shareholding": ("shareholding", "pledge"),
+    "transcript": ("transcripts", "guidance"),
+    "quarterly_result": ("financials",),
+    "credit_rating": ("credit_rating",),
+    "voting_result": ("voting",),
+}
+
+
+def available_inputs_from(manifest: Mapping[str, object]) -> tuple[str, ...]:
+    """Roster prerequisites satisfied by a documents manifest — derived, never asserted by hand.
+
+    The alternative was a caller passing a literal list, and that is exactly how four agents came to be
+    described as "blocked on data that does not exist" when 28 shareholding patterns and 15 concall
+    transcripts were sitting on the company's own website. Deriving availability from what is actually on
+    disk means the roster cannot claim more coverage than the ingest supports, and cannot claim less.
+    """
+    classes = {str(d.get("doc_class")) for d in manifest.get("documents", [])}  # type: ignore[union-attr]
+    satisfied: set[str] = set()
+    for name in classes:
+        satisfied.update(SATISFIES.get(name, ()))
+    return tuple(sorted(satisfied))
+
+
 def plan_run(
     roster: Sequence[RosterEntry],
     *,

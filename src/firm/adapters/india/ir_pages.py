@@ -42,6 +42,75 @@ _UPLOAD_MONTH = re.compile(r"/(20\d{2})/(0[1-9]|1[0-2])/")
 _FY_RANGE = re.compile(r"(20\d{2})\s*[-_]\s*(20\d{2}|\d{2})")
 _HREF = re.compile(r'href="([^"]+\.pdf)"', re.IGNORECASE)
 
+#: The IR sections every SEBI-compliant Indian listed company publishes (Reg. 46 LODR). Fetching only the
+#: financials page was an error that cost real capability: it hid 28 shareholding patterns, 15 concall
+#: transcripts, 12 voting results and the credit ratings, and led to four agents being declared "blocked on
+#: data that does not exist" when the data was two clicks away. The rule this encodes: before concluding an
+#: input is unavailable, enumerate every section the regulation requires the company to publish.
+IR_SECTIONS: tuple[str, ...] = (
+    "financials", "corporate-governance", "general-meetings", "announcements",
+    "investor-center", "disclosure-reg-46-of-sebi", "financial-trends",
+)
+
+#: Document class -> (match, reject). Order matters: the first class whose pattern matches wins, so the
+#: specific patterns precede the general ones ("Annual Return" must be tested before "annual report").
+DOCUMENT_CLASSES: tuple[tuple[str, re.Pattern[str], re.Pattern[str] | None], ...] = (
+    ("annual_return", re.compile(r"annual[-_\s]*return|mgt-?7", re.I), None),
+    ("annual_report", re.compile(r"annual[-_\s]*report", re.I),
+     re.compile(r"annual[-_\s]*(return|secretarial)", re.I)),
+    # The shareholding pattern carries the promoter PLEDGE column, so it satisfies both prerequisites.
+    ("shareholding", re.compile(r"shareholding|share[-_\s]*holding|\bshp\b", re.I), None),
+    ("transcript", re.compile(r"transcript|con-?call|earnings[-_\s]*call", re.I), None),
+    ("credit_rating", re.compile(r"credit[-_\s]*rating", re.I), None),
+    ("voting_result", re.compile(r"voting[-_\s]*result|scrutinis|scrutiniz", re.I), None),
+    ("presentation", re.compile(r"presentation|investor[-_\s]*deck", re.I), None),
+    ("quarterly_result", re.compile(r"result|financial[-_\s]*results", re.I),
+     re.compile(r"voting|newspaper", re.I)),
+    ("governance", re.compile(r"corporate[-_\s]*governance|board[-_\s]*meet|policy|policies|code[-_\s]*of",
+                              re.I), None),
+)
+
+
+@dataclass(frozen=True)
+class Document:
+    """A discovered primary-source document of any class, not just an annual report."""
+
+    url: str
+    doc_class: str
+    period: str | None            # 'FY26' where derivable from the link, else None
+    suggested_file: str
+
+
+def classify(url: str) -> str | None:
+    """The document class a link belongs to, or None if it is not one the firm reads."""
+    for name, match, reject in DOCUMENT_CLASSES:
+        if match.search(url) and not (reject and reject.search(url)):
+            return name
+    return None
+
+
+def discover_documents(html: str, ticker: str) -> list[Document]:
+    """Every recognised primary-source document in an IR page's HTML, de-duplicated by URL.
+
+    Unlike `discover_filings` this does not require a fiscal year: a shareholding pattern for a quarter or a
+    credit-rating letter is worth having even when the period has to be read from the document itself. The
+    period is recorded when the link states it and left None when it does not — never guessed, because a
+    wrongly dated document breaks Law 3 more quietly than a missing one.
+    """
+    out: dict[str, Document] = {}
+    for url in _HREF.findall(html):
+        doc_class = classify(url)
+        if doc_class is None:
+            continue
+        fy = _FY_RANGE.search(url)
+        period = _fy_from_range(int(fy.group(1)), fy.group(2)) if fy else None
+        stem = re.sub(r"[^A-Za-z0-9]+", "-", url.rsplit("/", 1)[-1][:-4]).strip("-")[:60]
+        out[url] = Document(
+            url=url, doc_class=doc_class, period=period,
+            suggested_file=f"{ticker}-{doc_class}-{stem}.pdf",
+        )
+    return sorted(out.values(), key=lambda d: (d.doc_class, d.period or "", d.url))
+
 
 @dataclass(frozen=True)
 class FilingCandidate:
