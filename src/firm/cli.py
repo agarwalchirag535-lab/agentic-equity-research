@@ -188,6 +188,76 @@ def analyze(
     typer.echo(json.dumps(m, indent=2, default=str))
 
 
+@app.command("discover-filings")
+def discover_filings_cmd(
+    ticker: str = typer.Option(..., "--ticker", help="NSE/BSE symbol, e.g. ALKYLAMINE"),
+    url: str = typer.Option(..., "--url", help="the company's investor-relations financials page"),
+    out: str = typer.Option("", "--out", help="default data/manifests/{TICKER}-filings.json"),
+    company: str = typer.Option("", "--company", help="display name for the manifest"),
+) -> None:
+    """Find the annual reports on a listed company's own IR page and write a filings manifest.
+
+    Works for any Indian listed company: Reg. 46 of the SEBI LODR requires every one of them to publish its
+    annual reports on its own website. Reads the page, recognises the annual reports among the other PDFs,
+    and records for each the fiscal year it covers, its URL, and a publication date WITH ITS BASIS —
+    `upload-path` where the publisher's own URL evidences the month, `statutory-proxy` where the file was
+    re-uploaded later and the AGM deadline is the honest fallback (ADR-0026).
+
+    Downloads nothing. Retrieval is a separate, deliberate step: pulling tens of megabytes from a company's
+    servers deserves a human decision per company, which a discovery pass that fetched silently would remove.
+    Fill in `sha256`/`bytes` after retrieving, then run `firm deep-dive --filings <manifest>`.
+    """
+    import json
+    import ssl
+    import urllib.request
+    from pathlib import Path
+
+    # A framework Python on macOS ships no CA bundle for urllib (curl works because it uses the system
+    # store), so an IR page over https fails with CERTIFICATE_VERIFY_FAILED. `certifi` is already a
+    # declared dependency of the india extra; verification is never disabled — a research firm reading a
+    # company's own disclosures must know it reached that company.
+    try:
+        import certifi
+
+        context = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:  # pragma: no cover - falls back to the interpreter's default trust store
+        context = ssl.create_default_context()
+
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(request, timeout=60, context=context) as response:  # noqa: S310
+        html = response.read().decode("utf-8", errors="replace")
+
+    from firm.adapters.india.ir_pages import discover_filings
+
+    found = discover_filings(html, ticker)
+    if not found:
+        typer.echo(f"no annual reports recognised at {url}")
+        raise typer.Exit(1)
+
+    manifest = {
+        "ticker": ticker,
+        "company_name": company or ticker,
+        "source": url,
+        "retrieved_at": date.today().isoformat(),
+        "filings": [
+            {
+                "file": c.suggested_file, "period": c.period, "prior_period": c.prior_period,
+                "source_url": c.url, "published_at": c.published_at.isoformat(),
+                "published_at_basis": c.published_at_basis, "grade": "A", "sha256": "", "bytes": 0,
+            }
+            for c in found
+        ],
+    }
+    path = Path(out or f"data/manifests/{ticker}-filings.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, indent=2) + "\n")
+    typer.echo(f"{len(found)} annual report(s) -> {path}")
+    for c in found:
+        typer.echo(f"  {c.period}  {c.published_at}  ({c.published_at_basis})  {c.suggested_file}")
+    typer.echo("\nNext: download each source_url into data/bronze/ under `file`, fill sha256/bytes, then")
+    typer.echo(f"  firm deep-dive --ticker {ticker} --filings {path}")
+
+
 @app.command("deep-dive")
 def deep_dive(
     ticker: str = typer.Option(..., "--ticker", help="NSE/BSE symbol, e.g. ALKYLAMINE"),

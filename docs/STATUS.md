@@ -157,6 +157,15 @@ degenerate returns FLAG instead of UNAVAILABLE. Work:
 </details>
 
 ### A. Close the data gap the first real report exposed ← **the highest-value next step**
+**Primary sources are now wired for any company (ADR-0024/0026).** Two commands:
+```
+firm discover-filings --ticker TICKER --url <company IR financials page>   # writes the manifest
+firm deep-dive --ticker TICKER --filings data/manifests/TICKER-filings.json
+```
+ALKYLAMINE is done end to end: 10 annual reports FY17-FY26 as grade-A facts, cross-checked against each
+other. What remains is note *contents* — the notes are enumerated at 100% but **0% substantive**, so no check
+has yet read inside them. That is what blocks the governance, related-party and ratio-determinant questions.
+
 **As of ADR-0022 this backlog generates itself.** Every report now emits `disclosure_backlog`: the
 deduplicated, ordered list of primary-source rows that would answer a question the pipeline had to leave
 unanswered. Read it off the latest report rather than from prose here —

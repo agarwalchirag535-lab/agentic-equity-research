@@ -601,3 +601,38 @@ right direction: 29% was cheaper and wrong.
 result, and the firm needs both. Every check added from here states what its inputs must look like to be
 worth believing, and mixed-grade arithmetic (a grade-A filing figure over a grade-B screener figure) is a
 smell that deserves the same treatment — noted in STATUS as the remaining piece.
+
+### ADR-0026 — Primary-source discovery works for any listed company, and dates what it can evidence
+**Context.** Owner: *"the data is publicly available... as like that, you can find data of the publicly listed
+company."* The Alkyl Amines IR page was an example of a pattern, not a special case — Reg. 46 of the SEBI LODR
+requires every Indian listed company to publish its annual reports on its own website. The primary-source
+ingest built in ADR-0024 already took any manifest path, but the manifest itself was hand-built, which made
+the pattern unreusable in practice.
+
+**Decision 1 — discovery reads a page, and downloads nothing.** `firm discover-filings --ticker --url` parses
+an IR page, recognises the annual reports among the other PDFs, and writes
+`data/manifests/{TICKER}-filings.json`. Retrieval stays a separate step. Pulling tens of megabytes from a
+company's servers is a decision a human should take per company, and a discovery pass that fetched silently
+would remove the moment where that decision is made.
+
+**Decision 2 — a publication date carries its basis, and a re-upload is not a publication.** Law 3 turns on
+`published_at`, so each entry records how its date was arrived at: `upload-path` where the publisher's own URL
+encodes the month (`/uploads/2026/06/`), `statutory-proxy` where it does not. Crucially the upload month is
+believed only if it falls inside a credible window — on or after the financial year closed, and no later than
+the 30 September AGM deadline plus a grace quarter for a late filer. On the real site the FY17-FY21 reports
+all live under `/2022/03/`, a bulk migration: believing it would date the FY17 report five years late and tell
+a Phase-6 historical replay that it did not exist until 2022, silently deleting five years of point-in-time
+evidence. Outside the window the statutory deadline is used, which is the latest date the report can lawfully
+have appeared — conservative in the direction that prevents look-ahead — and it is labelled so no reader
+mistakes an inference for an observation.
+
+**Decision 3 — reject rather than guess.** "Annual Return" (MGT-7) and "Annual Secretarial Compliance Report"
+are different documents and are excluded by name; a report whose fiscal year cannot be read off the link is
+dropped, because a PDF that cannot be placed in a point-in-time series is worse than an absent one. Where two
+links cover the same year (a migration copy and the original), the entry whose date rests on evidence wins.
+
+**Consequence.** Verified against the live page: ten annual reports discovered, FY22-FY26 dated from the
+upload path and FY17-FY21 from the statutory proxy — independently reproducing the manifest that had been
+built by hand. `certifi` is now used for the TLS context, because a framework Python on macOS ships no CA
+bundle for urllib and the fetch failed with CERTIFICATE_VERIFY_FAILED; verification is never disabled, since
+a research firm reading a company's disclosures must know it reached that company.
