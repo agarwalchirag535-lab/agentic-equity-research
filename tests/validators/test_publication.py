@@ -88,6 +88,24 @@ def test_p1_note_coverage_below_100_blocks():
     assert any("note coverage" in x.detail for x in v)
 
 
+def test_p1_insufficient_disclosure_may_publish_the_unreadable_filing_as_its_finding():
+    """ADR-0014/0016: opacity is published, not swallowed — otherwise the one verdict the firm exists to
+    give on an opaque company could never ship, because the gap is what blocks it."""
+    cl = _clean_checklist(note_coverage=0.0, notes_undispositioned=[])
+    cl.records[1] = CheckRecord(name="receivables_divergent", outcome=CheckOutcome.UNAVAILABLE,
+                                reason="not broken out in any filing readable as text")
+    v = verified_clean_completeness(
+        _report(verdict=Verdict.INSUFFICIENT_DISCLOSURE, checklist=cl))
+    assert v == []
+
+
+def test_p1_insufficient_disclosure_must_still_be_evidenced():
+    """"We could not tell" with nothing missing and every note read is not a finding."""
+    v = verified_clean_completeness(
+        _report(verdict=Verdict.INSUFFICIENT_DISCLOSURE, checklist=_clean_checklist()))
+    assert len(v) == 1 and "not evidenced" in v[0].detail
+
+
 # ---- P2 symmetry ---------------------------------------------------------------------------------
 def test_p2_positive_report_needs_kill_criteria():
     v = symmetry(_report(kill_criteria=[_criterion(True)]))

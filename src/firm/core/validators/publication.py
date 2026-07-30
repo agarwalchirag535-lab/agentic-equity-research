@@ -5,7 +5,9 @@ whether a report may ship:
 
   P1 verified-clean completeness — every check the playbook expected must appear in the checklist, and
      NOT_APPLICABLE/UNAVAILABLE must carry a reason. A check that silently vanished is indistinguishable
-     from one that never ran, so a clean verdict would be unfalsifiable.
+     from one that never ran, so a clean verdict would be unfalsifiable. Full note coverage is required
+     too, except for an `INSUFFICIENT_DISCLOSURE` verdict, whose finding IS the unreadable filing — that
+     verdict must instead be evidenced by an UNAVAILABLE check or a named disclosure gap.
   P2 symmetry — positive verdicts carry dated kill criteria; negative verdicts carry rehabilitation
      criteria; both carry the opposing case. Optimism gets no easier standard than pessimism.
   P3 legal framing — a forensic finding renders as evidence-indicates language with a replication path,
@@ -72,12 +74,30 @@ def verified_clean_completeness(report: ResearchReport) -> list[PublicationViola
             ))
 
     # Line-by-line discipline (ADR-0017): a report cannot publish below full note coverage.
-    if cl.note_coverage < 1.0:
+    #
+    # One exemption, and it is the point rather than a loophole: an `INSUFFICIENT_DISCLOSURE` report's
+    # *finding* is that the filings could not be read line by line (ADR-0014/0016 — opacity is published,
+    # not swallowed). Blocking it on the very gap it reports would mean the firm can never publish the one
+    # verdict it exists to publish when a company is opaque. In exchange that verdict must be **evidenced**
+    # the same way a FORENSIC_CAUTION must carry a FLAG: at least one UNAVAILABLE check or a named
+    # disclosure gap. "We could not tell" with nothing missing is not a finding.
+    opacity_is_the_finding = report.verdict is Verdict.INSUFFICIENT_DISCLOSURE
+    if cl.note_coverage < 1.0 and not opacity_is_the_finding:
         out.append(PublicationViolation(
             "P1_incomplete_checklist", "checklist.note_coverage",
             f"note coverage {cl.note_coverage:.0%} < 100%; undispositioned notes: "
             f"{cl.notes_undispositioned or 'unlisted'}",
         ))
+    if opacity_is_the_finding:
+        evidenced = cl.disclosure_gaps or any(
+            r.outcome is CheckOutcome.UNAVAILABLE for r in cl.records
+        ) or cl.note_coverage < 1.0
+        if not evidenced:
+            out.append(PublicationViolation(
+                "P1_incomplete_checklist", "checklist",
+                "INSUFFICIENT_DISCLOSURE with no UNAVAILABLE check, no named disclosure gap and full "
+                "note coverage — the verdict is not evidenced",
+            ))
     return out
 
 
