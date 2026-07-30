@@ -62,6 +62,12 @@ class ExternalInputs:
     cash: float | None = None
     interest_income: float | None = None
     promoter_loans: tuple[float, float] | None = None   # (loans to promoters/KMP, total advances)
+    #: From the Ind AS 24 note body (ADR-0027), used when the Schedule III row is absent. Tri-state on
+    #: purpose: False means the note WAS read and disclosed no lending or guarantees to promoters — a real
+    #: governance finding — while None means it could not be read and nothing may be concluded.
+    promoter_lending_disclosed: bool | None = None
+    related_party_categories: tuple[str, ...] = ()
+    kmp_remuneration_cr: float | None = None
     gross_margin: float | None = None
     disclosure_gaps: tuple[str, ...] = ()
     disclosure_scanned: bool = False
@@ -331,7 +337,18 @@ def evaluate_checks(
                       ext.ids(check))
 
         elif check == "promoter_lending":
-            if ext.promoter_loans is None:
+            if ext.promoter_loans is None and ext.promoter_lending_disclosed is not None:
+                # The Schedule III row is absent but the Ind AS 24 note was read, and it is the better
+                # source anyway: Schedule III reports a balance, the note reports the transactions. A note
+                # listing only director remuneration is the strongest statement a promoter group can make.
+                disclosed = ext.promoter_lending_disclosed
+                categories = ", ".join(ext.related_party_categories) or "none"
+                pay = (f"; KMP remuneration ₹{ext.kmp_remuneration_cr:,.2f}cr"
+                       if ext.kmp_remuneration_cr is not None else "")
+                r.ran(check, disclosed,
+                      f"related-party note read ({ext.locator(check) or 'AR'}): categories disclosed = "
+                      f"{categories}{pay}", ext.ids(check))
+            elif ext.promoter_loans is None:
                 r.unavailable(check, ("loans and advances to promoters/KMP (Schedule III row)",))
             else:
                 share, flagged = quality.promoter_loan_share(

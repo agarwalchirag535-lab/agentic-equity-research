@@ -163,8 +163,16 @@ firm discover-filings --ticker TICKER --url <company IR financials page>   # wri
 firm deep-dive --ticker TICKER --filings data/manifests/TICKER-filings.json
 ```
 ALKYLAMINE is done end to end: 10 annual reports FY17-FY26 as grade-A facts, cross-checked against each
-other. What remains is note *contents* — the notes are enumerated at 100% but **0% substantive**, so no check
-has yet read inside them. That is what blocks the governance, related-party and ratio-determinant questions.
+other. Note *contents* are now partly read (ADR-0027): the Ind AS 24 related-party note is parsed, so
+`promoter_lending` runs and unavailable checks are down to 29%. On ALKYLAMINE it is a real finding — the note
+discloses only director remuneration (₹27.69cr), no related-party sales, loans or guarantees.
+
+**The one remaining blocker to a substantive report:** `adapters/india/notes.py:_NOTE_HEADING` does not match
+the note headings in these filings. Scoped enumeration (`notes_section_start`) correctly locates the section
+at p.86 but finds 3 notes where there are ~49, so `substantive_share` stays 0% and the verdict is
+`INSUFFICIENT_DISCLOSURE` for that reason alone. `adapters/india/notes_content.py:_NOTE_HEADING` matches them
+reliably (it locates notes 38-49) — **port that pattern**. One file, and then the governance, related-party
+and ratio-determinant questions all become answerable.
 
 **As of ADR-0022 this backlog generates itself.** Every report now emits `disclosure_backlog`: the
 deduplicated, ordered list of primary-source rows that would answer a question the pipeline had to leave

@@ -123,14 +123,38 @@ class NoteDisposition:
             raise ValueError(f"invalid disposition status {self.status!r}")
 
 
-def enumerate_notes(pages: Sequence[str]) -> list[Note]:
+def notes_section_start(pages: Sequence[str]) -> int:
+    """1-based page where the NOTES TO THE FINANCIAL STATEMENTS begin, or 1 if it cannot be located.
+
+    Scoping matters as much here as it did for the statement rows (ADR-0024), and for the same reason. An
+    annual report numbers paragraphs everywhere: the AGM notice, the directors' report, the
+    corporate-governance report and the BRSR all have numbered items that match a note heading exactly. On
+    the FY26 Alkyl Amines filing an unscoped pass enumerated 17 "notes" from pages 5-44 — e-voting
+    instructions, ACKNOWLEDGEMENTS, a list of the chairman's other directorships — and not one of the 49
+    real notes on pages 87-133. Coverage read 100% and every disposition was `unknown`, which is exactly the
+    "coverage without reading" that `substantive_share` exists to catch.
+
+    The audited notes always follow the audited statements, so the balance sheet anchors the section.
+    """
+    from firm.adapters.base.tables import audited_statement_pages
+
+    anchor = audited_statement_pages(pages).get("balance_sheet", ())
+    return (anchor[0] + 1) if anchor else 1
+
+
+def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> list[Note]:
     """Every numbered note heading across the pages, with (page, line) anchors.
 
-    Duplicate note numbers keep the FIRST occurrence (continuation pages repeat headings).
+    Duplicate note numbers keep the FIRST occurrence (continuation pages repeat headings). ``first_page``
+    (1-based) restricts the scan to the notes-to-accounts section; pass `notes_section_start(pages)` for it.
+    Page numbers stay absolute so provenance still points at the real page.
     """
     seen: set[int] = set()
     notes: list[Note] = []
+    floor = first_page or 1
     for p_idx, page in enumerate(pages, start=1):
+        if p_idx < floor:
+            continue
         for l_idx, line in enumerate(page.splitlines(), start=1):
             m = _NOTE_HEADING.match(line)
             if not m:

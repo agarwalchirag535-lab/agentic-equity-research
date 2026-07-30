@@ -636,3 +636,45 @@ upload path and FY17-FY21 from the statutory proxy — independently reproducing
 built by hand. `certifi` is now used for the TLS context, because a framework Python on macOS ships no CA
 bundle for urllib and the fetch failed with CERTIFICATE_VERIFY_FAILED; verification is never disabled, since
 a research firm reading a company's disclosures must know it reached that company.
+
+### ADR-0027 — Read inside the notes, and enumerate the right ones
+**Context.** After ADR-0024 the FY26 Alkyl Amines filing reached **100% note coverage and 0% substantive**.
+Every note enumerated, not one read — so the highest-severity questions (related-party quantum, promoter
+lending, director pay) stayed unanswered while the report could claim full coverage. `substantive_share`
+(ADR-0017) is what stopped that from buying a positive verdict, and it did its job.
+
+**Decision 1 — a note-body reader whose result distinguishes absent from empty.** `notes_content.py` reads the
+Ind AS 24 note and returns `located`, the transaction categories present, and total KMP remuneration. The
+failure mode here is not a wrong number but a **false clean**: "I read the related-party note and found no
+loans to promoters" and "I could not find the note" produce the same empty result and mean opposite things.
+`has_promoter_lending` is therefore tri-state — `False` is a publishable governance finding, `None` is a
+refusal to conclude.
+
+On Alkyl Amines FY26 the answer is a real finding: the note discloses **only** director remuneration
+(₹27.69cr) — no related-party sales, purchases, loans, guarantees or investments — and states no amounts were
+written off. That channel is the route almost every Indian promoter-level fraud uses, and here it is empty.
+`promoter_lending` can now run, so unavailable checks fell 43% → 29%.
+
+**Decision 2 — enumerate only the notes to the ACCOUNTS.** The unscoped scan was enumerating the wrong
+document entirely: 17 "notes" from pages 5-44 — e-voting instructions, ACKNOWLEDGEMENTS, the chairman's other
+directorships — and none of the 49 real notes on pages 87-133. Every one came back `uncategorised`, which is
+why nothing could be dispositioned. The audited notes always follow the audited statements, so
+`notes_section_start` anchors on the balance sheet. Same class of bug as ADR-0024's statement scoping, same
+fix: a label search over a whole annual report finds the wrong table.
+
+**Two bugs the tests caught that the real filing hid.**
+* Summing lines that *name* a category caught the "Sitting Fees" sub-labels and missed every director,
+  reporting ₹2.86cr against ₹27.69cr. These notes are block-structured — heading names the category, rows
+  carry the figures — so the category is now carried as state.
+* `find_note_body` stopped at the next heading only on *following* pages. On FY26 note 41 ends on p.121 and
+  note 42 begins on p.122, so it worked by coincidence. Where two notes share a page it swept the neighbour
+  in — and a related-party note's neighbour is Earnings Per Share, whose first row is net profit: ₹17,999.91
+  lakh landing in directors' pay. Also removed page furniture from the sum (a page number "119" and "26" from
+  "Report 2025-2026Website:" inflated ₹27.69cr to ₹52.27cr).
+
+**Consequence and what is still open.** The related-party note is read and evidenced; the notes section is
+correctly located (p.86 for FY26). But `notes.py:_NOTE_HEADING` does not match this filing's real note
+headings — scoped enumeration finds 3 notes where there are ~49 — so `substantive_share` is still 0% and the
+verdict remains `INSUFFICIENT_DISCLOSURE` on that basis. The pattern in `notes_content.py:_NOTE_HEADING` DOES
+match them (it locates notes 38-49 reliably), so the fix is to port it. That is the next task, and it is now a
+one-file change rather than an open question.

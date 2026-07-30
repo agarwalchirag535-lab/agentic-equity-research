@@ -26,8 +26,10 @@ from typing import Mapping, Sequence
 
 from firm.adapters.base.tables import ExtractedValue, find_statement_row, to_canonical_crore
 from firm.adapters.india.filings import disclosure_gaps, forensic_sections
+from firm.adapters.india.notes_content import related_party_summary
 from firm.adapters.india.notes import (
     Note,
+    notes_section_start,
     NoteDisposition,
     caro_candidate_flags,
     coverage,
@@ -162,7 +164,9 @@ def register_filing_facts(
 def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWalk:
     """Enumerate the notes, scan the mandated disclosures, and register the filing's figures as facts."""
     rows, fact_ids, unresolved = register_filing_facts(store, ticker, filing)
-    notes = tuple(enumerate_notes(filing.pages))
+    # Only the notes to the ACCOUNTS count (ADR-0027). An unscoped scan enumerates AGM-notice and
+    # directors'-report paragraph numbers, which no financial check can ever disposition.
+    notes = tuple(enumerate_notes(filing.pages, first_page=notes_section_start(filing.pages)))
 
     text = "\n".join(filing.pages)
     sections_missing, _ = disclosure_gaps(forensic_sections(text))
@@ -206,11 +210,22 @@ def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWa
         ids_by_check["disclosure_gap"] = ()
         locators["disclosure_gap"] = filing.doc_id
 
+    # Read the Ind AS 24 note body (ADR-0027) so the related-party notes become SUBSTANTIVE rather than
+    # merely enumerated — `NOTE_CHECKS` routes the `related_party` and `loans_advances` categories through
+    # `promoter_lending`, so a check that can finally run is what dispositions those notes.
+    rp = related_party_summary(filing.pages)
+    if rp.located:
+        locators["promoter_lending"] = f"{filing.doc_id} {rp.locator}"
+        ids_by_check.setdefault("promoter_lending", ())
+
     external = ExternalInputs(
         receivables=pair(D.RECEIVABLES),
         inventory=pair(D.INVENTORY),
         revenue=pair(D.SALES),
         cash=canonical(D.CASH, 0),
+        promoter_lending_disclosed=rp.has_promoter_lending,
+        related_party_categories=tuple(sorted(rp.categories)),
+        kmp_remuneration_cr=rp.remuneration_cr,
         disclosure_gaps=missing,
         disclosure_scanned=True,
         source_locators=locators,
