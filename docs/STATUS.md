@@ -127,6 +127,26 @@ a company for the firm's own unfinished note-parser would reject every good busi
 
 ## 3. What is REMAINING (priority order)
 
+### 0. A FALSE-POSITIVE FORENSIC_CAUTION — fix before any real company is judged ← **blocking**
+Found 2026-07-30 on the first primary-source run of ALKYLAMINE. The deterministic screen returned
+`FORENSIC_CAUTION` on `cash_debt_paradox`, and the finding is **not real**. Its detail line reads
+`cash/assets 496.6% at cost of debt 100.0%` — cash cannot be 5x total assets, and the 100% cost of debt is
+Interest ₹1cr ÷ Borrowings ₹1cr, i.e. two *rounded* grade-B screener figures whose ratio carries no
+information. A published FORENSIC_CAUTION on a real listed company resting on that would be a serious
+error, and the legal-framing gate (P3) cannot catch it because the check is deterministic and the prose is
+correctly hedged.
+
+The root cause is architectural, not a bad threshold: **ADR-0022's plausibility discipline exists only in
+the narration layer** (`config/line_items.yaml` `plausible:`), where it correctly refuses to narrate the
+same degenerate 100% cost of debt. `core/compute/quality.py` has no equivalent, so a check whose inputs are
+degenerate returns FLAG instead of UNAVAILABLE. Work:
+- give the checks an input-plausibility precondition (materiality floor on the denominator; a
+  cash/assets ratio > 1 is arithmetically impossible and must fail loudly, not flag)
+- ban mixed-grade arithmetic in a check: cash here is grade A from the filing, borrowings grade B from the
+  screener, and the ratio silently spans both
+- the `cash/assets` denominator itself is wrong and needs tracing — 94.15/496.6% implies a ₹19cr asset base
+  against a real ~₹2,000cr balance sheet
+
 ### A. Close the data gap the first real report exposed ← **the highest-value next step**
 **As of ADR-0022 this backlog generates itself.** Every report now emits `disclosure_backlog`: the
 deduplicated, ordered list of primary-source rows that would answer a question the pipeline had to leave
