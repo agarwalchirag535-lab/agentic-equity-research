@@ -1,5 +1,8 @@
 # CLAUDE.md — Repo Constitution
 
+**Current state, remaining work, owner directives, and gotchas: [`docs/STATUS.md`](docs/STATUS.md) —
+read it at the start of any new session before planning work.**
+
 This file is loaded into context on every session. It is the short, enforceable version of
 [`docs/SPEC.md`](docs/SPEC.md) (the full constitution) and [`docs/PLAN.md`](docs/PLAN.md) (the
 build plan + corrections). When in doubt, SPEC wins; when SPEC and PLAN disagree, a `docs/DECISIONS.md`

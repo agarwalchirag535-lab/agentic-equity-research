@@ -5,11 +5,16 @@ An **agentic equity research firm** — auditable multibagger discovery for Indi
 into a 5–10x over 5–8 years, self-funded, under honest management?* — and **rejects** everything that
 can't prove it. It produces research artifacts only: **no orders, no broker, never "buy this."**
 
+**👉 New here (new session, new agent, new platform)? Read [`docs/STATUS.md`](docs/STATUS.md) first** —
+what is built, what is not, standing owner directives, and hard-won gotchas.
+
 Full constitution: [`docs/SPEC.md`](docs/SPEC.md). Build plan + corrections: [`docs/PLAN.md`](docs/PLAN.md).
 Decisions: [`docs/DECISIONS.md`](docs/DECISIONS.md). Short rules: [`CLAUDE.md`](CLAUDE.md).
 
 ## Status
-**Everything buildable offline is built** — 105 tests; 100% coverage on the compute layer.
+Phases 0–1 complete; primary-source data layer + dual-verdict report generator built.
+**271 tests; 100% coverage on the compute layer.** Phase 2 (wiring agents to the evidence graph and the
+report) is the next step and needs the owner's go. Full detail: [`docs/STATUS.md`](docs/STATUS.md).
 - **Compute (Phase 1, done):** multibagger + §6 feasibility gate, forensic quality (Beneish,
   cash-reality, lender checks), ratios, DuPont, ROIC + incremental ROIC, DCF, reverse DCF, scenarios,
   sensitivity.
