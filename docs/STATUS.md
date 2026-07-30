@@ -132,8 +132,9 @@ a company for the firm's own unfinished note-parser would reject every good busi
 enforces build order and reports three distinct kinds of skip. 54 governance documents ingested from the IR
 sections that discovery had never opened. Remaining in this phase:
 1. ~~wire `deep_dive` to the roster~~ DONE (ADR-0033) — `--phase`/`--documents`; coverage gaps reach the
-   report but never the verdict; pre-flight names unstaffed agents. **Next: answer the 5 new agents'
-   packets** so their narration actually reaches a report — Phase 3 is wired, not staffed.
+   report but never the verdict; pre-flight names unstaffed agents. DONE (ADR-0034): 8 agents now appear in a published report's
+   `agent_versions`. Remaining: parsers to turn ingested documents into citable facts (shareholding and
+   transcripts are downloaded and parsed but not registered), then peer ingest for `sector_analyst`.
 2. parsers for shareholding (promoter %, pledge %, institutional trend) and transcripts (guidance extraction)
 3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
 

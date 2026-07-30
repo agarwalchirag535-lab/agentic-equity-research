@@ -883,3 +883,39 @@ run also proved the publication gate independently — with zero agents staffed 
 
 **What this does NOT yet do.** The five new agents have prompts, schemas and a place in the run order, but no
 answered packets, so no new narration reaches a report. Phase 3 is wired, not staffed.
+
+### ADR-0034 — Staffing Phase 3: packets follow the roster, and the discipline layer caught the narrator
+**Context.** ADR-0033 wired the roster into the run, leaving Phase 3 "wired, not staffed": five agents had a
+place in the run order and no answered packets, so `agent_versions` still listed the same three agents. Two
+plumbing defects kept it that way, both mine:
+
+* `firm packets` had no `--phase` and wrote packets for the fixed trio, so the five could never be answered.
+* `firm deep-dive` called `read_answers(answers)`, which defaults to the Phase-2 trio — it silently ignored
+  the five answer files sitting in the same directory and then failed pre-flight claiming they were never
+  written. Answers are now read **after** the roster is known.
+
+**The part worth recording is what happened when the answers arrived.** I wrote the five agents' output
+myself — that is the designed Claude-in-the-loop path (ADR-0010) — and the discipline layer rejected three
+separate violations in it before anything reached a report:
+
+1. `unit_economics_analyst` — `narrative: number '7' — no_citation`. The prose named the schema field
+   `units_plausible_in_7y`, and the digit read as an uncited figure. I considered exempting backticked spans
+   and **rejected it**: an agent could then hide numbers in code formatting to evade citation entirely. The
+   validator is right and the prose was wrong.
+2. `management_analyst` — `narrative: number '134' — value_mismatch`. The claim "borrowings fell by 134
+   crore" cited `debt_delta_window`, whose value is **-134**. Semantically correct, numerically mismatched,
+   and refused. This is the ADR-0021 value check doing precisely the job it was built for, on a real
+   plausible-sounding sentence rather than a synthetic one.
+3. `management_analyst`, `transcript_analyst`, `ownership_flows_analyst` — bare document counts ("15
+   transcripts", "27 filings") with no fact behind them. Every one removed; the firm ingested those
+   documents but never registered the counts as facts, so they were uncitable by construction.
+
+**Consequence.** Eight agents now appear in `agent_versions` of a published report, and `sector_analyst`'s
+absence is published as the firm's own coverage gap, worded against us. The verdict is unchanged at
+`INSUFFICIENT_DISCLOSURE` on the 9%-substantive-notes floor — five new narrators did not talk the company
+into a better verdict, which is the separation of powers working.
+
+**What the new agents honestly say.** Three of the five report that their inputs exist but are unparsed —
+`transcript_analyst` scores no guidance drift, `ownership_flows_analyst` cites no holding, and
+`unit_economics_analyst` reports both unit counts as zero-meaning-unknown. That is the correct output for
+this state of the ingest, and far more useful than invented tonnage or a tone reading from a skim.

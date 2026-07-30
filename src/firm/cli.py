@@ -303,7 +303,10 @@ def deep_dive(
     from firm.core.report.render import write_report
 
     run_date = date.fromisoformat(as_of) if as_of else date.today()
-    prepared = read_answers(answers) if answers else None
+    # Answers are read AFTER the roster is known (below): `read_answers` defaults to the Phase-2 trio, so
+    # reading here would silently ignore the five phase-3 answer files sitting in the same directory and
+    # then fail pre-flight claiming they were never written.
+    prepared = None
     key_env = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}.get(provider)
     llm = build_provider(provider, os.environ.get(key_env) if key_env else None)
 
@@ -350,6 +353,8 @@ def deep_dive(
             satisfied |= {"financials", "filing", "segments"}
         available: tuple[str, ...] = tuple(sorted(satisfied))
         roster_agents, coverage_gaps = plan_agents(phase=phase, available_inputs=available)
+        if answers:
+            prepared = read_answers(answers, agents=roster_agents)
         typer.echo(f"  roster: phase {phase} plans {len(roster_agents)} agent(s); "
                    f"{len(coverage_gaps)} could not be staffed")
 
@@ -396,8 +401,13 @@ def packets(
     as_of: str = typer.Option("", "--as-of"),
     db: str = typer.Option("data/firm.db", "--db"),
     out: str = typer.Option("", "--out", help="default runs/{ticker}-{as_of}/packets"),
+    phase: int = typer.Option(
+        2, "--phase",
+        help="build phase; selects the roster from config/roster.yaml (ADR-0030). Packets are written for "
+             "every agent the roster plans, so a phase-3 run can actually be staffed."),
+    documents: str = typer.Option("", "--documents", help="documents manifest, for roster availability"),
 ) -> None:
-    """Write the three agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
+    """Write the planned agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
 
     Answer each `{agent}.md` with a single JSON object, save it as `{agent}.json` beside it, then run
     `firm deep-dive --answers <dir>`. This is how agents run on a subscription with no API key (ADR-0010).
@@ -415,7 +425,12 @@ def packets(
     )
     from firm.core.pipeline import derive as D
     from firm.core.pipeline.checks import evaluate_checks
-    from firm.core.pipeline.deep_dive import agent_facts_payload, statement_shape, write_packets
+    from firm.core.pipeline.deep_dive import (
+        agent_facts_payload,
+        plan_agents,
+        statement_shape,
+        write_packets,
+    )
     from firm.core.report.assemble import NotesReview
 
     run_date = date.fromisoformat(as_of) if as_of else date.today()
@@ -438,8 +453,20 @@ def packets(
     payload = agent_facts_payload(
         derived, evaluation, screen, feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
         models, NotesReview())
+    # Packets follow the ROSTER, not a fixed trio (ADR-0034): a phase-3 run that plans eight agents needs
+    # eight packets, or it can never be staffed and the phase stalls at "wired, not staffed".
+    satisfied: set[str] = {"financials", "filing", "segments"}
+    if documents:
+        import json as _json
+        from pathlib import Path as _Path
+
+        from firm.core.orchestrator.roster import available_inputs_from
+
+        satisfied |= set(available_inputs_from(_json.loads(_Path(documents).read_text())))
+    roster_agents, _gaps = plan_agents(phase=phase, available_inputs=tuple(sorted(satisfied)))
+
     out_dir = out or f"runs/{ticker}-{run_date.isoformat()}/packets"
-    written = write_packets(payload, out_dir)
+    written = write_packets(payload, out_dir, agents=roster_agents)
     for path in written:
         typer.echo(f"wrote {path}")
     typer.echo(f"answer each as {out_dir}/<agent>.json, then: "
