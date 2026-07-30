@@ -816,3 +816,35 @@ shape pointed at a different IR site, not a missing capability.
 
 **The rule this encodes.** Before recording any input as unavailable, enumerate every section the regulation
 requires the issuer to publish. "We did not find it" is a claim about our search, not about the world.
+
+### ADR-0032 — Shareholding: repair the column with the category identity, or refuse the stake
+**Context.** Promoter stake and pledge are the two hardest governance signals, and Reg. 31 of the SEBI LODR
+fixes the *format* of the filing that carries them. A parser written against one company's shareholding
+pattern is therefore a parser for the market, which is why this was worth doing properly.
+
+**The failure mode is a plausible wrong stake.** 71.96% misread as 17.96% would drive a governance verdict off
+a cliff and look entirely normal doing it. The categories are exhaustive by construction — promoter % +
+public % + non-promoter-non-public % = 100 — so that identity is used as an acceptance test on **our own
+extraction**. Anything that will not reconcile is refused with its reason, never reported.
+
+**The identity also repairs.** On 14 of Alkyl Amines' 27 quarters the text layer loses the column separator
+and welds the percentage onto the share count: `3683726872.0265` is `36837268` shares followed by `72.0265`
+percent. The token cannot say where to split, and a greedy regex silently picked the one-digit split —
+`2.0265` where the truth is `72.0265`, a wrong answer with no outward sign of being wrong. Both readings are
+now generated and the pair that sums to 100 is selected. An acceptance test became a repair, and one that
+cannot invent a stake: a wrong split simply fails to sum.
+
+**Pledge is tri-state** for the ADR-0027 reason. `False` — the filing was read and answers "No" to
+*"Whether any shares held by promoters are pledge or otherwise encumbered?"* — is a real governance finding.
+`None` means the question was not located and nothing may be concluded.
+
+**Result on the real filings.** 13 of 27 quarters parse, covering FY23-FY26: promoter holding 71.96%-72.05%
+with **no pledge in any quarter read**. A promoter group that has neither diluted nor borrowed against its
+stake across the period is a genuine positive, and it is the first governance fact the firm has established
+from a primary source.
+
+**Honest remainder.** The other 14 quarters (2019-2022) use an older layout whose category rows the current
+patterns do not match at all — they fail at location, not at reconciliation, so no wrong number is produced.
+Extending to that layout is the next task and is precisely specified: the files are named in
+`data/manifests/ALKYLAMINE-documents.json` and every one fails with "the promoter and public category rows
+were not both located".
