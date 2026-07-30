@@ -30,8 +30,13 @@ def test_loads_only_what_was_published_as_of_the_run_date(store):
 
 
 def test_derivation_citation_carries_formula_inputs_and_the_worst_grade(store):
-    seed_store(store, "ACME", clean_series())
-    # a grade-C source for one input must drag the derived figure down to C
+    # PBT is withheld from the screener snapshot so the grade-C investor deck is its ONLY source. Since
+    # ADR-0029 the resolver prefers the best grade available, so a C fact alongside a B fact would simply
+    # never be selected — to prove that a derived figure inherits its WORST input grade, that input has to
+    # be the only one there is.
+    series = clean_series()
+    del series["pnl:Profit before tax"]
+    seed_store(store, "ACME", series)
     store.add_document(Document(
         "deck-ACME", "https://example.test/deck", "0", date(2026, 4, 1), date(2026, 4, 1), "C",
         "deck-parser@1.0.0"))

@@ -708,3 +708,33 @@ remuneration ₹27.69cr"). Reaching the 50% substantive floor needs content read
 inventory, receivables, borrowings, contingent liabilities, tax, leases, employee benefits, segment — which is
 several sessions of work, not one fix. Recorded honestly in STATUS rather than papered over by lowering the
 floor: the floor is right and the coverage is not there yet.
+
+### ADR-0029 — Provenance outranks recency in the fact resolver
+**Context.** `FactStore.query_fact` resolved ties with `ORDER BY published_at DESC`. A screener snapshot taken
+today therefore outranked an audited annual report published last month. Owner directive 1 is the opposite: the
+filing is the source of record and screener.in is a grade-B **cross-check**. Ten annual reports were being
+ingested and the published report still quoted the aggregator wherever both carried a row — ALKYLAMINE FY26
+revenue resolved to ₹1,536cr instead of the filing's ₹1,535.86cr, and `fact_citations` held zero grade-A
+entries. The forensic layer was reading primary sources while the report cited the secondary one.
+
+Found by auditing the build against the constitution rather than against the test suite, which was green
+throughout: nothing in it asserted *which source* should win.
+
+**Decision.** Resolve by `(grade ASC, published_at DESC)` — best grade first, most recent within a grade.
+
+Two behaviours are preserved deliberately, and both are now pinned by tests:
+* **Law 3 is untouched.** `published_at <= as_of` still filters first, so no source can be seen before it
+  existed, at any grade. A grade-A filing published after the query date stays invisible.
+* **A restatement still wins within its grade.** Two audited filings, the later correcting the earlier: the
+  correction is returned. What no longer happens is a lower-grade source overriding an audited figure by being
+  fresher.
+
+**Consequence.** `pnl:Sales`, receivables, inventory and cash for FY26 now resolve grade A from the filing.
+Derived *ratios* stay grade B, and correctly so: `revenue_cagr` spans FY15-FY26 and the early years exist only
+in the screener, so the worst-input rule (ADR-0021) puts the ratio at B. Grade A will propagate into the ratios
+as the AR ingest widens to more metrics and years, not by relaxing that rule.
+
+One existing test had to change rather than the code: it seeded a grade-C investor-deck figure alongside the
+grade-B screener and expected the derived ratio to inherit C. The resolver now declines to select a C source
+when a B exists, so to test worst-grade propagation the low-grade input must be the only source — the screener
+row is now withheld. The old test was asserting the resolver's bug as if it were the contract.

@@ -127,7 +127,11 @@ a company for the firm's own unfinished note-parser would reject every good busi
 
 ## 3. What is REMAINING (priority order)
 
-### 0. RECENCY BEATS PROVENANCE in the fact resolver ← **blocking, found by audit 2026-07-30**
+### 0. ~~RECENCY BEATS PROVENANCE~~ — FIXED 2026-07-30 (ADR-0029)
+Resolution is now `(grade, published_at DESC)`. FY26 Sales/receivables/inventory/cash resolve grade A from
+the filing. Derived ratios stay grade B by the worst-input rule, correctly, until the AR ingest widens.
+
+<details><summary>original entry</summary>
 `FactStore.query_fact` resolves ties with `ORDER BY d.published_at DESC`. A screener snapshot taken today
 therefore outranks the audited annual report published last month, and owner directive 1 says the opposite:
 the AR is the source of record and screener.in is a grade-B **cross-check**. Demonstrated on ALKYLAMINE FY26:
@@ -145,6 +149,7 @@ Fix: order by `(grade, published_at)` — best grade first, most recent within a
 `published_at <= as_of` filter untouched. This is a load-bearing change to the resolver every other layer
 depends on, so it needs its own tests: a restatement must still be invisible before its publication date, and
 a grade-A filing must not resurrect a figure the company later corrected.
+</details>
 
 ### 0b. Substantive note coverage is 9% against a 50% floor
 Not a defect — the floor is right and the coverage is not there yet. Needs note-content readers for inventory,

@@ -113,18 +113,32 @@ class FactStore:
         )
 
     def query_fact(self, ticker: str, metric: str, period: str, as_of: date) -> Fact | None:
-        """Point-in-time read (Law 3): the latest fact for (ticker, metric, period) whose source was
-        published on or before ``as_of``. Returns None if nothing was published yet as-of that date.
+        """Point-in-time read (Law 3): the BEST-SOURCED fact for (ticker, metric, period) published on or
+        before ``as_of``. Returns None if nothing was published yet as-of that date.
 
-        A later restatement is invisible until its own ``published_at`` — so a query dated before the
-        restatement correctly returns the original figure.
+        Resolution order is `(grade, published_at DESC)` — best grade first, most recent within a grade.
+        Grade leads deliberately, and this was a real defect until 2026-07-30: ordering by recency alone let a
+        screener snapshot taken today outrank the audited annual report published last month, so ALKYLAMINE's
+        FY26 revenue resolved to the aggregator's ₹1,536cr instead of the filing's ₹1,535.86cr. Ten annual
+        reports were being ingested and the published report still quoted the aggregator wherever both sources
+        carried a row — `fact_citations` held zero grade-A entries. Owner directive 1 is explicit that the
+        audited filing is the source of record and screener.in is a grade-B cross-check, so provenance has to
+        outrank recency.
+
+        Two behaviours preserved on purpose:
+
+        * **Law 3 is untouched.** The `published_at <= as_of` filter still runs first, so nothing a source
+          published after the query date can be seen at any grade.
+        * **A restatement still wins within its own grade.** When a later annual report corrects an earlier
+          one, both are grade A and the more recent publication is returned. What no longer happens is a
+          *lower-grade* source overriding an audited figure merely by being fresher.
         """
         row = self._conn.execute(
             """
             SELECT f.*, d.published_at, d.grade, d.extractor_version
             FROM facts f JOIN documents d ON f.doc_id = d.doc_id
             WHERE f.ticker = ? AND f.metric = ? AND f.period = ? AND d.published_at <= ?
-            ORDER BY d.published_at DESC, f.rowid DESC
+            ORDER BY d.grade ASC, d.published_at DESC, f.rowid DESC
             LIMIT 1
             """,
             (ticker, metric, period, as_of.isoformat()),
