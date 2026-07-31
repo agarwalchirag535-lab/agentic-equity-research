@@ -38,6 +38,13 @@ playbooks:
       - disclosure_gap
       - other_income_heavy
       - promoter_lending
+      # Schedule III ageing schedules (ADR-0039). Universal because the disclosure is universal: every
+      # company filing FY22 or later must publish all three tables, so a company that does not is
+      # telling you something and a company that does can be read line by line.
+      - ageing_reconciliation
+      - receivables_ageing_tail
+      - receivables_disputed
+      - payables_ageing_tail
     priority_notes:
       - related_party
       - contingent_liabilities
@@ -59,6 +66,9 @@ playbooks:
       - receivables_divergent
       - inventory_divergent
       - ageing_cwip
+      - stalled_capex
+      - receivables_ageing_tail
+      - receivables_disputed
     priority_notes:
       - ecl_impairment
       - loans_advances
@@ -74,6 +84,8 @@ playbooks:
       - high_accruals
       - receivables_divergent
       - inventory_divergent
+      - receivables_ageing_tail
+      - receivables_disputed
     priority_notes:
       - ecl_impairment
       - investments
@@ -83,6 +95,7 @@ playbooks:
       - receivables_divergent
       - inventory_divergent
       - ageing_cwip
+      - stalled_capex
       - high_accruals
       - beneish_manipulator
     priority_notes:
@@ -105,6 +118,7 @@ playbooks:
       - receivables_divergent
       - high_accruals
       - ageing_cwip
+      - stalled_capex
       - contract_asset_divergent
       - guarantees_heavy
     priority_notes:
@@ -131,6 +145,7 @@ playbooks:
       - inventory_divergent
       - high_accruals
       - ageing_cwip
+      - stalled_capex
       - guarantees_heavy
     priority_notes:
       - inventory

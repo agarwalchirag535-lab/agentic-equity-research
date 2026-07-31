@@ -21,7 +21,7 @@ threshold is passed in from config (Law 1, CLAUDE.md).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping, Sequence
 
 from firm.core.compute import quality
@@ -48,6 +48,40 @@ CHECK_TO_FLAG: Mapping[str, str] = {
 
 
 @dataclass(frozen=True)
+class AgeingEvidence:
+    """Whether one Schedule III ageing schedule was found, and whether its columns may be trusted.
+
+    The FIGURES from these tables travel as ordinary grade-A facts (see `filing.register_ageing_facts`)
+    so a derived share carries provenance for free. What cannot travel as a fact is the *state of the
+    reading* — found or not, columns matched or withheld — and that state is what separates the three
+    outcomes a check must keep apart: the schedule says the balance is clean, the schedule is absent
+    from the filing, and the schedule is there but we could not read its columns. Collapsing any two of
+    those produces a false clean, which is the failure ADR-0027 named for notes and ADR-0038 for tables.
+
+    Deliberately adapter-free: this layer is offline, pure, and must not import a parser.
+    """
+
+    kind: str
+    located: bool
+    aligned: bool
+    locator: str = ""
+    reason: str = ""
+    buckets: tuple[str, ...] = ()
+    fact_ids: tuple[str, ...] = ()
+
+    def unavailable_reason(self, what: str) -> str:
+        """Why ``what`` cannot be reported — never a bare absence, always which of the three states."""
+        if not self.located:
+            return (f"the {self.kind} ageing schedule (Schedule III) was not found in the filing, so "
+                    f"{what} cannot be established: {self.reason or 'no matching table located'}")
+        if not self.aligned:
+            return (f"the {self.kind} ageing schedule was located at {self.locator} but its columns "
+                    f"could not be matched to their headers, so {what} is withheld rather than "
+                    f"estimated: {self.reason}")
+        return (f"the {self.kind} ageing schedule at {self.locator} does not break out {what}")
+
+
+@dataclass(frozen=True)
 class ExternalInputs:
     """Facts that live in the annual report rather than in a summary financials feed.
 
@@ -71,6 +105,9 @@ class ExternalInputs:
     gross_margin: float | None = None
     disclosure_gaps: tuple[str, ...] = ()
     disclosure_scanned: bool = False
+    #: kind ('receivables' | 'payables' | 'cwip') -> how that ageing schedule read (ADR-0039). Empty on a
+    #: run that walked no filing, which makes every ageing check UNAVAILABLE naming the absent walk.
+    ageing: Mapping[str, AgeingEvidence] = field(default_factory=dict)
     source_locators: Mapping[str, str] | None = None    # check name -> "AR p.12 l.4"
     fact_ids: Mapping[str, tuple[str, ...]] | None = None
 
@@ -79,6 +116,14 @@ class ExternalInputs:
 
     def ids(self, check: str) -> tuple[str, ...]:
         return (self.fact_ids or {}).get(check, ())
+
+    def ageing_reason(self, kind: str, what: str) -> str:
+        """Why an ageing figure is unavailable — from the schedule's own reading state, never generic."""
+        evidence = self.ageing.get(kind)
+        if evidence is None:
+            return (f"no filing was walked in this run, so the {kind} ageing schedule (Schedule III) was "
+                    f"never opened and {what} could not be established")
+        return evidence.unavailable_reason(what)
 
 
 @dataclass(frozen=True)
@@ -163,6 +208,70 @@ class _Recorder:
         self.ran(check, flagged, detail, fact_ids)
 
 
+#: ageing kind -> (its schedule total metric, the statement row that total must agree with).
+_AGEING_RECONCILIATION: Mapping[str, tuple[str, str]] = {
+    "cwip": (D.CWIP_AGEING_TOTAL, D.CWIP),
+    "receivables": (D.RECEIVABLES_AGEING_TOTAL, D.RECEIVABLES),
+    "payables": (D.PAYABLES_AGEING_TOTAL, D.PAYABLES),
+}
+
+
+def _reconcile_ageing(
+    facts: CompanyFacts, ext: ExternalInputs, tolerance: float
+) -> CheckRecord:
+    """Does each ageing schedule add up to the balance-sheet line it ages?
+
+    This is the check that earns the other four. A tail share is only worth reading if the table it came
+    from describes the same balance the balance sheet reports, and nothing else in the pipeline compares
+    a Schedule III table against the statement it belongs to.
+
+    A MISMATCH IS NOT A FINDING AGAINST THE COMPANY. Two Schedule III totals disagreeing is far more
+    likely to be our column reader than the company's arithmetic, and an audited filing whose own
+    schedule contradicted its own balance sheet would have been caught long before us. So a mismatch
+    returns UNAVAILABLE naming a probable extraction fault — the same treatment ADR-0025 gave the
+    impossible cash/assets ratio, and for the same reason: publishing an accusation that rests on our
+    own misread is the worst outcome available here.
+    """
+    checked: list[str] = []
+    mismatched: list[str] = []
+    cited: list[str] = []
+    for kind, (schedule_metric, statement_metric) in _AGEING_RECONCILIATION.items():
+        period = facts.latest_period(schedule_metric)
+        if period is None:
+            continue
+        schedule = facts.fact(schedule_metric, period)
+        statement = facts.fact(statement_metric, period)
+        if schedule is None or statement is None or statement.value <= 0:
+            continue
+        gap = quality.ageing_reconciliation_gap(schedule.value, statement.value)
+        cited.extend((schedule.fact_id, statement.fact_id))
+        line = (f"{kind} ₹{schedule.value:,.2f}cr vs the balance sheet's ₹{statement.value:,.2f}cr "
+                f"({gap:+.2%})")
+        (checked if gap <= tolerance else mismatched).append(line)
+
+    if not checked and not mismatched:
+        return CheckRecord(
+            name="ageing_reconciliation", outcome=CheckOutcome.UNAVAILABLE,
+            reason="inputs not disclosed in the sources read as-of this run: no ageing schedule and its "
+                   "matching statement row were both read, so there is nothing to reconcile",
+        )
+    if mismatched:
+        return CheckRecord(
+            name="ageing_reconciliation", outcome=CheckOutcome.UNAVAILABLE,
+            reason=("an ageing schedule does not agree with the line it ages, beyond the "
+                    f"{tolerance:.0%} tolerance: {'; '.join(mismatched)}. That is far more likely to be "
+                    "this pipeline misreading a column than the audited filing contradicting itself, so "
+                    "it is reported as an extraction fault and NOT as a finding against the company — "
+                    "but every ageing figure drawn from that schedule should be treated as unverified"),
+        )
+    return CheckRecord(
+        name="ageing_reconciliation", outcome=CheckOutcome.PASS,
+        detail=("every Schedule III ageing schedule read agrees with the statement line it ages within "
+                f"{tolerance:.0%}: {'; '.join(checked)} ({ext.locator('ageing_reconciliation') or 'AR'})"),
+        fact_ids=list(dict.fromkeys(cited)),
+    )
+
+
 def evaluate_checks(
     playbook: Playbook,
     derived: DerivedSet,
@@ -173,6 +282,7 @@ def evaluate_checks(
     model_specific: Mapping[str, float],
     external: ExternalInputs | None = None,
     check_inputs: Mapping[str, float] | None = None,
+    ageing: Mapping[str, float] | None = None,
 ) -> CheckEvaluation:
     """Evaluate every check the playbook selects, and mark every suppressed check NOT_APPLICABLE.
 
@@ -186,6 +296,10 @@ def evaluate_checks(
         from firm.core.config import check_input_thresholds
 
         check_inputs = check_input_thresholds()
+    if ageing is None:
+        from firm.core.config import ageing_thresholds
+
+        ageing = ageing_thresholds()
     ext = external or ExternalInputs()
     # Grades of every fact in scope, so each record can report the provenance span it rests on (ADR-0028).
     grades = {
@@ -299,16 +413,75 @@ def evaluate_checks(
             if share is None:
                 r.unavailable(check, missing_for("cwip_share_latest"))
             else:
-                years, used = D.cwip_persistence_years(facts, forensic["ageing_cwip_to_assets"])
+                # THE AGE COMES FROM THE FILING WHEN THE FILING SAYS IT (ADR-0039). The snapshot proxy
+                # counts how many year-ends the CWIP *balance* stayed large, which cannot tell a company
+                # that finishes one project and starts another — balance never dips, nothing is stuck —
+                # from one whose capital has not moved in four years. The Schedule III schedule states
+                # the age outright, so it wins where it exists and the detail line says which was used.
+                from_schedule = D.cwip_age_from_schedule(facts, ageing["cwip_bucket_materiality"])
+                if from_schedule is not None:
+                    years, used = from_schedule
+                    basis = (f"oldest bucket holding >{ageing['cwip_bucket_materiality']:.0%} of CWIP in "
+                             "the filing's own ageing schedule")
+                else:
+                    years, used = D.cwip_persistence_years(facts, forensic["ageing_cwip_to_assets"])
+                    basis = ("consecutive year-ends the balance stayed large — no ageing schedule was "
+                             "read, so the age is inferred from snapshots rather than disclosed")
                 assets = facts.fact(D.TOTAL_ASSETS, derived.last_period or "")
                 flagged = quality.ageing_cwip_flag(
                     share.value * assets.value, assets.value, years,
                     forensic["ageing_cwip_to_assets"], forensic["ageing_cwip_years"])
                 r.ran(check, flagged,
-                      f"CWIP {share.value:.1%} of assets, large for {years:.0f}y "
-                      f"(flags above {forensic['ageing_cwip_to_assets']:.0%} for "
-                      f"{forensic['ageing_cwip_years']}y)",
+                      f"CWIP {share.value:.1%} of assets, aged {years:.0f}y ({basis}); flags above "
+                      f"{forensic['ageing_cwip_to_assets']:.0%} of assets held for "
+                      f"{forensic['ageing_cwip_years']}y",
                       (*share.fact_ids, *(f.fact_id for f in used)))
+
+        # ---- Schedule III ageing schedules (ADR-0039) --------------------------------------------
+        elif check == "stalled_capex":
+            d = derived.get("cwip_suspended_share")
+            if d is None:
+                r.unavailable(check, (ext.ageing_reason(
+                    "cwip", "capital work in progress in temporarily-suspended projects"),))
+            else:
+                limit = ageing["suspended_cwip_share_max"]
+                suspended, total = d.inputs[0].value, d.inputs[1].value
+                share, flagged = quality.suspended_capex_share(suspended, total, limit)
+                r.ran(check, flagged,
+                      f"₹{suspended:,.2f}cr of ₹{total:,.2f}cr capital work in progress is in projects "
+                      f"the company reports as temporarily suspended — {share:.1%} vs limit "
+                      f"{limit:.0%} ({ext.locator(check) or 'AR'})", d.fact_ids)
+
+        elif check in ("receivables_ageing_tail", "payables_ageing_tail"):
+            kind = "receivables" if check == "receivables_ageing_tail" else "payables"
+            d = derived.get(f"{kind}_beyond_1y_share")
+            if d is None:
+                r.unavailable(check, (ext.ageing_reason(
+                    kind, f"the share of {kind} aged beyond one year"),))
+            else:
+                limit = ageing[f"{kind}_beyond_1y_max"]
+                aged, total = d.inputs[0].value, d.inputs[1].value
+                share, flagged = quality.ageing_tail_share(aged, total, limit)
+                r.ran(check, flagged,
+                      f"₹{aged:,.2f}cr of ₹{total:,.2f}cr {kind} is aged beyond one year — {share:.1%} "
+                      f"vs limit {limit:.0%} ({ext.locator(check) or 'AR'})", d.fact_ids)
+
+        elif check == "receivables_disputed":
+            d = derived.get("receivables_disputed_share")
+            if d is None:
+                r.unavailable(check, (ext.ageing_reason(
+                    "receivables", "disputed and credit-impaired receivables"),))
+            else:
+                limit = ageing["receivables_disputed_max"]
+                disputed, impaired, total = (i.value for i in d.inputs)
+                share, flagged = quality.disputed_balance_share(disputed, impaired, total, limit)
+                r.ran(check, flagged,
+                      f"₹{disputed:,.2f}cr disputed and ₹{impaired:,.2f}cr credit-impaired of "
+                      f"₹{total:,.2f}cr receivables — {share:.1%} vs limit {limit:.0%} "
+                      f"({ext.locator(check) or 'AR'})", d.fact_ids)
+
+        elif check == "ageing_reconciliation":
+            r.records.append(_reconcile_ageing(facts, ext, ageing["reconciliation_tolerance"]))
 
         # ---- universal SPEC §5 tells -------------------------------------------------------------
         elif check == "other_income_heavy":
@@ -401,9 +574,9 @@ def evaluate_checks(
         ))
 
     metrics = quality.ForensicMetrics()
-    for check, field in CHECK_TO_FIELD.items():
+    for check, metric_field in CHECK_TO_FIELD.items():
         if check in r.values:
-            metrics = replace(metrics, **{field: r.values[check]})
+            metrics = replace(metrics, **{metric_field: r.values[check]})
     for check in r.fired:
         if check in CHECK_TO_FIELD:
             continue                       # value checks are flagged by the screen itself

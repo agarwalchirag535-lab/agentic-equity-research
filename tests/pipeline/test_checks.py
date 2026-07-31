@@ -146,7 +146,10 @@ def test_cwip_parked_above_the_threshold_for_years_flags(store):
     evaluation, _ = _evaluate(store, "SIPHON", series, [BusinessModel.MANUFACTURER])
     record = evaluation.record("ageing_cwip")
     assert record.outcome is CheckOutcome.FLAG
-    assert "large for 3y" in record.detail
+    assert "aged 3y" in record.detail
+    # No ageing schedule was read here, so the age is INFERRED — and the published detail says so rather
+    # than letting a snapshot proxy read like a disclosure (ADR-0039).
+    assert "inferred from snapshots" in record.detail
     assert evaluation.metrics.ageing_cwip is True
 
 

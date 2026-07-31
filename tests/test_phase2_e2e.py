@@ -116,9 +116,20 @@ def test_profit_that_never_becomes_cash_publishes_a_forensic_caution(store, tmp_
     assert result.publication_violations == ()
     assert result.published
 
+    # The Schedule III ageing tail is a SECOND, independent sighting of the same fraud — one the
+    # stock-flow check cannot make, because it compares two totals and never looks inside the book
+    # (ADR-0039). A quarter of the receivables is over a year old and ₹8cr of it is disputed.
+    assert "receivables_ageing_tail" in fired
+    assert "receivables_disputed" in fired
+
     md = render_markdown(result.report)
     assert "🚩 flag" in md
     assert "FORENSIC_CAUTION" in md
+    # ...and the figures reach the published page with the ids that let a reader check them. A finding
+    # that stops at the check evaluator is a finding the firm did not publish.
+    assert "of ₹210.00cr receivables is aged beyond one year" in md
+    assert "₹8.00cr disputed" in md
+    assert "[fact:AR-FRAUDCO-FY26:ageing:Receivables Beyond 1 Year:FY26]" in md
 
 
 def test_forensic_agent_cannot_narrate_past_a_deterministic_hard_fail(store):

@@ -22,6 +22,29 @@ forensic:
   ageing_cwip_to_assets: 0.10   # CWIP above this share of assets, not commissioning, = siphoning flag
   ageing_cwip_years: 3          # years a CWIP block may age before it's a flag
 
+# Schedule III ageing schedules (ADR-0039). Every number here is PROVISIONAL until the Phase-6 golden set
+# calibrates it, and the severities in `quality.forensic_screen` were chosen on the same basis: no
+# uncalibrated ageing signal is allowed to be HIGH unless it rests on the company's OWN classification of
+# a balance (disputed / credit-impaired), because two HIGHs hard-fail a company and nothing here has been
+# tested against a known fraud yet.
+ageing:
+  # A project the company itself reports as temporarily suspended is capital that is not becoming plant.
+  # Some suspension is normal in a multi-project capex programme; a tenth of the book is not.
+  suspended_cwip_share_max: 0.10
+  # Below this share a bucket is rounding dust, not evidence that capital is that old. Without the floor
+  # a `0.01cr` balance in the ">3 years" column would date the whole block at three years.
+  cwip_bucket_materiality: 0.05
+  # Receivables past a year, as a share of the book. A manufacturer collecting in ~55 days should have
+  # almost nothing here; the tail grows before the total does.
+  receivables_beyond_1y_max: 0.05
+  # Disputed + credit-impaired, i.e. balances the company has said it may not collect at face value.
+  receivables_disputed_max: 0.02
+  # Trade payables overdue past a year — supplier financing by default rather than by negotiation.
+  payables_beyond_1y_max: 0.10
+  # How far an ageing schedule's own total may sit from the statement line it ages before the pair is
+  # untrustworthy. Wider than a rounding tolerance because the two are struck at different precisions.
+  reconciliation_tolerance: 0.02
+
 # Lender-specific forensic checks (ADR-0002) — used when sector_class == FINANCIAL
 financial_forensic:
   gnpa_drift_flag: 0.010        # YoY rise in GNPA ratio above this = flag

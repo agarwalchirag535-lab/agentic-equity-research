@@ -15,8 +15,15 @@ import pytest
 from firm.core.compute.models import BusinessModel
 from firm.core.config import line_item_registry
 from firm.core.pipeline.derive import derive_metrics, load_company_facts
+from firm.core.pipeline.filing import walk_filing
 from firm.core.pipeline.interrogate import AnswerStatus, interrogate
-from tests.conftest import AS_OF, clean_series, seed_store
+from tests.conftest import (
+    AS_OF,
+    clean_series,
+    filing_for,
+    seed_store,
+    with_working_capital,
+)
 
 REGISTRY = line_item_registry()
 QUESTIONS = [
@@ -82,8 +89,13 @@ def test_every_referenced_metric_is_one_the_pipeline_could_actually_produce(stor
 
     A metric named here must either be derivable today or be a KNOWN gap listed below. Anything else is a
     misspelling that would masquerade as honest humility in every future report.
+
+    "Derivable" means *by the pipeline*, not *by the screener*: a run walks an audited filing as well, and
+    the Schedule III ageing metrics (ADR-0039) exist only on that path. Judging the registry against a
+    screener-only fixture would have declared every filing-sourced question a typo.
     """
-    seed_store(store, "FULLCO", clean_series())
+    seed_store(store, "FULLCO", with_working_capital(clean_series()))
+    walk_filing(store, "FULLCO", filing_for("FULLCO"))
     derived = derive_metrics(load_company_facts(store, "FULLCO", AS_OF))
     derivable = set(derived.values) | set(derived.missing)
 

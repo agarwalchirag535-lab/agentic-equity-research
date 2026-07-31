@@ -2,11 +2,11 @@
 
 > **Read this first if you are new to this repo** (new session, new agent, new platform, or the owner
 > after a break). It is the single authoritative answer to *"what is built, what is not, and what
-> should happen next."* Last updated **2026-07-31**.
+> should happen next."* Last updated **2026-08-01**.
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0021). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0039). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -29,7 +29,7 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 563 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 663 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -54,7 +54,9 @@ Phase-2 work. Not merged to `main`.
 - `models.py` — business-model detection → playbook selection
 
 **2a. Forensic checks in `quality.py`** — cash-reality (ADR-0006: cash-vs-interest, cash+debt paradox,
-cumulative CFO/PAT, ageing CWIP) · sector-branched lender checks (ADR-0002) · originate-to-sell
+cumulative CFO/PAT, ageing CWIP) · Schedule III ageing schedules (ADR-0039: suspended capex, receivable and
+payable tails, disputed/credit-impaired balances, schedule-vs-statement reconciliation) ·
+sector-branched lender checks (ADR-0002) · originate-to-sell
 (ADR-0012: gain-on-sale reliance, provision-vs-book divergence, reserve suppression, held-for-sale
 zero-reserve) · universal SPEC §5 (receivables/inventory stock-flow divergence, other-income share,
 trader gross-vs-net tell) · model-specific (ADR-0020: contract assets, guarantees-to-net-worth,
@@ -175,17 +177,32 @@ depends on, so it needs its own tests: a restatement must still be invisible bef
 a grade-A filing must not resurrect a figure the company later corrected.
 </details>
 
-### 0b. Substantive note coverage is 7% of 45 notes against a 50% floor
+### 0b. Substantive note coverage is 22% of 45 notes against a 50% floor
 Not a defect — the floor is right and the coverage is not there yet. Needs note-content readers for inventory,
-receivables, borrowings, contingent liabilities, tax, leases, employee benefits and segment, on the pattern of
+borrowings, contingent liabilities, tax, leases, employee benefits and segment, on the pattern of
 `notes_content.related_party_summary`. Several sessions of work, one note category at a time.
 
-**The ageing schedules are now READ (ADR-0038)** — `adapters/india/ageing.py` parses receivables, payables
-and CWIP; all three reconcile to their balance-sheet rows on FY26. **Not yet wired** into the checks, the
-note dispositions or the agent packet, so `substantive_share` has not moved and `ageing_cwip` still has no
-input. That wiring is the immediate next commit. What the tables already show on ALKYLAMINE: ₹16.29cr of
-CWIP in projects *temporarily suspended*, ₹34.50cr of CWIP aged beyond a year, and a receivable book with
-zero disputed and zero credit-impaired balances.
+**The ageing schedules are READ and WIRED (ADR-0038 parsed them, ADR-0039 connected them).** A figure in an
+ageing table now travels fact → derivation → check → note disposition → agent packet → published page.
+Verified on the real Alkyl Amines FY26 filing, not on a fixture:
+
+| | before | after |
+|---|---|---|
+| `substantive_share` | 9% | **22%** (notes 3, 11 and 24 read rather than counted) |
+| unavailable share of the playbook | 71% | **12%** |
+| `ageing_cwip` | no input since it was written (ADR-0006) | runs, age read off the filing's own columns |
+| ageing findings in a report | none | five checks, all citing grade-A `(page, schedule)` facts |
+
+The headline finding, and the first this firm has published that no summary feed could produce:
+**`stalled_capex` FLAGS — ₹16.29cr of ₹130.48cr capital work in progress (12.5%) sits in projects the
+company itself reports as temporarily suspended**, cited to p.103. Against it, published as passes because
+a clean verdict with an invisible process is worth nothing: zero disputed and zero credit-impaired
+receivables, ₹0.01cr of a ₹230.50cr book aged past a year, ₹0.16cr of ₹151.21cr payables overdue past a
+year, and all three schedules reconciling to their balance-sheet lines at +0.00%.
+
+Note that `ageing_cwip` itself **passes** at 14.5% of assets aged 2y — large, but two years old, so the
+siphoning conclusion is refused. The old snapshot proxy would have said 3y from three flat year-ends. That
+is the upgrade working: the schedule replaced an inference with a disclosure.
 
 **The working-capital cycle exists (ADR-0038)** — receivable/inventory/payable days, the cash conversion
 cycle and the two deltas. Metric set went 26 derived / 2 missing → **33 derived / 0 missing**, seven of them
@@ -194,9 +211,7 @@ adding to it is a decision to publish an excuse.
 
 **Enumeration itself was fixed 2026-07-31 (ADR-0037)** — it found 11 notes where the FY26 filing has 45,
 because the heading regex was defeated by the `` ` In Lakhs`` unit marker printed on the heading line. The
-denominator is now real, which is why this entry reads 7% rather than 9%. **The three ageing schedules
-(receivables, payables, CWIP) are located and unparsed** — they are the highest-value readers to write next,
-because they are the independent handle on the working-capital cycle that four unavailable checks want.
+denominator is now real, which is why the count above is out of 45 notes.
 
 **Open design question from the same ADR:** `choose_verdict` routes low `substantive_share` to
 `INSUFFICIENT_DISCLOSURE` without asking whose insufficiency it is. On ALKYLAMINE the shortfall is entirely
@@ -405,6 +420,22 @@ blank — see the ALKYLAMINE note.
 - **Screener data cannot produce a forensic pass.** Receivables, inventory and cash are not broken out in
   the screener snapshot, so four of seven universal checks are structurally unavailable from it. Any run
   without an AR walk should be expected to return `INSUFFICIENT_DISCLOSURE`; that is the design working.
+- **A parser with no caller passes every test it has and changes nothing.** ADR-0038 shipped the ageing
+  parser unconsumed and said so; the tests were green, `substantive_share` was flat, and the ₹16.29cr
+  finding was in no report. When you add an extractor, wire it in the same change or write down — in the
+  commit message and in this file — that it is dead code, because nothing else will tell you.
+- **A clean fixture cannot exercise an unavailable path.** `walk_filing` built the ageing evidence and
+  never passed it to `ExternalInputs` for a full session. Every ageing check passed its unit test, because
+  a check consults that evidence *only* when its derivation is absent — the branch a fixture with complete
+  data never reaches. If a code path exists to explain a failure, a test has to produce the failure.
+- **A fixture filing must be a document that could legally exist.** The AR fixtures carried the Schedule
+  III ageing *headings* with no tables beneath them, which satisfied the `disclosure_gap` scan while
+  describing a filing no company could file for FY22 or later. That is part of why nothing noticed the
+  parser had no caller for a whole session.
+- **Reading a column's age off its own label needs a materiality floor.** ₹0.01cr of rounding dust in a
+  ">3 years" bucket is not a three-year-old asset, and without the floor every table with a non-empty tail
+  column dates the whole block at the maximum — turning a real measurement back into the assumption it
+  was supposed to replace.
 
 ## 6. Live calibration evidence (what has actually been tested on real data)
 
@@ -466,14 +497,18 @@ would have been the dishonest answer. It is also a concrete work list — see §
 
 ## 7. Suggested next step
 
-**§3A, close the data gap the ALKYLAMINE run exposed** — specifically the cash balance and the
-receivables/inventory rows out of the audited AR, plus exposing `backfill_filings()` on the CLI so a run
-can fetch and walk the filing itself. That single push moves real companies from
-`INSUFFICIENT_DISCLOSURE` to a verdict with a thesis behind it, and it is the prerequisite for the golden
-set having anything to score.
+**§0b, the next note-content readers** — inventory (raw/WIP/finished split and any write-down),
+borrowings (rate per tranche, security, covenants) and contingent liabilities (guarantees, claims not
+acknowledged as debt), on the pattern of `notes_content.related_party_summary` and
+`adapters/india/ageing.py`. `substantive_share` is at 22% against a 50% floor, and those three categories
+are the largest remaining blocks of enumerated-but-unread notes. Borrowings additionally closes the
+mixed-provenance hole in `cash_debt_paradox` that ADR-0028 named and ADR-0039 only closed for CWIP.
 
-Then §3C (logging the now-deterministic, dated `Criterion` objects as predictions — a small wire-up), then
-Phase 3, then the golden set.
+Only after that, the broader ratio set — and ranked by materiality rather than dumped. Two hundred
+undifferentiated rows is the same shallowness the line-by-line work was meant to fix, wearing a
+different costume.
+
+Then §3C (resolving the prediction ledger, which needs a second point-in-time run), then the golden set.
 
 Deliberate recommendation *against* doing the golden set first, despite it being the honest measure: it is
 the single biggest lift in the project, and it is far more useful once the pipeline can produce a

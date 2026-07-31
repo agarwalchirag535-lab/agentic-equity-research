@@ -8,8 +8,13 @@ from firm.core.compute.quality import (
     ForensicThresholds,
     ForensicVerdict,
     SectorClass,
+    Severity,
     accrual_ratio,
     ageing_cwip_flag,
+    ageing_reconciliation_gap,
+    ageing_tail_share,
+    disputed_balance_share,
+    suspended_capex_share,
     beneish_m_score,
     cash_debt_paradox,
     cash_interest_consistency,
@@ -84,6 +89,48 @@ def test_ageing_cwip_flag():
     assert ageing_cwip_flag(200, 1000, 1, 0.10, 3) is False
     with pytest.raises(ValueError):
         ageing_cwip_flag(200, 0, 3, 0.10, 3)
+
+
+# ---- Schedule III ageing schedules (ADR-0039) --------------------------------------------------
+# Each returns (share, flagged) rather than a bare bool, because the published checklist prints the
+# value it compared against the policy number — a reader must be able to disagree with the threshold
+# without re-running anything.
+
+
+def test_suspended_capex_share():
+    # Alkyl Amines FY26: 1,629.16 lakh of 13,048.12 suspended.
+    share, flagged = suspended_capex_share(16.2916, 130.4812, 0.10)
+    assert share == pytest.approx(0.1249, abs=1e-4) and flagged is True
+    assert suspended_capex_share(1.0, 130.4812, 0.10) == (pytest.approx(0.00766, abs=1e-4), False)
+    with pytest.raises(ValueError):
+        suspended_capex_share(16.29, 0, 0.10)
+
+
+def test_ageing_tail_share():
+    assert ageing_tail_share(56.0, 210.0, 0.05) == (pytest.approx(0.2667, abs=1e-4), True)
+    assert ageing_tail_share(2.0, 118.0, 0.05) == (pytest.approx(0.01695, abs=1e-4), False)
+    # Exactly at the limit is not a flag: the threshold is a ceiling the company may sit on.
+    assert ageing_tail_share(5.0, 100.0, 0.05)[1] is False
+    with pytest.raises(ValueError):
+        ageing_tail_share(10.0, 0.0, 0.05)
+
+
+def test_disputed_balance_share_sums_both_admissions():
+    """Disputed and credit-impaired are different admissions and the check wants the total of them."""
+    assert disputed_balance_share(8.0, 0.0, 210.0, 0.02) == (pytest.approx(0.0381, abs=1e-4), True)
+    assert disputed_balance_share(1.0, 2.0, 210.0, 0.02)[1] is False
+    assert disputed_balance_share(1.0, 5.0, 210.0, 0.02)[1] is True     # neither alone would fire
+    with pytest.raises(ValueError):
+        disputed_balance_share(1.0, 1.0, 0.0, 0.02)
+
+
+def test_ageing_reconciliation_gap_is_a_measurement_not_a_verdict():
+    """It returns the gap and no judgement — the caller decides, and never against the company."""
+    assert ageing_reconciliation_gap(118.0, 118.0) == 0.0
+    assert ageing_reconciliation_gap(318.0, 118.0) == pytest.approx(200.0 / 118.0)
+    assert ageing_reconciliation_gap(117.0, 118.0) == pytest.approx(1.0 / 118.0)   # sign-free
+    with pytest.raises(ValueError):
+        ageing_reconciliation_gap(118.0, 0.0)
 
 
 # ---- Beneish M-score (non-financials) ----------------------------------------------------------
@@ -310,6 +357,35 @@ def test_screen_dirty_non_financial_hard_fails_on_severe():
     names = {f.name for f in r.flags}
     assert {"cumulative_cfo_pat_low", "cfo_pat_low", "high_accruals", "beneish_manipulator",
             "cash_interest_inconsistent", "cash_debt_paradox", "ageing_cwip"} <= names
+
+
+def test_screen_raises_the_ageing_signals_at_the_severity_they_were_calibrated_at():
+    """No uncalibrated ageing signal is HIGH unless it rests on the company's OWN classification.
+
+    Two HIGH flags hard-fail a company. Nothing in `config/thresholds.yaml:ageing` has been tested
+    against a known fraud yet (Phase 6), so a tail share — a policy number applied to a bucket sum —
+    stays MEDIUM, while `receivables_disputed` is HIGH because the company itself said the balance is
+    contested. That distinction is the whole severity argument, and it is asserted rather than trusted.
+    """
+    m = ForensicMetrics(
+        stalled_capex=True, receivables_ageing_tail=True, payables_ageing_tail=True,
+        receivables_disputed=True,
+    )
+    r = forensic_screen(SectorClass.NON_FINANCIAL, m, TH)
+    severities = {f.name: f.severity for f in r.flags}
+    assert severities["receivables_disputed"] is Severity.HIGH
+    assert severities["stalled_capex"] is Severity.MEDIUM
+    assert severities["receivables_ageing_tail"] is Severity.MEDIUM
+    assert severities["payables_ageing_tail"] is Severity.MEDIUM
+    # One HIGH plus three MEDIUMs is a REVIEW — an invitation to investigate, not an accusation.
+    assert r.verdict is ForensicVerdict.REVIEW and r.hard_fail is False
+
+    # The receivable/payable tails are meaningless for a lender, exactly as `receivables_divergent` is
+    # (ADR-0002), while capital work in progress is real for anyone who builds.
+    lender = forensic_screen(SectorClass.FINANCIAL, m, TH)
+    lender_flags = {f.name for f in lender.flags}
+    assert "stalled_capex" in lender_flags
+    assert {"receivables_disputed", "receivables_ageing_tail", "payables_ageing_tail"} & lender_flags == set()
 
 
 def test_screen_two_highs_hard_fail_without_severe():

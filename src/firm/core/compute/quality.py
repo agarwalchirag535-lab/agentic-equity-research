@@ -113,6 +113,72 @@ def ageing_cwip_flag(
 
 
 # --------------------------------------------------------------------------------------------------
+# Schedule III ageing schedules (ADR-0039). The tables are a legal disclosure, so every one of these
+# questions is answerable from a primary source for any Indian company filing FY22 or later — and each
+# is a question no summary feed can answer at all.
+#
+# All four return `(share, flagged)` rather than a bare bool: the published checklist prints the value it
+# compared against the threshold (ADR-0021), so a reader can disagree with the policy number without
+# re-running anything.
+# --------------------------------------------------------------------------------------------------
+
+
+def suspended_capex_share(
+    suspended_cwip: float, total_cwip: float, limit: float
+) -> tuple[float, bool]:
+    """Share of capital work in progress in projects the company itself calls temporarily suspended.
+
+    This is the ageing-CWIP question with the company's own label on it. `ageing_cwip` infers that
+    capital is stuck by watching a balance stay large across years; the schedule states it outright, and
+    a project that is suspended is by definition not becoming productive plant while the money sits at
+    cost on the balance sheet.
+    """
+    if total_cwip <= 0:
+        raise ValueError("total_cwip must be positive")
+    share = suspended_cwip / total_cwip
+    return share, share > limit
+
+
+def ageing_tail_share(aged_beyond: float, total: float, limit: float) -> tuple[float, bool]:
+    """Share of a receivable/payable/CWIP balance aged past a bucket boundary — the tail.
+
+    A deteriorating book grows its tail before its total moves, which is why a stock-flow divergence
+    check (receivables vs revenue) can pass while the collectable quality is already falling: the same
+    ₹230cr of receivables is a different asset when a tenth of it is two years old.
+    """
+    if total <= 0:
+        raise ValueError("total must be positive")
+    share = aged_beyond / total
+    return share, share > limit
+
+
+def disputed_balance_share(
+    disputed: float, credit_impaired: float, total: float, limit: float
+) -> tuple[float, bool]:
+    """Share of a balance the company has itself classified as disputed or credit-impaired.
+
+    Both are admissions against interest, which is what makes them worth more than any ratio: the
+    company is reporting that it does not expect to collect this at face value while still carrying it.
+    """
+    if total <= 0:
+        raise ValueError("total must be positive")
+    share = (disputed + credit_impaired) / total
+    return share, share > limit
+
+
+def ageing_reconciliation_gap(schedule_total: float, statement_total: float) -> float:
+    """|ageing schedule total − the statement line it ages| as a share of the statement line.
+
+    Deliberately returns the gap and no verdict. A mismatch is far more likely to be OUR extraction than
+    the company's arithmetic, so the caller reports it as an unavailable check naming a possible
+    extraction fault — never as a finding against the company (the ADR-0025 rule).
+    """
+    if statement_total <= 0:
+        raise ValueError("statement_total must be positive")
+    return abs(schedule_total - statement_total) / statement_total
+
+
+# --------------------------------------------------------------------------------------------------
 # Beneish M-score (8-index) — NON-financials only (ADR-0002).
 # --------------------------------------------------------------------------------------------------
 
@@ -455,6 +521,10 @@ class ForensicMetrics:
     cash_interest_inconsistent: bool = False
     cash_debt_paradox: bool = False
     ageing_cwip: bool = False
+    #: Read off the Schedule III ageing schedules (ADR-0039) rather than inferred from balance-sheet
+    #: snapshots. `stalled_capex` applies to any sector; the receivable/payable tails are meaningless
+    #: for a lender and are raised only for NON_FINANCIAL, exactly like `receivables_divergent`.
+    stalled_capex: bool = False
     # Originate-to-sell / lender signals (apply by business model, any sector)
     gain_on_sale_reliant: bool = False
     provision_book_divergent: bool = False
@@ -467,6 +537,9 @@ class ForensicMetrics:
     inventory_divergent: bool = False
     other_income_heavy: bool = False
     revenue_inflation: bool = False
+    receivables_ageing_tail: bool = False
+    receivables_disputed: bool = False
+    payables_ageing_tail: bool = False
     # Model-specific signals (ADAPTIVE_FORENSICS §2) — fired only when the playbook selects them
     contract_asset_divergent: bool = False
     guarantees_heavy: bool = False
@@ -527,6 +600,19 @@ def forensic_screen(
         if metrics.revenue_inflation:
             flags.append(Flag("revenue_inflation", Severity.HIGH,
                               "revenue exploding on near-zero gross margin — gross-vs-net / circular tell"))
+        # Schedule III ageing tails (ADR-0039). `disputed` outranks the plain tail because it is the
+        # company's own admission that a balance it still carries at value is contested.
+        if metrics.receivables_disputed:
+            flags.append(Flag("receivables_disputed", Severity.HIGH,
+                              "material receivables the company itself calls disputed or credit-impaired"))
+        if metrics.receivables_ageing_tail:
+            flags.append(Flag("receivables_ageing_tail", Severity.MEDIUM,
+                              "outsized share of the receivable book aged past a year — collection quality "
+                              "falling ahead of the total"))
+        if metrics.payables_ageing_tail:
+            flags.append(Flag("payables_ageing_tail", Severity.MEDIUM,
+                              "outsized share of trade payables overdue past a year — the company is "
+                              "funding itself on its suppliers"))
     else:  # FINANCIAL — Beneish/Piotroski/accruals suppressed (ADR-0002)
         if metrics.gnpa_drift:
             flags.append(Flag("gnpa_drift", Severity.HIGH, "GNPA ratio rising beyond threshold"))
@@ -544,6 +630,10 @@ def forensic_screen(
                           "large cash held while paying high-cost debt"))
     if metrics.ageing_cwip:
         flags.append(Flag("ageing_cwip", Severity.MEDIUM, "large CWIP not commissioning to PP&E"))
+    if metrics.stalled_capex:
+        flags.append(Flag("stalled_capex", Severity.MEDIUM,
+                          "material capital work in progress sits in projects the company reports as "
+                          "temporarily suspended — capex that is not becoming productive plant"))
 
     # Originate-to-sell / lender signals — model-based, not sector-label-based (a "dealer" can be a
     # lender). These apply regardless of sector_class (FORENSIC_METHODOLOGY §7).

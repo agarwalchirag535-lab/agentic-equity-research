@@ -79,11 +79,43 @@ EXPENSES = "pnl:Expenses"
 DIVIDEND_PAYOUT_PCT = "pnl:Dividend Payout %"
 CFI = "cashflow:Cash from Investing Activity"
 
+#: Figures read off the Schedule III **ageing schedules** (ADR-0039), which are their own primary source:
+#: a balance-sheet row says how much is owed, the ageing table says for how long and whether the company
+#: agrees it is collectable. They are stored as ordinary annual facts so a derived share carries the
+#: filing's grade-A provenance, and so an agent can cite the tail directly.
+#:
+#: `Beyond N` are SUMS across the printed columns and exist only when the table reconciled to its own
+#: totals; the classified rows (`Suspended`, `Disputed`, `Credit Impaired`) are row totals and survive a
+#: misaligned table. That split is the parser's alignment contract carried into the fact store.
+CWIP_AGEING_TOTAL = "ageing:CWIP Total"
+CWIP_AGEING_SUSPENDED = "ageing:CWIP Suspended"
+CWIP_AGEING_1_2Y = "ageing:CWIP 1-2 Years"
+CWIP_AGEING_2_3Y = "ageing:CWIP 2-3 Years"
+CWIP_AGEING_BEYOND_3Y = "ageing:CWIP Beyond 3 Years"
+CWIP_AGEING_BEYOND_1Y = "ageing:CWIP Beyond 1 Year"
+RECEIVABLES_AGEING_TOTAL = "ageing:Receivables Total"
+RECEIVABLES_AGEING_DISPUTED = "ageing:Receivables Disputed"
+RECEIVABLES_AGEING_IMPAIRED = "ageing:Receivables Credit Impaired"
+RECEIVABLES_AGEING_BEYOND_1Y = "ageing:Receivables Beyond 1 Year"
+RECEIVABLES_AGEING_BEYOND_3Y = "ageing:Receivables Beyond 3 Years"
+PAYABLES_AGEING_TOTAL = "ageing:Payables Total"
+PAYABLES_AGEING_DISPUTED = "ageing:Payables Disputed"
+PAYABLES_AGEING_BEYOND_1Y = "ageing:Payables Beyond 1 Year"
+
+AGEING_METRICS: tuple[str, ...] = (
+    CWIP_AGEING_TOTAL, CWIP_AGEING_SUSPENDED, CWIP_AGEING_1_2Y, CWIP_AGEING_2_3Y,
+    CWIP_AGEING_BEYOND_3Y, CWIP_AGEING_BEYOND_1Y,
+    RECEIVABLES_AGEING_TOTAL, RECEIVABLES_AGEING_DISPUTED, RECEIVABLES_AGEING_IMPAIRED,
+    RECEIVABLES_AGEING_BEYOND_1Y, RECEIVABLES_AGEING_BEYOND_3Y,
+    PAYABLES_AGEING_TOTAL, PAYABLES_AGEING_DISPUTED, PAYABLES_AGEING_BEYOND_1Y,
+)
+
 READ_METRICS: tuple[str, ...] = (
     SALES, PAT, OPERATING_PROFIT, DEPRECIATION, INTEREST, TAX_PCT, OTHER_INCOME, PBT,
     CFO, FCF, BORROWINGS, EQUITY_CAPITAL, RESERVES, CWIP, FIXED_ASSETS, TOTAL_ASSETS,
     CASH, RECEIVABLES, INVENTORY, PAYABLES,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
+    *AGEING_METRICS,
 )
 
 
@@ -320,6 +352,98 @@ def _cum(
     return b.values.get(metric)
 
 
+#: derived metric -> (numerator metrics summed, denominator metric, human formula). One entry per
+#: forensic QUESTION, which is why `receivables_disputed_share` sums two rows: "disputed" and "credit
+#: impaired" are different admissions and the check wants the company's total admission against itself.
+_AGEING_SHARES: tuple[tuple[str, tuple[str, ...], str, str], ...] = (
+    ("cwip_suspended_share", (CWIP_AGEING_SUSPENDED,), CWIP_AGEING_TOTAL,
+     "CWIP in temporarily-suspended projects / total CWIP (Schedule III ageing schedule)"),
+    ("cwip_beyond_1y_share", (CWIP_AGEING_BEYOND_1Y,), CWIP_AGEING_TOTAL,
+     "CWIP aged beyond 1 year / total CWIP (Schedule III ageing schedule)"),
+    ("cwip_beyond_3y_share", (CWIP_AGEING_BEYOND_3Y,), CWIP_AGEING_TOTAL,
+     "CWIP aged beyond 3 years / total CWIP (Schedule III ageing schedule)"),
+    ("receivables_disputed_share",
+     (RECEIVABLES_AGEING_DISPUTED, RECEIVABLES_AGEING_IMPAIRED), RECEIVABLES_AGEING_TOTAL,
+     "(disputed + credit-impaired receivables) / total receivables (Schedule III ageing schedule)"),
+    ("receivables_beyond_1y_share", (RECEIVABLES_AGEING_BEYOND_1Y,), RECEIVABLES_AGEING_TOTAL,
+     "receivables aged beyond 1 year / total receivables (Schedule III ageing schedule)"),
+    ("receivables_beyond_3y_share", (RECEIVABLES_AGEING_BEYOND_3Y,), RECEIVABLES_AGEING_TOTAL,
+     "receivables aged beyond 3 years / total receivables (Schedule III ageing schedule)"),
+    ("payables_beyond_1y_share", (PAYABLES_AGEING_BEYOND_1Y,), PAYABLES_AGEING_TOTAL,
+     "payables aged beyond 1 year / total payables (Schedule III ageing schedule)"),
+    ("payables_disputed_share", (PAYABLES_AGEING_DISPUTED,), PAYABLES_AGEING_TOTAL,
+     "disputed payables / total payables (Schedule III ageing schedule)"),
+)
+
+
+def _ageing_shares(b: _Builder, facts: CompanyFacts) -> None:
+    """Every share the ageing schedules support, on the period that schedule was filed for.
+
+    The period is taken from the ageing facts themselves rather than from the run's last annual period.
+    The two are usually the same year, but they need not be — the audited filing that carries the
+    schedules can be a year behind the screener's P&L, and pinning the share to `last_period` would
+    either lose the schedule entirely or, worse, divide one year's tail by another year's total.
+
+    WHOSE GAP IT IS WHEN A TABLE IS ABSENT (ADR-0022's DISCLOSURE/CAPABILITY split). An absent schedule
+    is recorded in `missing` — which the interrogation layer reads as a gap in the *filing* — only when
+    at least one other ageing table WAS read. That is the condition under which the pipeline demonstrably
+    went looking at this filing's schedules and this one was not among them. On a screener-only run no
+    table is read at all, and claiming the company failed to disclose would charge it for the fact that
+    nobody opened its annual report.
+    """
+    looked = any(facts.has(m) for m in AGEING_METRICS)
+    for metric, numerators, denominator, formula in _AGEING_SHARES:
+        period = facts.latest_period(denominator)
+        if period is None:
+            if looked:
+                b.missing.setdefault(metric, ((
+                    f"{denominator} — this filing's other Schedule III ageing schedules were read, but "
+                    f"no usable {denominator.split(':')[1].lower()} was found in it"
+                ),))
+            continue
+        pairs = tuple((m, period) for m in (*numerators, denominator))
+        if (got := b.need(metric, *pairs)) is None:
+            continue
+        total = got[-1].value
+        b.add(metric, sum(f.value for f in got[:-1]) / total if total > 0 else None,
+              f"{formula}, {period}", got)
+
+
+#: Bucket metric -> the age in years it evidences. Ordered oldest-first: the first bucket carrying a
+#: material balance is the answer, because a younger bucket says nothing about an older one.
+_CWIP_AGE_LADDER: tuple[tuple[str, float], ...] = (
+    (CWIP_AGEING_BEYOND_3Y, 3.0), (CWIP_AGEING_2_3Y, 2.0), (CWIP_AGEING_1_2Y, 1.0),
+)
+
+
+def cwip_age_from_schedule(
+    facts: CompanyFacts, materiality_share: float
+) -> tuple[float, tuple[Fact, ...]] | None:
+    """Years the oldest MATERIAL block of CWIP has been sitting, read off the filing's own columns.
+
+    This is what `cwip_persistence_years` was a stand-in for. The stand-in counts how many consecutive
+    year-ends the CWIP *balance* stayed large, which cannot distinguish a company that finishes one
+    project and starts another (perfectly healthy, and the balance never drops) from one whose capital
+    has not moved in four years. The schedule answers directly, in the company's own disclosure.
+
+    Returns None when no schedule was read, so the caller falls back rather than concluding "0 years" —
+    an unread table must never be evidence that capital is young.
+    """
+    period = facts.latest_period(CWIP_AGEING_TOTAL)
+    if period is None:
+        return None
+    total = facts.fact(CWIP_AGEING_TOTAL, period)
+    if total is None or total.value <= 0:
+        return None
+    for metric, years in _CWIP_AGE_LADDER:
+        bucket = facts.fact(metric, period)
+        if bucket is not None and bucket.value / total.value > materiality_share:
+            return years, (bucket, total)
+    # Every bucket read and none material: the capital IS young, and that is a measurement.
+    read = tuple(f for f in (facts.fact(m, period) for m, _ in _CWIP_AGE_LADDER) if f is not None)
+    return (0.0, (*read, total)) if read else None
+
+
 def derive_metrics(facts: CompanyFacts) -> DerivedSet:
     """Compute every derived metric the Phase-2 report and checks need, keeping provenance on each.
 
@@ -401,6 +525,13 @@ def derive_metrics(facts: CompanyFacts) -> DerivedSet:
     if (got := b.need("cwip_share_latest", (CWIP, fN), (TOTAL_ASSETS, fN))) is not None:
         b.add("cwip_share_latest", got[0].value / got[1].value if got[1].value > 0 else None,
               f"CWIP {fN} / Total Assets {fN}", got)
+
+    # ---- Schedule III ageing schedules (ADR-0039) -----------------------------------------------
+    # Each of these is a share of the balance the ageing table itself totals — NOT of the balance-sheet
+    # row. The two agree when the filing is internally consistent (`ageing_reconciliation` is the check
+    # that says so), and dividing by the table's own total keeps a reconciliation failure from silently
+    # distorting every share underneath it.
+    _ageing_shares(b, facts)
 
     # ---- the ratios the financial_statement_analyst is allowed to quote -------------------------
     # These exist so the agent's numeric schema fields can be ARITHMETICALLY VERIFIED against the

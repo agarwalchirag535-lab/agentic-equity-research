@@ -378,6 +378,27 @@ line_items:
         template: "Net investing outflow across {window} was {v}."
         severity: low
 
+      - id: capital_stalled_projects
+        question: >
+          Is any of the committed capital sitting in projects that have stopped? Capital work in progress
+          is carried at cost and earns nothing until it commissions, so a suspended project is money the
+          company has spent, is still showing as an asset, and has decided not to finish.
+        metric: cwip_suspended_share
+        unit: pct
+        template: "{v} of capital work in progress is in projects the company reports as temporarily suspended."
+        bands:
+          - at_least: 0.25
+            says: "a quarter of the programme has stopped — ask what changed, and whether the carrying value survives it"
+          - at_least: 0.10
+            says: "a material stalled block: worth asking what it was for and when it was last reviewed for impairment"
+          - at_least: 0.001
+            says: "some suspension, at a scale normal in a multi-project programme"
+          - says: "nothing is suspended — every rupee of work in progress is still being built"
+        needs:
+          - "Schedule III capital-work-in-progress ageing schedule — the 'projects temporarily suspended' row"
+        severity: medium
+        exclude_models: [LENDER, BANK]
+
       - id: capital_maintenance_vs_growth
         question: >
           How much of the capex was maintenance and how much was growth? Without the split, a negative
@@ -453,6 +474,70 @@ line_items:
         needs:
           - "balance_sheet:Trade Receivables, Inventories and Trade Payables per year"
         severity: high
+        exclude_models: [LENDER, BANK]
+
+      # The three questions below read the Schedule III ageing schedules (ADR-0039). They exist because
+      # collection *days* is an average, and an average hides the thing that matters: the same ₹230cr of
+      # receivables is a different asset when a tenth of it is two years old. A book can shorten its
+      # average while growing a tail, and the tail is what a deteriorating book grows first.
+      - id: wc_receivable_tail
+        question: >
+          How much of the receivable book is genuinely old? Days-to-collect is an average and a stuffed
+          channel can hold the average steady while the tail grows underneath it.
+        metric: receivables_beyond_1y_share
+        unit: pct
+        template: "{v} of the receivable book has been outstanding for more than a year."
+        bands:
+          - at_least: 0.15
+            says: "a large stale tail — ask what it is, who owes it, and why it has not been provided against"
+          - at_least: 0.05
+            says: "a tail worth naming: these are balances the ordinary collection cycle did not clear"
+          - at_least: 0.005
+            says: "a small residue, normal in any book"
+          - says: "effectively nothing is aged past a year — the book turns over as the collection days imply"
+        needs:
+          - "Schedule III trade-receivables ageing schedule — the 1-2, 2-3 and >3 year buckets"
+        severity: high
+        exclude_models: [LENDER, BANK]
+
+      - id: wc_receivable_disputed
+        question: >
+          How much of the book has the company itself said it may not collect? A disputed or
+          credit-impaired balance is an admission against interest, and worth more than any ratio.
+        metric: receivables_disputed_share
+        unit: pct
+        template: "{v} of receivables are classified by the company as disputed or credit-impaired."
+        bands:
+          - at_least: 0.05
+            says: "a material contested balance still carried as an asset — the recoverability question is live"
+          - at_least: 0.02
+            says: "a real disputed block: check what is provided against it"
+          - at_least: 0.0001
+            says: "a small disputed balance, disclosed"
+          - says: "nothing disputed and nothing credit-impaired — the company asserts the whole book is collectable"
+        needs:
+          - "Schedule III trade-receivables ageing schedule — the disputed and credit-impaired rows"
+        severity: high
+        exclude_models: [LENDER, BANK]
+
+      - id: wc_payable_overdue
+        question: >
+          Is the company funding itself on suppliers it has simply not paid? Payable *days* can rise from
+          negotiated terms; a balance overdue past a year cannot.
+        metric: payables_beyond_1y_share
+        unit: pct
+        template: "{v} of trade payables has been outstanding for more than a year."
+        bands:
+          - at_least: 0.20
+            says: "a fifth of the payable book is over a year overdue — this is distress financing, not terms"
+          - at_least: 0.10
+            says: "a material overdue block: a liquidity signal that arrives before any ratio breaks"
+          - at_least: 0.005
+            says: "a small overdue residue"
+          - says: "essentially nothing is overdue past a year — the payable cycle reflects terms, not delay"
+        needs:
+          - "Schedule III trade-payables ageing schedule — the 1-2, 2-3 and >3 year buckets"
+        severity: medium
         exclude_models: [LENDER, BANK]
 
   # ------------------------------------------------------------------------------------------------

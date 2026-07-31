@@ -49,6 +49,37 @@ def _statement_pages(receivables, inventory, cash, revenue, pbt) -> tuple[str, s
     return balance_sheet, profit_and_loss
 
 
+def _ageing_pages(receivables_rows: str, payables_rows: str, cwip_rows: str) -> str:
+    """The three Schedule III ageing schedules on one page, in the layout Indian filings actually use.
+
+    These were missing from the fixtures entirely, and their absence was invisible: the filing pages
+    carried the schedule *headings* (so the `disclosure_gap` scan was satisfied) with no table beneath
+    them. A filing for FY22 or later is legally required to carry all three, so a fixture without them
+    was testing a document that could not exist — and it hid the fact that nothing consumed the parser
+    (ADR-0039).
+
+    The bucket header is deliberately printed the way the real filings print it, wrapped mid-phrase, so
+    the header/first-row boundary logic in `adapters/india/ageing.py` is exercised rather than bypassed.
+    """
+    return (
+        "Notes to the Financial Statements — Schedule III disclosures (` in crore)\n"
+        "24 Trade Receivables\n"
+        "Particulars Outstanding for following periods from due date of payment as at March 31, 2026\n"
+        "Less than\n"
+        "6 months\n"
+        "6 months-1year 1-2 years 2-3 years More than 3 years Total\n"
+        f"{receivables_rows}"
+        "25 Trade Payables\n"
+        "Particulars Outstanding for following periods from due date of payment as at March 31, 2026\n"
+        "Less than 1 year 1-2 years 2-3 years More than 3 years Total\n"
+        f"{payables_rows}"
+        "26 Ageing of Capital Work in progress as at March 31, 2026\n"
+        "Particulars Amounts in capital work-in-progress for a period of\n"
+        "Less than 1 year 1-2 years 2-3 years More than 3 years Total\n"
+        f"{cwip_rows}"
+    )
+
+
 CLEAN_AR_PAGES: tuple[str, ...] = (
     *_statement_pages(
         ("118.00", "110.00"), ("96.00", "90.00"), ("40.00", "35.00"),
@@ -89,6 +120,26 @@ CLEAN_AR_PAGES: tuple[str, ...] = (
         "Title deeds of immovable properties are held in the name of the Company.\n"
         "Current Ratio 1.85 1.72\n"
     ),
+    # Clean tables: a short receivable tail, nothing disputed, no suspended capex. Both totals tie to the
+    # balance sheet (receivables 118.00, CWIP 22.00), so `ageing_reconciliation` passes on real agreement
+    # rather than on an absence.
+    _ageing_pages(
+        receivables_rows=(
+            "i) Undisputed Trade receivables - considered good  112.00  4.00  1.50  0.50  -    118.00\n"
+            "ii) Disputed Trade Receivables - considered good  -    -    -    -    -    -\n"
+            "Total  112.00  4.00  1.50  0.50  -    118.00\n"
+        ),
+        payables_rows=(
+            "i) Undisputed dues of micro and small enterprises  8.00  -    -    -    8.00\n"
+            "ii) Undisputed dues of creditors other than micro and small  60.00  2.00  -    -    62.00\n"
+            "Total  68.00  2.00  -    -    70.00\n"
+        ),
+        cwip_rows=(
+            "Projects in progress  19.00  3.00  -    -    22.00\n"
+            "Projects temporarily suspended  -    -    -    -    -\n"
+            "Total  19.00  3.00  -    -    22.00\n"
+        ),
+    ),
 )
 
 #: The same filing shape for a company whose receivables are running away from revenue (+110% vs +5%) —
@@ -118,6 +169,26 @@ FRAUD_AR_PAGES: tuple[str, ...] = (
         "(xi) No fraud has been noticed or reported.\n"
         "Trade Receivables ageing schedule as at 31 March 2026\n"
         "Current Ratio 0.92 1.10\n"
+    ),
+    # The same fraud pattern, seen in the ageing table rather than in the stock-flow ratio: a quarter of
+    # the book is past a year and the company has itself disputed ₹8cr of it. Capital work in progress is
+    # left clean on purpose — a company can be stuffing the channel without touching its capex.
+    _ageing_pages(
+        receivables_rows=(
+            "i) Undisputed Trade receivables - considered good  122.00  30.00  30.00  15.00  5.00  202.00\n"
+            "ii) Disputed Trade Receivables - considered good  -    2.00  3.00  2.00  1.00  8.00\n"
+            "Total  122.00  32.00  33.00  17.00  6.00  210.00\n"
+        ),
+        payables_rows=(
+            "i) Undisputed dues of micro and small enterprises  12.00  -    -    -    12.00\n"
+            "ii) Undisputed dues of creditors other than micro and small  74.00  4.00  -    -    78.00\n"
+            "Total  86.00  4.00  -    -    90.00\n"
+        ),
+        cwip_rows=(
+            "Projects in progress  200.00  60.00  -    -    260.00\n"
+            "Projects temporarily suspended  -    -    -    -    -\n"
+            "Total  200.00  60.00  -    -    260.00\n"
+        ),
     ),
 )
 

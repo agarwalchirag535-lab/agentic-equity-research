@@ -154,7 +154,14 @@ def test_every_playbook_check_is_a_real_forensic_signal():
         "beneish_m": "beneish_manipulator",
         "cash_interest_inconsistent": "cash_interest_inconsistent",
     }
-    known = (signals - value_fields) | set(aliases.values()) | value_fields
+    # Checks that RUN and are published but can never raise a screen flag, so they correctly have no
+    # `ForensicMetrics` field. Listing them here is the point: the invariant this test protects is "no
+    # check is silently unimplemented", and a check that is deliberately non-accusatory has to say so
+    # somewhere. `ageing_reconciliation` compares a Schedule III schedule against the statement line it
+    # ages; a mismatch is far likelier to be our column reader than the filing, so it reports
+    # UNAVAILABLE naming an extraction fault and never a finding against the company (ADR-0039).
+    non_flagging = {"ageing_reconciliation"}
+    known = (signals - value_fields) | set(aliases.values()) | value_fields | non_flagging
 
     referenced: set[str] = set()
     for entry in PB.values():
@@ -163,3 +170,11 @@ def test_every_playbook_check_is_a_real_forensic_signal():
 
     unknown = referenced - known
     assert unknown == set(), f"playbooks reference non-existent checks: {sorted(unknown)}"
+
+    # ...and a non-flagging check must still have a real evaluator, or it lands in the catch-all branch
+    # of `evaluate_checks` and publishes "no evaluator wired" while looking like a configured check.
+    from pathlib import Path
+
+    evaluator = Path("src/firm/core/pipeline/checks.py").read_text()
+    for check in non_flagging:
+        assert f'check == "{check}"' in evaluator, f"{check} is in a playbook with no evaluator branch"

@@ -83,6 +83,11 @@ def reconciliation_thresholds() -> dict[str, float]:
     return load_thresholds()["reconciliation"]
 
 
+def ageing_thresholds() -> dict[str, float]:
+    """Schedule III ageing-schedule policy: tail limits, bucket materiality, reconciliation (ADR-0039)."""
+    return load_thresholds()["ageing"]
+
+
 def load_playbooks() -> dict[str, Any]:
     """Business-model detection thresholds + per-model check playbooks (ADR-0017)."""
     return load_yaml("forensic_playbooks.yaml")

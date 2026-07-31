@@ -1126,3 +1126,84 @@ is a decision to publish an excuse. That is the standard this ADR is really sett
 **Not yet done, and named so it is not mistaken for finished.** The ageing tables are parsed but not yet
 consumed by the checks, the note dispositions or the agent packet — so `substantive_share` has not moved
 and `ageing_cwip` still has no input wired to it. That is the next commit, not a future phase.
+
+---
+
+### ADR-0039 — A parser with no caller is not a feature
+**Context.** ADR-0038 ended by naming its own gap: the three Schedule III ageing schedules were parsed and
+consumed by nothing. That is a specific and dangerous state, not merely an unfinished one. The parser had
+its own tests and they all passed; `substantive_share` was unchanged at 9%; `ageing_cwip` still had no
+input; and the ₹16.29cr of suspended capital work in progress the parser could see appeared in no report.
+A component with no caller is indistinguishable from an absent one everywhere except the test suite, where
+it looks like progress.
+
+**Decision — follow the figure, not the function.** A number printed in an ageing table now travels the
+whole way: fact → derivation → check → note disposition → agent packet → published page. Each hop is a
+separate mechanism and each was separately missing.
+
+**1. The tables become grade-A facts** (`filing.register_ageing_facts`). Fourteen metrics under an
+`ageing:` namespace, each bound to `(page, schedule)` and to the filing's dissemination date, so Law 3
+filters them like any other fact and Law 2 lets an agent cite them. **What is stored is governed by the
+parser's alignment contract, not by convenience**: a table whose rows do not sum to their own printed
+totals still yields its total and its classified rows (`Suspended`, `Disputed`, `Credit Impaired` — those
+are row totals, read whole), while every bucket sum is withheld. Publishing a "beyond one year" figure
+from columns we could not match to their headers would put the filing's grade-A stamp on a guess, which is
+worse than an absent number by exactly the margin that a confident wrong answer beats "I don't know".
+
+**2. Eight derived shares** (`derive._ageing_shares`), each answering one forensic question and carrying
+the worst-input grade. They divide by the *table's own* total rather than by the balance-sheet row, so a
+reconciliation failure cannot silently distort every share underneath it.
+
+**3. Five checks and one self-test.** `stalled_capex`, `receivables_ageing_tail`, `receivables_disputed`,
+`payables_ageing_tail`, plus `ageing_reconciliation`. And `ageing_cwip` — written in ADR-0006, never once
+run against data — now takes its age from the filing's own columns where they exist, falling back to the
+snapshot proxy and **saying in the published detail line which of the two it used**. The upgrade is
+substantive, not cosmetic: `cwip_persistence_years` counts year-ends the CWIP *balance* stayed large,
+which cannot distinguish a company that finishes one project and starts another (balance never dips,
+nothing is stuck) from one whose capital has not moved in four years. A materiality floor stops ₹0.01cr of
+rounding dust in the ">3 years" column dating the whole block at three years.
+
+**4. Three note categories become substantive.** `payables` had **no check against it at all**, so every
+trade-payables note in every report was dispositioned `unknown` — 100% covered, nothing read, which is
+precisely the theatre `substantive_share` exists to expose.
+
+**5. The packet.** `ageing_series` renders every figure with its `cite_as` token. The ADR-0036 rule,
+applied to tables: a fact an agent cannot see is a fact the firm does not have.
+
+**A reconciliation failure is not a finding against the company.** Two Schedule III totals disagreeing is
+far more likely to be our column reader than the company's arithmetic — an audited filing whose own
+schedule contradicted its own balance sheet would have been caught long before us. So `ageing_reconciliation`
+reports UNAVAILABLE naming a probable extraction fault and never a flag, the same treatment ADR-0025 gave
+the impossible cash/assets ratio, and for the same reason.
+
+**Severity is bounded by calibration.** Two HIGH flags hard-fail a company and nothing in
+`config/thresholds.yaml:ageing` has been tested against a known fraud (that is Phase 6). So no new ageing
+signal is HIGH unless it rests on the company's **own** classification of a balance: `receivables_disputed`
+is HIGH because the company said the balance is contested; the tail shares — a policy number applied to a
+bucket sum — are MEDIUM. `tests/compute/test_quality.py` asserts this rather than trusting it.
+
+**Verified on the real filing, not on the fixture.** Alkyl Amines FY26, all three tables, end to end:
+- **`stalled_capex` FLAGS — ₹16.29cr of ₹130.48cr (12.5%) in projects the company reports as temporarily
+  suspended**, grade A, cited to p.103. The first finding this firm has published that no summary feed
+  could have produced.
+- receivables **zero disputed, zero credit-impaired**, ₹0.01cr aged beyond a year on a ₹230.50cr book;
+  payables ₹0.16cr overdue past a year of ₹151.21cr. Owner directive 4: a pass is worthless unless it
+  shows what was looked at, and each of these prints its figure and its limit.
+- `ageing_cwip` **passes at 14.5% of assets aged 2y** — large, but two years old, so the siphoning
+  conclusion is refused. The fixture-era proxy would have said 3y from three flat year-ends.
+- all three schedules reconcile to their balance-sheet lines to **+0.00%**; unavailable share 71% → 12%;
+  `substantive_share` 9% → 22%; notes 3, 11 and 24 read rather than counted.
+
+**Two defects the real filing found that the fixtures could not.** (1) `walk_filing` built the ageing
+evidence and never passed it to `ExternalInputs`, so a filing that had been read end to end would report
+*"no filing was walked in this run"* for any table it could not parse — the exact false statement the
+three-state distinction exists to prevent. Every check still passed its unit test, because a check only
+consults the evidence on the path where the derivation is absent, which a clean fixture never takes. There
+is now a regression test that fails without the wire. (2) `FILING_ROWS` had no CWIP entry, so the CWIP
+schedule's grade-A total could only be reconciled against a grade-B screener figure — mixed-provenance
+arithmetic inside the very check whose job is to establish that a table can be trusted (ADR-0028). The
+balance-sheet row is now read; both sides are grade A and agree exactly.
+
+**Consequence.** The fixture filings now carry real ageing tables. They previously carried the schedule
+*headings* with no table beneath them, which satisfied the `disclosure_gap` scan while testing a document
+that could not legally exist — and that is part of why nothing noticed the parser had no caller.

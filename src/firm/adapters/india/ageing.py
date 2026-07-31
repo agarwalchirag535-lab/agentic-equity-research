@@ -46,6 +46,17 @@ _BUCKET_LABELS: tuple[str, ...] = (
 )
 _BUCKET_RE = re.compile("|".join(re.escape(b) for b in _BUCKET_LABELS), re.IGNORECASE)
 
+#: The age each bucket label means, as the LOWER bound of its span in years. This is not a policy number
+#: and does not belong in `thresholds.yaml`: "2-3 years" means two-to-three years because that is what the
+#: words say, the same way "Total" means a sum. Reading a column's age off its own printed label is what
+#: lets `ageing_cwip` answer "how long has this block been sitting here?" from the filing instead of
+#: inferring it from a run of balance-sheet snapshots (ADR-0039).
+_BUCKET_LOWER_BOUND_YEARS: dict[str, float] = {
+    "unbilled": 0.0, "not due": 0.0, "less than 6 months": 0.0, "6 months": 0.5,
+    "6 months-1year": 0.5, "less than 1 year": 0.0, "1year": 1.0,
+    "1-2 years": 1.0, "2-3 years": 2.0, "more than 3 years": 3.0,
+}
+
 #: A row label that classifies the balance rather than merely naming it. These are the forensic handles.
 _DISPUTED = re.compile(r"\bdisputed\b", re.IGNORECASE)
 _UNDISPUTED = re.compile(r"\bundisputed\b", re.IGNORECASE)
@@ -135,10 +146,44 @@ class AgeingTable:
         body = [r for r in self.rows if not _TOTAL_ROW.match(r.label)]
         return sum(r.buckets[i] for r in body for i in idx if i < len(r.buckets))
 
+    def aged_beyond(self, years: float) -> float | None:
+        """Balance in every bucket whose span STARTS at or after ``years``, or None if not trustworthy.
+
+        The lower bound is the conservative reading: "1-2 years" is counted as beyond one year (it is)
+        and not as beyond two (it may not be). Overstating an age is the direction that manufactures a
+        finding, so the boundary is drawn where the label is unambiguous.
+        """
+        if not self.aligned:
+            return None
+        names = [b for b in self.buckets if _BUCKET_LOWER_BOUND_YEARS.get(b.lower(), -1.0) >= years]
+        return self.bucket_total(*names) if names else 0.0
+
     @property
     def long_dated(self) -> float | None:
         """Balance aged beyond one year — the tail a deteriorating book grows first."""
         return self.bucket_total("1-2 years", "2-3 years", "more than 3 years")
+
+    def oldest_material_bucket_years(self, materiality_share: float) -> float | None:
+        """Age of the oldest bucket holding a MATERIAL share of the balance. None if not trustworthy.
+
+        The materiality guard is the whole point. ₹0.01cr of rounding dust in the ">3 years" column is
+        not a three-year-old asset, and without the floor every table with a non-empty tail column would
+        report the maximum age — turning a real measurement back into the assumption it replaced.
+        Returns 0.0 when the balance is entirely current, which is a finding, not an absence.
+        """
+        if not self.aligned or self.total <= 0:
+            return None
+        ranked = sorted(
+            ((b, _BUCKET_LOWER_BOUND_YEARS.get(b.lower())) for b in self.buckets),
+            key=lambda pair: pair[1] if pair[1] is not None else -1.0, reverse=True,
+        )
+        for name, years in ranked:
+            if years is None:
+                continue
+            balance = self.bucket_total(name)
+            if balance is not None and balance / self.total > materiality_share:
+                return years
+        return 0.0
 
 
 def _tokenise(tail: str) -> list[float]:

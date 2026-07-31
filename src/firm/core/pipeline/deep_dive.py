@@ -273,6 +273,34 @@ def quarterly_series(facts: CompanyFacts | None) -> dict[str, list[dict[str, Any
     return out
 
 
+def ageing_series(facts: CompanyFacts | None) -> dict[str, dict[str, Any]]:
+    """The Schedule III ageing figures, rendered so an agent can cite them (ADR-0039).
+
+    The same "wired, not working" trap ADR-0036 caught for shareholding: the parser can read every bucket
+    of every table and the *agent* still has nothing, because the packet is the agent's entire world. A
+    forensic accountant asked to comment on capital work in progress cannot say that ₹16.29cr of it sits
+    in suspended projects unless that figure — and the fact id that lets it be cited — is in front of it.
+
+    Rendered as raw facts rather than derivations because each is a reading of one printed column; the
+    shares built on them arrive through `computed_metrics` with their formulas attached.
+    """
+    if facts is None:
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for metric in D.AGEING_METRICS:
+        periods = facts.series.get(metric) or {}
+        for period, fact in sorted(periods.items()):
+            out[f"{metric} {period}"] = {
+                "value": fact.value,
+                "unit": fact.unit,
+                "fact_id": fact.fact_id,
+                "cite_as": f"[fact:{fact.fact_id}]",
+                "grade": fact.grade,
+                "locator": fact.locator,
+            }
+    return out
+
+
 def agent_facts_payload(
     derived: DerivedSet, evaluation: CheckEvaluation, screen: quality.ForensicScreenResult,
     feasibility: multibagger.FeasibilityResult | None, models: Sequence[BusinessModel],
@@ -306,6 +334,9 @@ def agent_facts_payload(
         # Raw quarterly facts, cited by their own ids — the annual derivations above cannot carry them
         # because a promoter stake is a point-in-time holding, not a flow to compound.
         "quarterly_facts": quarterly_series(facts),
+        # The Schedule III tables, cited by their own ids. A tail balance is not a flow and has no
+        # formula behind it — it is a column of the filing, and the agent quotes it as one.
+        "ageing_schedules": ageing_series(facts),
         "forensic_screen": {
             "verdict": screen.verdict.value,
             "hard_fail": screen.hard_fail,
