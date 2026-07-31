@@ -470,18 +470,42 @@ would have been the dishonest answer. It is also a concrete work list — see §
 
 ## 7. Suggested next step
 
-**Widen `FILING_ROWS`** (`core/pipeline/filing.py`). It reads 11 rows; Operating Profit, Borrowings,
-Reserves, Equity Capital and CFO are not among them. Those five are what stand between the current state and
-`roic_latest` / `incremental_roic_3y` / `cum_cfo_pat` / `opm_latest` being derivable **from the filing
-alone** — which is the difference between a company that needs a grade-B screener snapshot and one that does
-not. It is also the whole of what the peer comparison is currently missing: BALAMINES has revenue and profit
-and nothing to compute a return on capital from, so `sector_analyst` can compare growth and not quality.
+**Make a filing self-sufficient**, so a company needs no screener snapshot. The measurement that sizes this,
+run 2026-07-31 on the two companies in the store:
 
-The reason to do this before anything else: it is the same work for the subject and for every peer, it moves
-figures from grade B to grade A, and every remaining Phase-3 gap named in §3 is downstream of it.
+| | derived | missing |
+|---|---|---|
+| ALKYLAMINE (filing **+ screener**) | 26 | 0 |
+| BALAMINES (filing **only**) | 4 | 21 |
 
-Then the segment note (unblocks `unit_economics_analyst`'s arithmetic), then §3C (the memory loop's
-resolver), then the golden set.
+That gap is the whole of what a peer comparison is missing today — `sector_analyst` can compare growth and
+not quality. Ranked by how many metrics each absent input blocks:
+
+| blocked | input | how to get it |
+|---|---|---|
+| 8 | `cashflow:Cash from Operating Activity` | extract — cash-flow statement |
+| 6 | `pnl:Operating Profit` | **derive** — see below |
+| 4 | `balance_sheet:Borrowings` | extract — balance sheet |
+| 3 | `balance_sheet:Total Assets` | extract — balance sheet |
+| 3 | `pnl:EPS in Rs` | extract — foot of the P&L |
+| 2 | `pnl:Tax %` | **derive** — see below |
+| 1 each | `balance_sheet:Equity Capital`, `Reserves` | extract — balance sheet |
+
+**Do the two derivations first — they need no new extraction at all.** An Ind AS P&L has no "Operating
+Profit" line, which is why it looked like an extraction problem; it is an arithmetic one, and every input is
+already registered by the ADR-0039 row additions:
+
+    Operating Profit = Revenue from operations - (Total expenses - Depreciation - Finance costs)
+    Tax %            = (Profit before tax - Profit for the year) / Profit before tax
+
+Verified on BALAMINES FY23-FY25 with **zero** reconciliation error against the filed PBT
+(`Revenue + Other income - Total expenses`), giving OPM 17.3% / 18.4% / 17.8%. Eight of the 21 missing
+metrics fall out of two formulas in `core/pipeline/derive.py` plus a unit test — no PDFs, no network, and
+`Operating Profit` is itself an input to `roic_latest` and `incremental_roic_3y`, so it unblocks the
+quality comparison that matters most.
+
+Then the cash-flow statement (8 more), then the four balance-sheet rows (9 more). Then the segment note
+(unblocks `unit_economics_analyst`'s arithmetic), then §3C (the memory loop's resolver), then the golden set.
 
 Then §3C (logging the now-deterministic, dated `Criterion` objects as predictions — a small wire-up), then
 Phase 3, then the golden set.
