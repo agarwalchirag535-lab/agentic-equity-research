@@ -1,0 +1,74 @@
+# xbrl_metrics.yaml — XBRL element -> the firm's metric name (ADR-0043).
+#
+# WHY THIS FILE EXISTS
+# NSE disseminates every quarterly result as XBRL against the standard BSE financial taxonomy. That is the
+# company's own regulatory filing, already tagged — so a bank's "Interest Earned" and a manufacturer's
+# "Revenue From Operations" arrive as named elements rather than as strings to be hunted for on a page.
+# The whole PDF-statement-vocabulary problem (which page is the P&L? what does this issuer call its
+# revenue line? what scale is it in?) disappears, for every company at once.
+#
+# TWO TAXONOMIES, AND THE FEED SAYS WHICH
+# A bank files `BANKING_*.xml`, everyone else files `INDAS_*.xml`, and the results metadata carries a
+# `bank: B|N` flag — so the taxonomy is READ, never inferred from the numbers. This is the ADR-0002
+# sector branch arriving as data instead of as a guess about statement shape.
+#
+# MAPPING ONTO THE EXISTING METRIC NAMES, DELIBERATELY
+# `pnl:Sales` for a bank is TOTAL INCOME (interest earned + other income), not interest earned alone.
+# That is the revenue analogue the compute layer's growth and margin ratios are built for, and it is what
+# a bank's own P&L totals to. Mapping interest earned alone would understate the top line by the whole
+# fee book and quietly corrupt every derived ratio.
+
+# The elements every filer tags, whatever their format.
+common:
+  ProfitLossForThePeriod: "pnl:Net Profit"
+  ProfitLossFromOrdinaryActivitiesBeforeTax: "pnl:Profit before tax"
+  TaxExpense: "pnl:Tax expense"
+  PaidUpValueOfEquityShareCapital: "balance_sheet:Equity Capital"
+  BasicEarningsLossPerShareFromContinuingOperations: "pnl:EPS in Rs"
+
+# `BANKING_*.xml` — Reserve Bank format. Schedule 13/14 income, Schedule 15/16 expenditure.
+banking:
+  # For a BANK, total income IS the top line — a bank has no "revenue from operations" element, and its
+  # own P&L totals interest earned plus other income to exactly this. For a manufacturer the same element
+  # exists and means something else (revenue PLUS other income), which is why it is mapped here and not in
+  # `common`: mapping it in both made `pnl:Sales` depend on which element the XBRL happened to tag first.
+  Income: "pnl:Sales"
+  InterestEarned: "pnl:Interest Earned"
+  InterestExpended: "pnl:Interest"
+  OtherIncome: "pnl:Other Income"
+  # A bank's operating profit is struck BEFORE provisions, which is the correct pre-provision operating
+  # line and the one a cost-to-income ratio is built on.
+  OperatingProfitBeforeProvisionAndContingencies: "pnl:Operating Profit"
+  ExpenditureExcludingProvisionsAndContingencies: "pnl:Expenses"
+  ProvisionsOtherThanTaxAndContingencies: "pnl:Provisions"
+  # The lender-specific forensic inputs (ADR-0002). `quality.py` has had these checks since Phase 1 and
+  # has never had data behind them — GNPA drift and provision coverage were structurally unavailable.
+  GrossNonPerformingAssets: "lender:Gross NPA"
+  NonPerformingAssets: "lender:Net NPA"
+  PercentageOfGrossNpa: "lender:GNPA %"
+  PercentageOfNpa: "lender:NNPA %"
+  ReturnOnAssets: "lender:Return on Assets"
+
+# `INDAS_*.xml` — Ind AS format, everyone else.
+indas:
+  RevenueFromOperations: "pnl:Sales"
+  # The Ind AS taxonomy names the profit lines differently from the banking one — `ProfitLossForPeriod`
+  # against `ProfitLossForThePeriod`, `ProfitBeforeTax` against
+  # `ProfitLossFromOrdinaryActivitiesBeforeTax`. Nearly the same words, different elements, so they are
+  # listed per taxonomy rather than assumed shared.
+  ProfitLossForPeriod: "pnl:Net Profit"
+  ProfitBeforeTax: "pnl:Profit before tax"
+  OtherIncome: "pnl:Other Income"
+  Expenses: "pnl:Expenses"
+  DepreciationDepletionAndAmortisationExpense: "pnl:Depreciation"
+  FinanceCosts: "pnl:Interest"
+  EmployeeBenefitExpense: "pnl:Employee Cost"
+  CostOfMaterialsConsumed: "pnl:Raw Material Cost"
+
+# Elements that are RATIOS already, not money. Kept apart because the money elements are converted from
+# absolute rupees to the firm's canonical crore and a ratio must not be.
+ratios:
+  - "lender:GNPA %"
+  - "lender:NNPA %"
+  - "lender:Return on Assets"
+  - "pnl:EPS in Rs"

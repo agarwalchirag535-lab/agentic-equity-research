@@ -194,8 +194,14 @@ def crosscheck(
     )
 
 
-def _default_fetcher() -> Fetcher:  # pragma: no cover - thin network wrapper
-    """A cookie-primed fetcher. NSE rejects a bare client, so the homepage is visited first."""
+def nse_session() -> Fetcher:  # pragma: no cover - thin network wrapper
+    """A cookie-primed fetcher for any NSE endpoint — the JSON APIs and the XBRL archive alike.
+
+    NSE rejects a bare client outright (403), and priming is not optional: the homepage must be visited
+    first so the edge sets its session cookies. Shared rather than duplicated because every NSE caller
+    needs exactly this and getting the header set subtly wrong fails with a 403 that looks like a
+    blocked IP rather than a missing cookie.
+    """
     import http.cookiejar
     import ssl
     import urllib.request
@@ -225,7 +231,7 @@ def _default_fetcher() -> Fetcher:  # pragma: no cover - thin network wrapper
 
 def fetch_shareholding(symbol: str, fetcher: Fetcher | None = None) -> list[ShareholdingRecord]:
     """Every shareholding quarter the exchange holds for this NSE symbol, oldest first."""
-    fetch = fetcher or _default_fetcher()
+    fetch = fetcher or nse_session()
     payload = json.loads(fetch(_MASTER_URL.format(symbol=symbol.upper())))
     if not isinstance(payload, list):
         return []
@@ -234,6 +240,7 @@ def fetch_shareholding(symbol: str, fetcher: Fetcher | None = None) -> list[Shar
 
 __all__ = [
     "CrossCheck",
+    "nse_session",
     "Disagreement",
     "ShareholdingRecord",
     "crosscheck",
