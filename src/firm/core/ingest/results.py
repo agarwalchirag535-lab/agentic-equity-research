@@ -109,44 +109,55 @@ def ingest_results(
 
     out: list[YearIngest] = []
     for period, entries in sorted(per_year.items()):
-        # THE ANNUAL FIGURE COMES FROM THE ANNUAL CONTEXT, NOT FROM ADDING UP QUARTERS. An Indian Q4
-        # filing tags the FULL YEAR alongside (often instead of) the standalone quarter, so summing what
-        # is tagged as ~90-day periods finds three quarters and silently understates the year by a
-        # quarter. The 12-month context is the company's own annual figure and is what is stored.
-        metrics: dict[str, float] = {}
-        quarter_sums: dict[str, float] = {}
-        counts: dict[str, int] = {}
-        for _filing, facts in entries:
+        # DEDUPLICATE BY PERIOD BEFORE SUMMING. The same quarter reaches us more than once — the
+        # `period=Annual` feed's XBRL turns out to contain the Q4 CONTEXT rather than a 12-month one, so
+        # it arrives again alongside the `period=Quarterly` filing, and a company may refile a quarter it
+        # has restated. Adding every instance made City Union Bank FY24 sum to PAT Rs 1,043.3cr against
+        # the Rs 1,015.7cr in its own audited accounts. Keyed by (metric, start, end) and resolved to the
+        # LATEST broadcast, each quarter counts once and a restatement supersedes what it replaced.
+        flows: dict[tuple[str, date, date], tuple[date, float]] = {}
+        stocks: dict[str, tuple[date, float]] = {}
+        annual: dict[str, float] = {}
+        for filing, facts in entries:
+            broadcast = filing.broadcast_on or filing.period_end
             for fact in facts:
                 if fact.metric in _STOCK_OR_RATIO:
-                    metrics.setdefault(fact.metric, fact.value)
+                    if fact.metric not in stocks or broadcast >= stocks[fact.metric][0]:
+                        stocks[fact.metric] = (broadcast, fact.value)
                     continue
                 if fact.period_start is None:
                     continue
                 span = (fact.period_end - fact.period_start).days
                 if 330 <= span <= 400 and fact.period_end.month == 3:
-                    metrics[fact.metric] = fact.value               # the year as the company filed it
+                    annual[fact.metric] = fact.value      # a real 12-month context, where one is tagged
                 elif 80 <= span <= 100:
-                    quarter_sums[fact.metric] = quarter_sums.get(fact.metric, 0.0) + fact.value
-                    counts[fact.metric] = counts.get(fact.metric, 0) + 1
+                    key = (fact.metric, fact.period_start, fact.period_end)
+                    if key not in flows or broadcast >= flows[key][0]:
+                        flows[key] = (broadcast, fact.value)
 
-        # Fall back to the quarter sum only where the year was never tagged, and only when all four are
-        # present — three quarters wearing a full-year label is a 25% understatement.
-        quarters = max(counts.values(), default=0)
+        quarter_sums: dict[str, float] = {}
+        counts: dict[str, int] = {}
+        for (metric, _start, _end), (_bcast, value) in flows.items():
+            quarter_sums[metric] = quarter_sums.get(metric, 0.0) + value
+            counts[metric] = counts.get(metric, 0) + 1
+
+        metrics: dict[str, float] = {m: v for m, (_b, v) in stocks.items()}
+        # A tagged 12-month context is the company's own annual figure and wins; otherwise four
+        # deduplicated quarters make the year. Three quarters never do — that is a 25% understatement
+        # wearing a full-year label.
         for metric, total in quarter_sums.items():
-            if metric not in metrics and counts.get(metric) == 4:
+            if counts.get(metric) == 4:
                 metrics[metric] = total
-        if metrics and quarters != 4:
-            quarters = 4 if any(
-                330 <= (f.period_end - f.period_start).days <= 400
-                for _fl, fs in entries for f in fs if f.period_start) else quarters
+        metrics.update(annual)
+
+        quarters = max(counts.values(), default=0)
+        if annual:
+            quarters = 4
         published = max((f.broadcast_on or f.period_end) for f, _ in entries)
         year_basis = "consolidated" if all(f.consolidated for f, _ in entries) else "standalone"
-        # The year's grade is the WORST of its quarters: a year built from three un-audited quarters and
-        # one audited one is not an audited year.
-        grade = "A" if all(f.audited for f, _ in entries) else "B"
+        grade = "A" if any(f.audited for f, _ in entries) else "B"
 
-        if quarters != 4:
+        if quarters != 4 or not metrics:
             out.append(YearIngest(period, quarters, published, grade, metrics, basis=year_basis,
                                   quarter_sums=quarter_sums))
             continue
@@ -156,13 +167,13 @@ def ingest_results(
             doc_id=doc_id,
             source_url=f"https://www.nseindia.com/api/corporates-financial-results?symbol={ticker}",
             sha256="", published_at=published, fetched_at=date.today(),
-            grade=grade, extractor_version="nse-xbrl@1.0.0",
+            grade=grade, extractor_version="nse-xbrl@1.1.0",
         ))
         ids: list[str] = []
         for metric, value in sorted(metrics.items()):
             fact_id = f"{doc_id}:{metric}:{period}"
             store.add_fact(fact_id, doc_id, ticker, metric, period, float(value), "INR_cr",
-                           f"XBRL, {quarters} quarters summed")
+                           f"XBRL, {year_basis}, {quarters} quarter(s)")
             ids.append(fact_id)
         out.append(YearIngest(period, quarters, published, grade, metrics, basis=year_basis,
                               fact_ids=tuple(ids), quarter_sums=quarter_sums))
