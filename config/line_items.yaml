@@ -91,8 +91,10 @@ line_items:
           Did receivables grow faster than revenue? Sales that turn into a receivable instead of cash are
           the classic signature of channel-stuffing and of revenue booked to hit a number.
         metric: receivable_days_delta
-        unit: pp
-        template: "Receivable days moved {v} across {window}."
+        unit: days_delta
+        template: >-
+          Receivables took {v} longer to collect at the end of {window} than at the start
+          (negative = the company is collecting faster).
         needs:
           - "balance_sheet:Trade Receivables per year (audited balance sheet — the screener omits it)"
         severity: high
@@ -397,8 +399,8 @@ line_items:
       - id: wc_receivable_days
         question: "How long does the company take to collect, and is that lengthening?"
         metric: receivable_days
-        unit: x
-        template: "Receivable days stand at {v}."
+        unit: days
+        template: "The company waits {v} to be paid, on average, after it books a sale."
         needs:
           - "balance_sheet:Trade Receivables per year (audited balance sheet)"
           - "receivables ageing schedule (Schedule III mandatory since FY22) — the >3-year bucket is the tell"
@@ -408,8 +410,10 @@ line_items:
       - id: wc_inventory_days
         question: "Is inventory building faster than sales, and is any of it obsolete?"
         metric: inventory_days
-        unit: x
-        template: "Inventory days stand at {v}."
+        unit: days
+        template: >-
+          Goods sit in stock for {v} before they are sold (struck on revenue, not cost of goods,
+          because the cost-of-materials note is not yet extracted).
         needs:
           - "balance_sheet:Inventories per year, with the raw/WIP/finished split"
           - "inventory write-down or provision disclosure in the notes"
@@ -420,10 +424,35 @@ line_items:
         question: >
           Is the company funding itself by paying suppliers late? A stretching payable cycle is a
           liquidity signal that arrives before any ratio breaks.
+        metric: payable_days
+        unit: days
+        template: "The company takes {v} to pay its own suppliers."
         needs:
           - "balance_sheet:Trade Payables per year"
           - "MSME payables-ageing disclosure (Schedule III) — overdue amounts to small suppliers"
         severity: medium
+        exclude_models: [LENDER, BANK]
+
+      - id: wc_cash_conversion_cycle
+        question: >
+          How many days of cash does each rupee of growth tie up? This is the single number that says
+          whether growth funds itself or eats the balance sheet: collect + hold - pay.
+        metric: cash_conversion_cycle
+        unit: days
+        template: >-
+          Each rupee of sales is tied up for {v} between paying for the input and collecting from the
+          customer, so growth has to be funded for that long before it returns.
+        bands:
+          - at_most: 0
+            says: "negative — suppliers fund the whole cycle, which is a structural cash advantage"
+          - at_most: 60
+            says: "a short cycle; growth largely funds itself"
+          - at_most: 120
+            says: "a normal manufacturing cycle — growth needs working capital but not alarmingly"
+          - says: "a long cycle: every rupee of growth locks up cash for more than a third of a year"
+        needs:
+          - "balance_sheet:Trade Receivables, Inventories and Trade Payables per year"
+        severity: high
         exclude_models: [LENDER, BANK]
 
   # ------------------------------------------------------------------------------------------------

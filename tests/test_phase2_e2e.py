@@ -36,6 +36,7 @@ from tests.conftest import (  # noqa: F401 - imported for the builders, not the 
     agent_answer,
     clean_answers,
     clean_series,
+    with_working_capital,
     filing_for,
     fraud_series,
     seed_store,
@@ -57,7 +58,10 @@ def _run(store, ticker, series, *, answers, filing=None, periods=None, tmp_path=
 
 # ---- 1. COMPOUNDER --------------------------------------------------------------------------------
 def test_clean_high_return_company_publishes_a_compounder_report(store, tmp_path):
-    result = _run(store, "CLEANCO", clean_series(roic_boost=1.6),
+    # A COMPOUNDER must clear the line-by-line gate too, and the cash-conversion-cycle question is
+    # high-severity: a company whose working-capital cycle cannot be read has not earned that verdict.
+    # So the fixture discloses all three legs (ADR-0038).
+    result = _run(store, "CLEANCO", with_working_capital(clean_series(roic_boost=1.6)),
                   answers=clean_answers("CLEANCO"), filing=filing_for("CLEANCO"), tmp_path=tmp_path)
 
     assert result.report.verdict is Verdict.COMPOUNDER, result.decision.rationale

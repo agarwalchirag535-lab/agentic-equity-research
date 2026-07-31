@@ -30,11 +30,13 @@ policy numbers in Python), and nothing here calls an LLM or the network.
 
 from __future__ import annotations
 
+import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
-from firm.core.pipeline.derive import DerivedSet
+from firm.core.pipeline.derive import Derivation, DerivedSet
 from firm.schemas._base import Citation
 
 
@@ -189,7 +191,23 @@ def _format(value: float, unit: str) -> str:
         return f"₹{value:,.0f} crore" if value >= 0 else f"-₹{abs(value):,.0f} crore"
     if unit == "x":
         return f"{value:.2f}x"
+    # Days are days. Rendering the working-capital cycle as "54.78x" or a 10-day change as "-1079.9pp"
+    # is not a formatting nicety — a reader cannot tell what either sentence claims, and "moved -1079.9pp"
+    # is simply false (ADR-0038).
+    if unit == "days":
+        return f"{value:,.0f} days"
+    if unit == "days_delta":
+        return f"{value:+,.0f} days"
     return f"{value:,.2f}"
+
+
+_FY_IN_FORMULA = re.compile(r"\bFY\d{2}\b")
+
+
+def _derivation_window(derivation: Derivation) -> str:
+    """The fiscal-year span this derivation actually spans, read off its own formula. '' if not a span."""
+    years = sorted(set(_FY_IN_FORMULA.findall(derivation.formula)), key=lambda f: int(f[2:]))
+    return f"{years[0]}-{years[-1]}" if len(years) > 1 else ""
 
 
 def _band_clause(value: float, bands: Sequence[Mapping[str, Any]]) -> str:
@@ -296,7 +314,12 @@ def _answer(
         other = derived.get(str(against))
         against_txt = _format(other.value, unit) if other is not None else "unavailable"
     template = str(spec.get("template", "{v}"))
-    finding = template.replace("{v}", rendered).replace("{a}", against_txt).replace("{window}", window)
+    # `{window}` must be the window THIS derivation used, not the run's overall span. The audited-filing
+    # backfill starts later than the screener's P&L, so a receivables trend struck over FY17-FY26 was being
+    # captioned "across FY15-FY26" — a real figure with a false window on it, which is the kind of small
+    # untruth that discredits every other number on the page (ADR-0038).
+    finding = (template.replace("{v}", rendered).replace("{a}", against_txt)
+               .replace("{window}", _derivation_window(derivation) or window))
     if clause := _band_clause(derivation.value, spec.get("bands") or ()):
         finding = f"{finding.rstrip('.')} — {clause}."
     return Answer(

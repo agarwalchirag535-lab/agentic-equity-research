@@ -158,6 +158,24 @@ def clean_series(roic_boost: float = 1.0) -> dict[str, list[float]]:
     }
 
 
+def with_working_capital(series: dict[str, list[float]]) -> dict[str, list[float]]:
+    """Add the three working-capital legs to a series (ADR-0038).
+
+    Deliberately NOT folded into `clean_series`: several tests use that fixture precisely because it is
+    incomplete — one asserts no business model can be detected while inventory is unknown, another that an
+    absent row is not stored. Enriching the shared fixture would have made those tests pass for the wrong
+    reason. A company that discloses its whole cycle is a different fixture, so it gets its own.
+
+    Receivables and inventory grow slower than sales and payables track them: a clean, shortening cycle.
+    """
+    return series | {
+        "balance_sheet:Trade Receivables": [90, 100, 110, 120, 130, 133],
+        "balance_sheet:Inventories": [60, 68, 76, 84, 92, 95],
+        "balance_sheet:Trade Payables": [50, 57, 64, 71, 78, 81],
+        "balance_sheet:Cash Equivalents": [30, 38, 47, 58, 70, 85],
+    }
+
+
 def fraud_series() -> dict[str, list[float]]:
     """Profit that never becomes cash: ΣCFO/ΣPAT well under the floor, receivables absorbing the gap.
 

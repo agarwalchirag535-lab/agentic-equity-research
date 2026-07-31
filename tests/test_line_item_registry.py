@@ -24,7 +24,7 @@ QUESTIONS = [
     for item in REGISTRY["line_items"]
     for q in item["questions"]
 ]
-VALID_UNITS = {"pct", "pp", "ratio", "inr_cr", "x"}
+VALID_UNITS = {"pct", "pp", "ratio", "inr_cr", "x", "days", "days_delta"}
 VALID_SEVERITIES = {"high", "medium", "low"}
 VALID_MODELS = {m.value for m in BusinessModel}
 
