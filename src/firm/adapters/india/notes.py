@@ -35,6 +35,26 @@ _NOTE_HEADING = re.compile(
     r"^\s*(\d{1,3})\s+([A-Z][A-Za-z &,/()'\-]{4,90})\s*$"
 )
 
+#: The currency-unit marker Indian filings print on the SAME line as the note heading:
+#: "9 INVENTORIES ` In Lakhs", "3. Property, Plant and Equipment  ` In Lakhs", "... Rs. In Lakhs".
+#: (The backtick is how the ₹ glyph survives text extraction.)
+#:
+#: This one suffix was the whole of ADR-0037. The end-of-line anchor above is deliberate and correct — it
+#: is what keeps the bare form off balance-sheet rows carrying figures — but on these filings almost every
+#: balance-sheet and P&L note heading ends in a unit marker rather than in its title, so the anchor
+#: rejected them. Enumeration returned notes 1, 2 and 38-49 and NOTHING between 3 and 37: precisely the
+#: inventory, receivables, borrowings, payables and CWIP notes, i.e. every note the mandated-disclosure
+#: scan looks for. Strip the marker, then anchor.
+_UNIT_TAIL = re.compile(
+    r"[\s(\[]*(?:`|₹|Rs\.?|INR)?\s*(?:In|in|IN)\s+"
+    r"(?:Lakhs?|Lacs?|Crores?|Cr\.?|Millions?|Mn\.?|Thousands?|'?000s?)\s*[)\]]*\s*$"
+)
+
+
+def _strip_unit_tail(line: str) -> str:
+    """Drop a trailing currency-unit marker so the heading anchor sees the end of the TITLE."""
+    return _UNIT_TAIL.sub("", line)
+
 # CARO clause markers: (i) ... (xxi), at line starts.
 _CARO_CLAUSE = re.compile(r"^\s*\(\s*([ivxl]{1,5})\s*\)", re.IGNORECASE | re.MULTILINE)
 _CARO_SECTION_HINTS = ["Companies (Auditor's Report) Order", "CARO", "Annexure"]
@@ -86,19 +106,71 @@ NOTE_TAXONOMY: tuple[tuple[str, tuple[str, ...]], ...] = (
 # Schedule III (Companies Act, 2021 amendments) mandatory disclosures — a forensic gift because the law
 # forces the company to answer each one. Absence in a filing that must contain them = `disclosure_gap`
 # (ADR-0014), never a silent skip.
+#
+# THESE ARE PATTERNS, NOT HEADINGS (ADR-0037). The first version matched the wording of the *statute*
+# ("ageing schedule of trade receivable") against filings that use the wording of the *accountant*. On the
+# FY26 Alkyl Amines report that produced six false gaps out of eleven rows, and since `disclosure_gap` is
+# the only MEDIUM-severity signal in the universal set, it alone drove a published `REVIEW` screen on a
+# real listed company for disclosures that were on pages 103, 107, 112 and 133. Charging a company for our
+# own phrase list is precisely the failure the DISCLOSURE-vs-CAPABILITY split exists to prevent.
+#
+# So each row now carries alternates drawn from how the disclosures are actually printed:
+#   * word order is not fixed — "Ageing of Capital Work in progress", not "capital work-in-progress ageing";
+#   * the ageing schedules are TABLES that may never use the word "ageing" — they are identified by their
+#     Schedule III row labels ("Undisputed Trade Receivables - considered good") instead;
+#   * the negative disclosures are answered in the negative — "The Company does not have any benami
+#     property", "There is no income surrendered or disclosed as income" — so match the answer, not the
+#     question.
 SCHEDULE_III_ROWS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("struck_off_companies", ("struck off", "struck-off")),
-    ("benami_property", ("benami",)),
-    ("wilful_defaulter", ("wilful defaulter", "willful defaulter")),
-    ("undisclosed_income", ("undisclosed income",)),
-    ("crypto_currency", ("crypto currency", "cryptocurrency", "virtual currency")),
-    ("cwip_ageing", ("capital work-in-progress ageing", "cwip ageing", "ageing schedule of capital")),
-    ("receivables_ageing", ("trade receivables ageing", "ageing schedule of trade receivable")),
-    ("payables_ageing", ("trade payables ageing", "ageing schedule of trade payable")),
-    ("loans_to_promoters", ("loans or advances to promoters", "loans and advances to promoters",
-                            "advances to directors")),
-    ("ratios_disclosure", ("current ratio", "debt-equity ratio", "debt equity ratio")),
-    ("title_deeds", ("title deeds of immovable propert",)),
+    ("struck_off_companies", (r"struck[\s-]*off",)),
+    ("benami_property", (r"benami",)),
+    ("wilful_defaulter", (r"wil{1,2}ful\s+defaulter",)),
+    ("undisclosed_income", (r"undisclosed\s+income",
+                            r"income\s+surrendered\s+or\s+disclosed\s+as\s+income",
+                            r"not\s+recorded\s+in\s+the\s+books\s+of\s+account")),
+    ("crypto_currency", (r"crypto\s*currency", r"cryptocurrency", r"virtual\s+currency")),
+    ("cwip_ageing", (r"ageing.{0,60}capital\s+work", r"capital\s+work.{0,80}ageing",
+                     r"cwip\s+ageing")),
+    ("receivables_ageing", (r"ageing.{0,60}(?:trade\s+)?receivable",
+                            r"(?:trade\s+)?receivables?.{0,80}ageing",
+                            r"(?:un)?disputed\s+trade\s+receivable")),
+    ("payables_ageing", (r"ageing.{0,60}(?:trade\s+)?payable",
+                         r"(?:trade\s+)?payables?.{0,80}ageing",
+                         r"(?:un)?disputed\s+trade\s+payable",
+                         r"micro\s+enterprises\s+and\s+small\s+enterprises\s*-?\s*undisputed")),
+    ("loans_to_promoters", (r"loans?\s+(?:or|and)\s+advances?.{0,60}promoter",
+                            r"advances?\s+in\s+the\s+nature\s+of\s+loans?",
+                            r"advances?\s+to\s+(?:promoters?|directors?|kmps?)")),
+    ("ratios_disclosure", (r"current\s+ratio", r"debt[\s-]*equity\s+ratio")),
+    ("title_deeds", (r"title\s+deeds?.{0,80}immovable", r"immovable\s+propert.{0,80}title\s+deeds?")),
+)
+
+#: The first fiscal year in which these rows are legally required. MCA notification G.S.R. 207(E) of
+#: 24 March 2021 amended Schedule III with effect from 1 April 2021, so the earliest annual report that
+#: must carry them is **FY22**.
+#:
+#: Without this, the scan is an anachronism: it charges a company for omitting a disclosure the law did not
+#: yet require. The FY20 Alkyl Amines report is reported "missing" on nine of eleven rows, every one of them
+#: correctly absent. That is not a curiosity — Phase 6's golden set is built from 2015-2021 filings, so
+#: every company in it would carry a spurious `disclosure_gap` and the threshold calibrated against it
+#: would be calibrated against our own bug (ADR-0037).
+SCHEDULE_III_FIRST_FY = 22
+
+
+def _fy_number(period: str | None) -> int | None:
+    """'FY22' -> 22. None when the period is absent or not a fiscal-year label."""
+    if not period:
+        return None
+    m = re.fullmatch(r"FY(\d{2})", period.strip(), re.IGNORECASE)
+    return int(m.group(1)) if m else None
+
+
+#: Compiled once. Matching is against the FLATTENED page (newlines collapsed to spaces) because these
+#: filings wrap a heading mid-phrase constantly — "Micro Enterprises and Small\nEnterprises- Undisputed" is
+#: one label printed as two lines, and a line-by-line scan can never see it.
+_SCHEDULE_III_PATTERNS: tuple[tuple[str, tuple[re.Pattern[str], ...]], ...] = tuple(
+    (row, tuple(re.compile(p, re.IGNORECASE) for p in patterns))
+    for row, patterns in SCHEDULE_III_ROWS
 )
 
 
@@ -159,22 +231,33 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
     Duplicate note numbers keep the FIRST occurrence (continuation pages repeat headings). ``first_page``
     (1-based) restricts the scan to the notes-to-accounts section; pass `notes_section_start(pages)` for it.
     Page numbers stay absolute so provenance still points at the real page.
+
+    Two rules beyond the regex, each closing a way the count went wrong (ADR-0037):
+
+    * a trailing currency-unit marker is stripped before matching, because these filings print it on the
+      heading line itself and the end-of-line anchor would otherwise reject the heading;
+    * note numbers must ASCEND. Notes are numbered in document order, so a "5." appearing after note 38 is
+      not note 5 — on the FY26 filing it was a row inside the employee-benefits actuarial table
+      ("5. Withdrawal Rate Indian Assured"), enumerated as a note and dispositioned `unknown`. A phantom
+      note inflates the denominator of `substantive_share`, which is the number the verdict reads.
     """
     seen: set[int] = set()
     notes: list[Note] = []
+    highest = 0
     floor = first_page or 1
     for p_idx, page in enumerate(pages, start=1):
         if p_idx < floor:
             continue
         for l_idx, line in enumerate(page.splitlines(), start=1):
-            m = _NOTE_HEADING.match(line)
+            m = _NOTE_HEADING.match(_strip_unit_tail(line))
             if not m:
                 continue
             number = int(m.group(1) or m.group(3) or m.group(5))
             title = (m.group(2) or m.group(4) or m.group(6) or "").strip(" .:-–")
-            if number in seen:
+            if number in seen or number <= highest:
                 continue
             seen.add(number)
+            highest = number
             notes.append(Note(number, title, p_idx, l_idx))
     return notes
 
@@ -214,36 +297,60 @@ class ScheduleIIIFinding:
     page: int | None = None
     line: int | None = None
     excerpt: str = ""
+    #: False when the filing predates the row's statutory effective date. Kept as a THIRD state rather than
+    #: silently dropping the row: "not required of this filing" and "required and absent" are opposite
+    #: findings, and only the second is a disclosure gap (ADR-0027's tri-state, applied to the law).
+    applicable: bool = True
 
     @property
     def locator(self) -> str:
         return f"p.{self.page} l.{self.line}" if self.found else ""
 
 
-def scan_schedule_iii(pages: Sequence[str]) -> list[ScheduleIIIFinding]:
+def scan_schedule_iii(
+    pages: Sequence[str], *, period: str | None = None
+) -> list[ScheduleIIIFinding]:
     """Locate every Schedule III mandatory disclosure row, with a (page, line) anchor when present.
 
-    A `found=False` row is the signal: the law requires the company to address it, so its absence is
-    either non-disclosure or an unreadable filing — both feed `disclosure_gap` (ADR-0014).
+    A `found=False, applicable=True` row is the signal: the law requires the company to address it, so its
+    absence is either non-disclosure or an unreadable filing — both feed `disclosure_gap` (ADR-0014).
+
+    ``period`` is the fiscal year the filing reports ('FY22'). Pass it and rows that were not yet law for
+    that year come back `applicable=False`; omit it and every row is treated as in force, which is the old
+    behaviour and wrong for any filing before FY22.
     """
+    fy = _fy_number(period)
+    in_force = fy is None or fy >= SCHEDULE_III_FIRST_FY
+    if not in_force:
+        return [ScheduleIIIFinding(row, False, applicable=False) for row, _ in SCHEDULE_III_ROWS]
     findings: list[ScheduleIIIFinding] = []
-    for row, keywords in SCHEDULE_III_ROWS:
+    for row, patterns in _SCHEDULE_III_PATTERNS:
         hit: ScheduleIIIFinding | None = None
         for p_idx, page in enumerate(pages, start=1):
-            for l_idx, line in enumerate(page.splitlines(), start=1):
-                low = line.lower()
-                if any(k in low for k in keywords):
-                    hit = ScheduleIIIFinding(row, True, p_idx, l_idx, line.strip()[:200])
-                    break
-            if hit is not None:
-                break
+            lines = page.splitlines()
+            flat = " ".join(page.split())
+            match = next((m for p in patterns if (m := p.search(flat))), None)
+            if match is None:
+                continue
+            # Anchor the provenance to a real line: the flattened offset cannot be mapped back exactly
+            # once whitespace is collapsed, so find the line carrying the match's first word.
+            head = match.group(0).split()[0].lower()
+            l_idx = next(
+                (i for i, line in enumerate(lines, start=1) if head in line.lower()), 1
+            )
+            hit = ScheduleIIIFinding(row, True, p_idx, l_idx, lines[l_idx - 1].strip()[:200])
+            break
         findings.append(hit or ScheduleIIIFinding(row, False))
     return findings
 
 
 def schedule_iii_gaps(findings: Sequence[ScheduleIIIFinding]) -> tuple[list[str], bool]:
-    """(missing mandatory rows, is_flagged) — feeds the `disclosure_gap` forensic signal."""
-    missing = sorted(f.row for f in findings if not f.found)
+    """(missing mandatory rows, is_flagged) — feeds the `disclosure_gap` forensic signal.
+
+    A row that was not yet law for this filing is NOT a gap: `applicable=False` rows are excluded, so a
+    2015-2021 filing is never charged for the 2021 Schedule III amendment (ADR-0037).
+    """
+    missing = sorted(f.row for f in findings if f.applicable and not f.found)
     return missing, bool(missing)
 
 

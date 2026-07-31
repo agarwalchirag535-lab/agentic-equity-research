@@ -175,10 +175,23 @@ depends on, so it needs its own tests: a restatement must still be invisible bef
 a grade-A filing must not resurrect a figure the company later corrected.
 </details>
 
-### 0b. Substantive note coverage is 9% against a 50% floor
+### 0b. Substantive note coverage is 7% of 45 notes against a 50% floor
 Not a defect — the floor is right and the coverage is not there yet. Needs note-content readers for inventory,
 receivables, borrowings, contingent liabilities, tax, leases, employee benefits and segment, on the pattern of
 `notes_content.related_party_summary`. Several sessions of work, one note category at a time.
+
+**Enumeration itself was fixed 2026-07-31 (ADR-0037)** — it found 11 notes where the FY26 filing has 45,
+because the heading regex was defeated by the `` ` In Lakhs`` unit marker printed on the heading line. The
+denominator is now real, which is why this entry reads 7% rather than 9%. **The three ageing schedules
+(receivables, payables, CWIP) are located and unparsed** — they are the highest-value readers to write next,
+because they are the independent handle on the working-capital cycle that four unavailable checks want.
+
+**Open design question from the same ADR:** `choose_verdict` routes low `substantive_share` to
+`INSUFFICIENT_DISCLOSURE` without asking whose insufficiency it is. On ALKYLAMINE the shortfall is entirely
+ours — 45 notes located, dispositioned, unread — yet the published verdict names the *company's* disclosure.
+ADR-0022 says a CAPABILITY gap may lower confidence and must not degrade a verdict; the line-item ladder
+honours that and the note ladder does not. Splitting the rung by gap kind, or renaming the verdict, is an
+owner decision.
 
 ### 0. ~~A FALSE-POSITIVE FORENSIC_CAUTION~~ — FIXED 2026-07-30 (ADR-0025)
 Both causes fixed: `ExternalInputs` is now canonical ₹ crore (the ADR-0024 unit fix had normalised only the
@@ -348,6 +361,15 @@ blank — see the ALKYLAMINE note.
   `what_it_does` and `disconfirming_search`. `authored_texts()` now checks every `str` field on the agent
   output, so a new schema field is covered the moment it exists. If you ever narrow it back to a name list,
   you have re-opened the hole.
+- **A keyword scan for a mandated disclosure must match the FILING's wording, not the STATUTE's.** Searching
+  "ageing schedule of trade receivable" against a filing that prints an ageing table headed "Outstanding for
+  following periods from due date of payment" produced six false disclosure gaps and a published `REVIEW`
+  screen on a clean company (ADR-0037). Match the negative answer ("does not have any benami property"), not
+  the question; allow either word order; and scan the **flattened page**, because Indian filings wrap a label
+  mid-phrase constantly.
+- **A rule may not be applied before it existed.** The Schedule III rows became mandatory in FY22; scanning a
+  FY17-FY21 filing for them reported nine false gaps. Anything keyed to a regulation needs an effective-year
+  gate, or every historical run in the Phase-6 golden set inherits the error.
 - **`firm packets` and `firm deep-dive` must be given the SAME manifests.** The packet is the brief an agent
   answers; the run is what grades the answer. Before ADR-0036 `packets` skipped the filing walk and the
   governance ingest, so the packet said `screen: PASS` / 0 notes while the run computed `REVIEW` / 11 notes —

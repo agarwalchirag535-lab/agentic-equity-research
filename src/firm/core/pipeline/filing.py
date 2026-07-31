@@ -170,7 +170,9 @@ def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWa
 
     text = "\n".join(filing.pages)
     sections_missing, _ = disclosure_gaps(forensic_sections(text))
-    schedule_missing, _ = schedule_iii_gaps(scan_schedule_iii(filing.pages))
+    # Pass the filing's own period so the scan applies the law as it stood for that year (ADR-0037).
+    schedule_missing, _ = schedule_iii_gaps(
+        scan_schedule_iii(filing.pages, period=filing.period))
     caro = tuple(caro_candidate_flags(parse_caro_clauses(text)))
     # A row found but unusable is a disclosure/extraction gap in its own right, and must surface rather
     # than vanish into a silently shorter `rows` mapping.

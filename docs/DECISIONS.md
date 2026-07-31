@@ -1004,3 +1004,64 @@ needing macro series the firm does not ingest at all. Tightening `SATISFIES` wou
 roster and reclassify them as coverage gaps — more honest per ADR-0031's own wording ("derived from what is
 actually ingested"), but it trades a visible empty seat for an invisible one, and that is the owner's call
 rather than a fix to slip into a plumbing ADR.
+
+### ADR-0037 — We flagged a clean company, and the flag was ours
+**Context.** The first full phase-3 run published `disclosure_gap` at MEDIUM severity against Alkyl Amines —
+six mandated Schedule III rows reported absent, the only flag in the run, and the sole reason the forensic
+screen read `REVIEW` rather than `PASS`. All six are in the filing. This is the failure mode the whole
+DISCLOSURE-vs-CAPABILITY split exists to prevent (ADR-0022), reaching a published report about a real listed
+company. Three distinct bugs stacked to produce it.
+
+**1. Note enumeration silently lost two-thirds of the notes.** `_NOTE_HEADING` anchors the bare heading form
+to end-of-line — correct, and what keeps it off balance-sheet rows carrying figures. But these filings print
+the currency-unit marker on the heading line: `9 INVENTORIES ` In Lakhs`, `3. Property, Plant and Equipment
+ ` In Lakhs`, and in older reports `Rs. In Lakhs`. The anchor rejected every one. Enumeration returned notes
+1, 2 and 38-49 and **nothing between 3 and 37** — exactly the inventory, receivables, borrowings, payables
+and CWIP notes. Strip the unit tail, then anchor: **11 notes → 45** on FY26, 44 on FY24.
+
+A second guard came with it. Note numbers ascend through the section, so a "5." appearing after note 38 is
+not a note: on FY26 it was a row inside the actuarial table (*"5. Withdrawal Rate Indian Assured"*),
+enumerated and dispositioned `unknown`. A phantom note inflates the denominator of `substantive_share`,
+which is the number the verdict ladder reads.
+
+**2. The Schedule III scan searched for the wording of the statute.** `SCHEDULE_III_ROWS` held literal
+phrases from the law — `"ageing schedule of trade receivable"`, `"capital work-in-progress ageing"` — and
+filings use the wording of the accountant. What is actually printed:
+
+| row | we searched for | the filing says |
+|---|---|---|
+| `cwip_ageing` | capital work-in-progress ageing | "Ageing of Capital Work in progress" (p.103) |
+| `receivables_ageing` | ageing schedule of trade receivable | an ageing table headed "Outstanding for following periods from due date of payment", labelled "Undisputed Trade receivable" (p.107) |
+| `payables_ageing` | ageing schedule of trade payable | the same table for payables (p.112) |
+| `undisclosed_income` | undisclosed income | "There is no income surrendered or disclosed as income…" (p.133) |
+
+Three lessons, each encoded: word order is not fixed; the ageing schedules are **tables that may never use
+the word "ageing"**, so match their Schedule III row labels instead; and the negative disclosures are
+answered in the negative, so match the *answer*, not the question. Matching also moved from line-by-line to
+the **flattened page**, because these filings wrap a label mid-phrase constantly ("Micro Enterprises and
+Small\nEnterprises- Undisputed" is one label printed as two lines) and a line scan can never see it.
+Result: FY26 and FY24 go from six missing rows to **zero**, each of the eleven anchored to a page and line.
+
+**3. The scan was an anachronism.** MCA G.S.R. 207(E) amended Schedule III with effect from 1 April 2021, so
+the earliest report that must carry these rows is FY22. We were charging FY17-FY21 filings for omitting
+disclosures the law did not yet require — FY20 came back "missing" on nine of eleven, every one correctly
+absent. `scan_schedule_iii` now takes the filing's period and returns `applicable=False` for rows not yet in
+force, kept as a third state rather than dropped, because "not required of this filing" and "required and
+absent" are opposite findings. **This one mattered most for Phase 6:** the golden set is built from
+2015-2021 filings, so every company in it would have carried a spurious `disclosure_gap` and the threshold
+calibrated against that set would have been calibrated against our own bug.
+
+**Result.** Same run id, same inputs, corrected reading: the screen goes `REVIEW` → **`PASS` with no flags**,
+and `disclosure_gap` reports *"every mandated Schedule III / forensic section located in the filing"*. The
+forensic agent withdrew its prior finding in the published note, in its own words. The verdict remains
+`INSUFFICIENT_DISCLOSURE` — but now on `substantive_share` 7% of 45 notes, which is our unwritten note
+readers and not the company's disclosure.
+
+**The open problem this exposes, and it is a design question rather than a bug.** `choose_verdict` routes a
+low `substantive_share` to `INSUFFICIENT_DISCLOSURE` without asking *whose* insufficiency it is. On this
+company the shortfall is entirely ours: 45 notes located, dispositioned, and unread because no reader exists
+for their contents. ADR-0022 already established that a CAPABILITY gap may lower confidence but must not
+degrade a verdict, and the line-item interrogation honours that — the note ladder does not. The published
+verdict therefore still names the company's disclosure for a gap in our extraction. Fixing it means either
+splitting the rung by gap kind or renaming the verdict; both change what the firm publishes, so it is
+recorded here and left to the owner.
