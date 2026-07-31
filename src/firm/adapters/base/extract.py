@@ -129,6 +129,37 @@ def extract_layout(pdf_bytes: bytes, **kwargs: object) -> ExtractionResult:
     return extract_document(pdf_bytes, text_layer_fn=_pages_from_layout, **kwargs)  # type: ignore[arg-type]
 
 
+def default_ocr_backend() -> "OcrBackend | None":
+    """The best OCR engine available on this host, or None.
+
+    WHY THIS IS A DEFAULT AND NOT AN OPTION. OCR was opt-in and nothing opted in, so a scanned filing came
+    back empty everywhere in the pipeline. 20 of 128 primary-source PDFs pulled from three companies are
+    pure scans — every one of City Union Bank's quarterly shareholding patterns — and a listed company is
+    entitled to file a scan. An equity-research firm that silently cannot read one has a permanent hole in
+    its coverage, so the engine has to be wired in by default rather than remembered at each call site.
+
+    Returning None is still a valid answer on a host with no engine: `extract_document` then reports
+    `complete=False` and the document is an explicit coverage gap, never a silent blank (ADR-0014).
+    """
+    try:
+        from firm.adapters.base.ocr_vision import VisionOcrBackend
+
+        import Quartz  # noqa: F401  - probe: the bindings must actually be importable
+        import Vision  # noqa: F401
+
+        return VisionOcrBackend()
+    except ImportError:
+        pass
+    try:
+        import pytesseract  # noqa: F401
+
+        from firm.adapters.base.ocr_tesseract import TesseractOcrBackend
+
+        return TesseractOcrBackend()
+    except ImportError:
+        return None
+
+
 def extract_document(
     pdf_bytes: bytes,
     *,

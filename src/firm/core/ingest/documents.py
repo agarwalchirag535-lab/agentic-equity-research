@@ -30,7 +30,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from firm.adapters.base.extract import extract_document
+from firm.adapters.base.extract import default_ocr_backend, extract_document
+from firm.adapters.india.nse_shareholding import CrossCheck, ShareholdingRecord, crosscheck
 from firm.adapters.india.shareholding import ShareholdingSummary, parse_shareholding
 from firm.adapters.india.transcripts import TranscriptRead, read_transcript
 from firm.core.facts.store import Document, FactStore
@@ -90,12 +91,22 @@ class DocumentIngest:
 
     shareholding: tuple[ShareholdingIngest, ...] = ()
     transcripts: tuple[TranscriptIngest, ...] = ()
+    #: The exchange's own dissemination of the same Reg. 31 filings (ADR-0042). This is the SOURCE the
+    #: ownership facts are registered from; the PDF parse above is kept as an independent second reading.
+    exchange: tuple[ShareholdingRecord, ...] = ()
+    #: Exchange feed vs company PDF, quarter by quarter. Owner directive: extracted data must cross-check.
+    shareholding_crosscheck: CrossCheck | None = None
 
     @property
     def shareholding_series(self) -> tuple[ShareholdingIngest, ...]:
         """Usable quarters, oldest first — the promoter-stake time series."""
         return tuple(sorted(
             (s for s in self.shareholding if s.usable), key=lambda s: s.as_on or date.min))
+
+    @property
+    def ownership_quarters(self) -> int:
+        """How many quarters of ownership evidence the run actually has, from either path."""
+        return max(len(self.exchange), len(self.shareholding_series))
 
     @property
     def usable_transcripts(self) -> tuple[TranscriptIngest, ...]:
@@ -143,7 +154,7 @@ def _register_shareholding(
             file=str(entry["file"]), period=None, as_on=None,
             summary=ShareholdingSummary(located=False, rejected_because="file not downloaded"),
         )
-    extraction = extract_document(pdf.read_bytes())
+    extraction = extract_document(pdf.read_bytes(), ocr_backend=default_ocr_backend())
     summary = parse_shareholding(tuple(extraction.pages))
     as_on = date.fromisoformat(summary.as_on) if summary.as_on else None
 
@@ -241,3 +252,56 @@ __all__ = [
     "load_documents_manifest",
     "quarter_label",
 ]
+
+
+#: A shareholding pattern is an EXCHANGE FILING, not audited accounts, so it is grade B under SPEC §4.
+#: The PDF path registered it as A, which overstated it: nothing in a Reg. 31 submission is audited, and
+#: the worst-input rule propagates that overstatement into every ratio built on it.
+_EXCHANGE_GRADE = "B"
+
+
+def ingest_exchange_shareholding(
+    store: FactStore,
+    ticker: str,
+    records: Sequence[ShareholdingRecord],
+    *,
+    as_of: date | None = None,
+) -> tuple[str, ...]:
+    """Register the exchange's shareholding series as point-in-time facts. Returns the fact ids.
+
+    `published_at` is the DISSEMINATION date, not the as-on date: the register described the company on
+    31 March, but the market could not know it until the filing was broadcast in April. Using the as-on
+    date would let a Phase-6 replay read a filing up to three weeks before it existed (Law 3).
+    """
+    out: list[str] = []
+    for record in records:
+        published = record.broadcast_on or record.as_on
+        if as_of is not None and published > as_of:
+            continue
+        period = quarter_label(record.as_on)
+        doc_id = f"NSE-SHP-{record.symbol}-{period}"
+        store.add_document(Document(
+            doc_id=doc_id,
+            source_url=f"https://www.nseindia.com/api/corporate-share-holdings-master?symbol={record.symbol}",
+            sha256="", published_at=published, fetched_at=date.today(),
+            grade=_EXCHANGE_GRADE, extractor_version="nse-shp@1.0.0",
+        ))
+        values = [(PROMOTER_PCT, record.promoter_pct), (PUBLIC_PCT, record.public_pct)]
+        for metric, value in values:
+            fact_id = f"{doc_id}:{metric}:{period}"
+            store.add_fact(fact_id, doc_id, ticker, metric, period, float(value), "pct",
+                           f"Reg. 31 filing as on {record.as_on}")
+            out.append(fact_id)
+    return tuple(out)
+
+
+def crosscheck_shareholding(ingest: "DocumentIngest") -> CrossCheck:
+    """Set the exchange feed against the company's own filed PDF, quarter by quarter."""
+    from datetime import date as _date
+
+    filed = {
+        _date.fromisoformat(item.summary.as_on): float(item.summary.promoter_pct)
+        for item in ingest.shareholding
+        if item.summary.located and item.summary.as_on and item.summary.promoter_pct is not None
+    }
+    return crosscheck(ingest.exchange, filed)

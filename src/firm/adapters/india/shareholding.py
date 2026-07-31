@@ -148,6 +148,19 @@ class ShareholdingSummary:
 _WELDED = re.compile(r"\d{4,}(\d{1,2}\.\d{2,4})")
 
 
+#: OCR reads a zero before a decimal point as the letter o about half the time — City Union Bank's
+#: promoter row comes back as "o.00 o.00 o.00". Deliberately the NARROWEST possible repair: a lone o or O
+#: immediately followed by a decimal point and digits, not preceded by another letter. "to.00" is
+#: untouched because of the lookbehind, and no other OCR confusion (S/5, l/1, B/8) is corrected here —
+#: each one guessed wrong would silently alter a filed figure, and the category identity is the only
+#: reason this one is safe: a repaired promoter row still has to sum to 100 with the public row.
+_OCR_ZERO = re.compile(r"(?<![A-Za-z0-9])[oO](?=\.\d)")
+
+
+def _ocr_repair(line: str) -> str:
+    return _OCR_ZERO.sub("0", line)
+
+
 def _candidate_pcts(line: str) -> list[float]:
     """Every reading of this row that could be a holding percentage, best guess first.
 
@@ -156,6 +169,7 @@ def _candidate_pcts(line: str) -> list[float]:
     ambiguous — "3683726872.0265" splits as 36837268 + 72.0265 or as 368372687 + 2.0265, and nothing in the
     token says which. `parse_shareholding` resolves it with the category identity rather than a guess.
     """
+    line = _ocr_repair(line)
     out: list[float] = []
     for value in numbers_on_line(line):
         # ZERO IS A HOLDING. A bank or a widely-held company often has NO promoter at all — City Union
@@ -194,6 +208,7 @@ def _integer_pcts(text: str) -> list[float]:
     integers too. Trying decimals first means the 13 filings that already parsed keep parsing by exactly the
     route they did, and the integer reading is reached only where the alternative is reporting nothing.
     """
+    text = _ocr_repair(text)
     out: list[float] = []
     for value in numbers_on_line(text):
         if 0 <= value <= _MAX_PCT and value == int(value) and value not in out:
