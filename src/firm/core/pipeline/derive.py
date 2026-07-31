@@ -67,6 +67,11 @@ PROMOTER_PLEDGED = "governance:Promoter Pledged"
 CASH = "balance_sheet:Cash Equivalents"
 RECEIVABLES = "balance_sheet:Trade Receivables"
 INVENTORY = "balance_sheet:Inventories"
+#: The fourth leg of the working-capital cycle (ADR-0038). Receivables, inventory and cash were being read
+#: from the audited balance sheet for ten years while `receivable_days` reported "no derivation exists in
+#: the pipeline" — the data was never the blocker, the arithmetic was simply not written. Payables is the
+#: one input that genuinely was absent, and without it the cycle cannot be closed.
+PAYABLES = "balance_sheet:Trade Payables"
 #: Lines the interrogation layer (ADR-0022) needs to answer *why* a number moved rather than only what it
 #: is. All four are already in the screener snapshot and were previously read by nothing.
 EPS = "pnl:EPS in Rs"
@@ -77,7 +82,7 @@ CFI = "cashflow:Cash from Investing Activity"
 READ_METRICS: tuple[str, ...] = (
     SALES, PAT, OPERATING_PROFIT, DEPRECIATION, INTEREST, TAX_PCT, OTHER_INCOME, PBT,
     CFO, FCF, BORROWINGS, EQUITY_CAPITAL, RESERVES, CWIP, FIXED_ASSETS, TOTAL_ASSETS,
-    CASH, RECEIVABLES, INVENTORY,
+    CASH, RECEIVABLES, INVENTORY, PAYABLES,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
 )
 
@@ -260,6 +265,13 @@ class _Builder:
             self.missing.setdefault(metric, ("undefined for these inputs",))
             return
         self.values[metric] = Derivation(metric, float(value), formula, tuple(inputs))
+
+
+def _working_capital_conventions() -> Mapping[str, float]:
+    """Days-in-year and the plausibility ceiling, from config — they are conventions, not facts."""
+    from firm.core.config import load_thresholds
+
+    return load_thresholds()["working_capital"]
 
 
 def _as_fraction(fact: Fact) -> float:
@@ -478,6 +490,86 @@ def derive_metrics(facts: CompanyFacts) -> DerivedSet:
         for metric in ("self_funding_ratio", "debt_funded_investment_share"):
             b.missing.setdefault(metric, (
                 f"{CFI} over {f0}-{fN} summing to a net outflow (the window shows no net investment)",))
+
+    # ---- the working-capital cycle (ADR-0038) ----------------------------------------------------
+    # This family reported "no derivation for 'receivable_days' exists in the pipeline yet" on every run
+    # while receivables, inventory and revenue sat in the fact store as grade-A rows off the audited
+    # balance sheet for ten years. The data was never missing; the arithmetic was simply never written,
+    # and the report said "unavailable" — charging the company for our own gap.
+    #
+    # Days are struck against SALES, not COGS. Cost of materials consumed is a note row this pipeline does
+    # not extract yet, so the convention is stated in every formula rather than hidden: inventory days on
+    # sales run LOWER than the textbook COGS version, and the comparison to a peer must use the same base.
+    wc = _working_capital_conventions()
+    days = float(wc["days_in_year"])
+    ceiling = float(wc["max_plausible_days"])
+
+    def _days(metric: str, source: str, label: str) -> Derivation | None:
+        got = b.need(metric, (source, fN), (SALES, fN))
+        if got is None:
+            return None
+        stock, sales = got[0].value, got[1].value
+        if sales <= 0:
+            b.missing.setdefault(metric, (f"{SALES} {fN} is not positive, so a days figure is undefined",))
+            return None
+        value = stock / sales * days
+        # ADR-0025's input-plausibility rule: a three-year collection period on a manufacturer means the
+        # denominator is wrong (part-year revenue, a restated balance), not that the company waits 3 years.
+        if value > ceiling:
+            b.missing.setdefault(metric, (
+                f"{label} computes to {value:,.0f} days, beyond the {ceiling:,.0f}-day plausibility "
+                f"ceiling — the denominator is not a full year of revenue, so the figure is refused "
+                f"rather than published",))
+            return None
+        b.add(metric, value, f"{source} {fN} / {SALES} {fN} x {days:.0f}", got)
+        return b.values.get(metric)
+
+    rec_days = _days("receivable_days", RECEIVABLES, "receivable days")
+    inv_days = _days("inventory_days", INVENTORY, "inventory days")
+    pay_days = _days("payable_days", PAYABLES, "payable days")
+
+    # The cash conversion cycle is the number that says how long a rupee of growth is locked up before it
+    # comes back — the difference between growth that funds itself and growth that eats cash.
+    if rec_days is not None and inv_days is not None and pay_days is not None:
+        b.add("cash_conversion_cycle",
+              rec_days.value + inv_days.value - pay_days.value,
+              f"receivable days + inventory days - payable days ({fN}, all on {SALES})",
+              tuple(rec_days.inputs) + tuple(inv_days.inputs) + tuple(pay_days.inputs))
+    else:
+        absent = [n for n, d in (("receivable", rec_days), ("inventory", inv_days), ("payable", pay_days))
+                  if d is None]
+        b.missing.setdefault("cash_conversion_cycle",
+                             (f"{', '.join(absent)} days could not be derived",))
+
+    # Working capital as a share of revenue, and its trend. The stock-flow question the forensic checks
+    # ask ("did receivables grow faster than sales?") is this metric moving, stated causally.
+    if (got := b.need("working_capital_days", (RECEIVABLES, fN), (INVENTORY, fN),
+                      (PAYABLES, fN), (SALES, fN))) is not None:
+        rec, inv, pay, sales = (f.value for f in got)
+        if sales > 0:
+            b.add("working_capital_days", (rec + inv - pay) / sales * days,
+                  f"(Receivables + Inventories - Trade Payables) {fN} / {SALES} {fN} x {days:.0f}", got)
+
+    # The DELTA is the forensic signal, not the level: a business can run 90 receivable days for a decade
+    # honestly, but a business whose receivable days climb while revenue is flat is financing its own
+    # customers to book sales.
+    for metric, source in (("receivable_days_delta", RECEIVABLES), ("inventory_days_delta", INVENTORY)):
+        # Struck over the window where the BALANCE-SHEET row actually exists, not the P&L window. The
+        # audited-filing backfill starts later than the screener's P&L series, so demanding both ends of
+        # FY15-FY26 reported "unavailable" on a metric that is perfectly derivable over FY17-FY26. Report
+        # the trend you can source and name its window, rather than declining because it is shorter.
+        window = [p for p in with_core if facts.fact(source, p) and (facts.value(SALES, p) or 0) > 0]
+        if len(window) < 2:
+            b.missing.setdefault(metric, (
+                f"{source} needs two periods with positive {SALES}; found {len(window)}",))
+            continue
+        p0, pN = window[0], window[-1]
+        inputs = [facts.fact(source, p0), facts.fact(SALES, p0),
+                  facts.fact(source, pN), facts.fact(SALES, pN)]
+        at0 = facts.value(source, p0) / facts.value(SALES, p0) * days
+        atN = facts.value(source, pN) / facts.value(SALES, pN) * days
+        b.add(metric, atN - at0,
+              f"{source}/{SALES} days at {pN} minus at {p0} (positive = the cycle lengthened)", inputs)
 
     # Distributions competing with the capex programme: a company borrowing while paying out is making a
     # capital-allocation choice that has to be named rather than averaged away.

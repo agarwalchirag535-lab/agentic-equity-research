@@ -1065,3 +1065,64 @@ degrade a verdict, and the line-item interrogation honours that — the note lad
 verdict therefore still names the company's disclosure for a gap in our extraction. Fixing it means either
 splitting the rung by gap kind or renaming the verdict; both change what the firm publishes, so it is
 recorded here and left to the owner.
+
+### ADR-0038 — "Unavailable" was an excuse, and the working-capital cycle proves it
+**Context.** The owner's critique of the published note: it has no depth, it is not line by line, and it
+leans on "not disclosed" too readily. Testing that against the FY26 report finds the critique correct and
+the cause worse than expected. `receivable_days` and `inventory_days` were reported as *"no derivation
+exists in the pipeline yet"* — and `tests/test_line_item_registry.py` carried an allowlist making that a
+sanctioned answer — while trade receivables, inventories, cash and revenue had been sitting in the fact
+store as **grade-A rows off the audited balance sheet for ten years**. The data was never missing. The
+arithmetic was never written, and the report published the firm's silence as the company's.
+
+**Decision — a gap must be proved, not assumed.** Four pieces of work, in the order the evidence forced.
+
+**1. The working-capital cycle exists now.** `receivable_days`, `inventory_days`, `payable_days`,
+`cash_conversion_cycle`, `working_capital_days` and the two deltas, in `derive.py`. On ALKYLAMINE the
+metric set goes **26 derived / 2 missing → 33 derived / 0 missing**, and seven of them are the first
+**grade-A** derived figures the project has produced. The findings were there all along: receivable days
+54.8, inventory days 29.0, payable days 35.9, a 47.9-day cash conversion cycle, and a cycle that
+*shortened* over the window (−10.8 receivable days, −46.0 inventory days). None of that could be said before.
+
+Two conventions are stated rather than hidden: days are struck against Sales because COGS is a note row
+this pipeline does not yet extract (so the formula says so on every published figure), and a cycle beyond
+the config ceiling is refused as an implausible denominator rather than published (ADR-0025's rule).
+
+**2. The deltas are struck over the window that exists.** Demanding both ends of FY15-FY26 reported
+"unavailable" for a trend that is perfectly derivable over FY17-FY26, because the audited backfill starts
+later than the screener's P&L. Report the trend you can source and name its window.
+
+**3. Trade payables — the one input that genuinely was absent — needed a new kind of reader.** Schedule III
+splits the line, so the balance sheet prints a header with no figure and two "Total outstanding dues of…"
+components beneath, the second wrapping onto the next line. A single-row reader returns ₹1,550cr of a
+₹15,121cr line **as though it were the total**, sourced from the audited balance sheet and therefore grade
+A. `find_statement_row_sum` sums the components and records that it did. FY26 comes to ₹15,120.76 lakh,
+matching note 24 exactly; FY25 comes to ₹17,723.36, matching FY26's comparative column.
+
+**4. The ageing schedules are read, not merely located.** `adapters/india/ageing.py` parses the
+receivables, payables and CWIP tables. All three reconcile to their balance-sheet rows on FY26
+(₹230.50cr / ₹151.21cr / ₹130.48cr). What they yield that nothing else could: **₹16.29cr of capital work in
+progress is in projects "temporarily suspended"** and ₹34.50cr has been sitting beyond a year — the
+`ageing_cwip` check has had no data behind it since it was written — while the receivable book is **zero
+disputed, zero credit-impaired**, with ₹0.01cr aged beyond a year.
+
+Three refusals make it safe: a "-" is parsed as a zero so it holds its column (dropping it shifts every
+later figure one column left and reads a two-year-old balance as current); buckets are trusted only when a
+row's figures sum to its own printed total, and otherwise withheld with the row total still usable; and
+receivables and payables are told apart by the note they sit under, not by a magic occurrence index that
+happens to fit one company's page order.
+
+**The bug found on the way, and it is the most dangerous one here.** `page_unit_hint` tested crore before
+lakh and returned the first match. FY22 page 91 declares "` In Lakhs" above each of its two tables and
+mentions "Rs. 1.26 crores" once, in a sentence about an EPCG licence — so the sentence won and every figure
+on the page was read **100x too large**, with a grade-A filing locator on it. A unit declaration has no
+digits between the rupee sign and the unit word; a prose amount does. That distinction now separates them,
+and where a page still declares two units the most-declared wins, because order-of-testing is not evidence.
+
+**Consequence.** The allowlist in `test_line_item_registry.py` is empty, and the comment says adding to it
+is a decision to publish an excuse. That is the standard this ADR is really setting: before a report says
+"not disclosed", something must have looked.
+
+**Not yet done, and named so it is not mistaken for finished.** The ageing tables are parsed but not yet
+consumed by the checks, the note dispositions or the agent packet — so `substantive_share` has not moved
+and `ageing_cwip` still has no input wired to it. That is the next commit, not a future phase.

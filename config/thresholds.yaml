@@ -48,6 +48,19 @@ universal_forensic:
   revenue_inflation_min_growth: 0.50  # trader tell: revenue growth at/above this ...
   revenue_inflation_max_margin: 0.03  # ... while gross margin at/below this = flag
 
+# Working-capital cycle (ADR-0038). Days conventions belong in config because they are conventions, not
+# facts: a 365-day year and a Sales denominator are choices a reader must be able to see and change.
+working_capital:
+  days_in_year: 365
+  # Inventory and payable days are conventionally struck against COGS, not Sales. COGS ("Cost of Materials
+  # Consumed") is a note row this pipeline does not yet extract, so the denominator falls back to Sales and
+  # the FORMULA SAYS SO on every published figure. Set to false once a COGS extractor exists.
+  use_sales_when_cogs_absent: true
+  # A cycle this long is implausible for a manufacturer and almost always means the denominator is wrong
+  # (part-year revenue, a restated balance) rather than a real 3-year collection period. Above it the metric
+  # is refused rather than published, on the ADR-0025 input-plausibility principle.
+  max_plausible_days: 730
+
 # Model-specific checks (ADAPTIVE_FORENSICS §2 matrix). PROVISIONAL until golden-set calibration.
 model_forensic:
   contract_asset_flow_gap: 0.30       # EPC: contract-asset growth − revenue growth above this = flag

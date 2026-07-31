@@ -41,11 +41,18 @@ _RUPEE = r"(?:₹|`|Rs\.?|INR)"
 #: "(₹ in Lakhs)" and "` In Lakhs" and a bare "Amount in Lakhs" all mean the same thing. The `in <unit>`
 #: alternative catches the last form; requiring the word "in" keeps it from firing on prose like
 #: "lakhs of tonnes".
+#: A unit DECLARATION ("₹ In Lakhs" above a table) has no digits between the rupee sign and the unit word.
+#: An inline prose AMOUNT ("Rs. 1.26 crores") does. Excluding digits is what separates them, and it is not a
+#: nicety: on the FY22 Alkyl Amines filing, page 91 declares "` In Lakhs" twice above its tables and
+#: mentions "Rs. 1.26 crores" once in a sentence about an EPCG licence. Crore is tested first, so the prose
+#: mention won and every figure on the page was read as crore — a silent 100x on grade-A facts, which is
+#: indistinguishable from a fabricated number once it carries a filing locator (ADR-0038).
 _UNIT_HINTS = [
-    (re.compile(rf"{_RUPEE}[^\n]{{0,20}}?\bcr(?:ore)?s?\b|\bin\s+cr(?:ore)?s?\b", re.IGNORECASE),
+    (re.compile(rf"{_RUPEE}[^\n\d]{{0,20}}?\bcr(?:ore)?s?\b|\bin\s+cr(?:ore)?s?\b", re.IGNORECASE),
      "INR_cr"),
-    (re.compile(rf"{_RUPEE}[^\n]{{0,20}}?\blakhs?\b|\bin\s+lakhs?\b", re.IGNORECASE), "INR_lakh"),
-    (re.compile(rf"(?:{_RUPEE}|\$)[^\n]{{0,20}}?\b(?:million|mn|MM)\b|\bin\s+millions?\b", re.IGNORECASE),
+    (re.compile(rf"{_RUPEE}[^\n\d]{{0,20}}?\blakhs?\b|\bin\s+lakhs?\b", re.IGNORECASE), "INR_lakh"),
+    (re.compile(rf"(?:{_RUPEE}|\$)[^\n\d]{{0,20}}?\b(?:million|mn|MM)\b|\bin\s+millions?\b",
+                re.IGNORECASE),
      "MM"),
 ]
 
@@ -61,6 +68,10 @@ NOTE_REFERENCE_MAX = 99
 _LOOKS_FORMATTED = re.compile(r"[,.]")
 #: A bare integer: no comma, no decimal, no parentheses, no sign.
 _BARE_INTEGER = re.compile(r"^\d{1,3}$")
+
+#: The start of the NEXT enumerated statement row — "(iv) Other Financial Liabilities", "(b) Provisions",
+#: "II Other Income". Used to bound a multi-line row so a component sum cannot absorb its neighbour.
+_NEXT_ROW = re.compile(r"^\s*(?:\(\s*(?:[ivxIVX]{1,4}|[a-zA-Z])\s*\)|[IVX]{1,4}\s+[A-Z])")
 
 
 def to_canonical_crore(value: float, unit: str) -> float | None:
@@ -165,11 +176,15 @@ def numbers_on_line(line: str) -> tuple[float, ...]:
 
 
 def page_unit_hint(page_text: str) -> str:
-    """Detect the unit a page declares ('₹ in crore', 'Rs. in lakhs', '$ MM', ...); '' if undeclared."""
-    for pattern, hint in _UNIT_HINTS:
-        if pattern.search(page_text):
-            return hint
-    return ""
+    """Detect the unit a page declares ('₹ in crore', 'Rs. in lakhs', '$ MM', ...); '' if undeclared.
+
+    When a page declares more than one unit — a lakh table followed by a note quoting a crore figure — the
+    MOST DECLARED wins rather than the first pattern in the list. Order-of-testing is not evidence, and a
+    page that says "In Lakhs" above each of its two tables is telling you its unit twice.
+    """
+    counts = [(len(pattern.findall(page_text)), hint) for pattern, hint in _UNIT_HINTS]
+    best = max(counts, key=lambda c: c[0])
+    return best[1] if best[0] else ""
 
 
 def _label_of(line: str) -> str:
@@ -280,6 +295,77 @@ def audited_statement_pages(pages: Sequence[str]) -> dict[str, tuple[int, ...]]:
         "balance_sheet": (anchor,),
         "pnl": () if nearest is None else (nearest,),
     }
+
+
+def find_statement_row_sum(
+    pages: Sequence[str],
+    statement: str,
+    anchor_keywords: Iterable[str],
+    component_keywords: Iterable[str],
+    *,
+    max_lines: int = 8,
+) -> ExtractedValue | None:
+    """A statement line whose total is printed only as its COMPONENTS, summed (ADR-0038).
+
+    Trade payables is the canonical case and it is a trap for a single-row reader. Schedule III requires the
+    balance sheet to split the line, so what is printed is::
+
+        (iii) Trade Payables
+        Total outstanding dues of  Micro & Small Enterprises 24  1,550.29  1,426.79
+        Total outstanding dues of creditors other than Micro
+        & Small Enterprises  13,570.47  16,296.57
+
+    The header carries no figure, and a keyword search that settles for the first matching row returns
+    ₹1,550.29 as "trade payables" when the real figure is ₹15,120.76 — an order of magnitude out, sourced
+    from the audited balance sheet, and therefore grade A. A wrong number with strong provenance is the
+    worst thing this pipeline can produce, so components are summed and the label records that they were.
+
+    The second component's label WRAPS, leaving its figures on the following line, so a component match
+    that yields no figures carries forward and takes the next numeric line. Returns None when the anchor is
+    absent or no component carries a figure — never a partial sum.
+    """
+    indices = audited_statement_pages(pages).get(statement, ())
+    anchors = tuple(k.lower() for k in anchor_keywords)
+    components = tuple(k.lower() for k in component_keywords)
+    for index in indices:
+        page = pages[index]
+        lines = page.splitlines()
+        start = next(
+            (i for i, ln in enumerate(lines) if any(a in ln.lower() for a in anchors)), None
+        )
+        if start is None:
+            continue
+        total = 0.0
+        found: list[str] = []
+        first_line = None
+        pending = False
+        for offset, line in enumerate(lines[start + 1:start + max_lines], start=1):
+            low = line.lower()
+            is_component = any(c in low for c in components)
+            # A new enumerated row ("(iv) Other Financial Liabilities …") ends the block. Without this the
+            # carry-forward below would walk off the end of trade payables and add the next line's figures.
+            if _NEXT_ROW.match(line) and not is_component:
+                break
+            if not (is_component or pending):
+                continue
+            values = numbers_on_line(line)
+            if not values:
+                # The label is still wrapping — it can take two lines before its figures appear, so a
+                # pending carry must SURVIVE an intermediate blank-of-figures line rather than reset.
+                pending = True
+                continue
+            total += values[0]
+            found.append(line.strip())
+            pending = False
+            if first_line is None:
+                first_line = start + offset + 1
+        if found:
+            return ExtractedValue(
+                label=f"{lines[start].strip()} (sum of {len(found)} component rows)",
+                values=(total,), page=index + 1, line=first_line or start + 1,
+                unit_hint=page_unit_hint(page), raw_line=" | ".join(found)[:400],
+            )
+    return None
 
 
 def find_statement_row(

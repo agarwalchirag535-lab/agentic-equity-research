@@ -47,6 +47,26 @@ def test_page_unit_hint():
     assert page_unit_hint("no unit declared here") == ""
 
 
+def test_a_prose_rupee_amount_does_not_override_the_table_unit_declaration():
+    """ADR-0038. FY22 Alkyl Amines p.91 declares "` In Lakhs" above each of its two tables and mentions
+    "Rs. 1.26 crores" once in a sentence. Crore is tested first, so the sentence used to win and every
+    figure on the page was read 100x too large — carrying a grade-A filing locator, which makes a wrong
+    scale indistinguishable from a fabricated number."""
+    page = (
+        "24 CURRENT FINANCIAL LIABILITY - TRADE PAYABLES ` In Lakhs\n"
+        "Total outstanding dues  1,550.29  1,426.79\n"
+        "The Company availed a benefit through the Utilization of EPCG License amounting to "
+        "Rs. 1.26 crores. However, since the Imported...\n"
+        "` In Lakhs\n"
+    )
+    assert page_unit_hint(page) == "INR_lakh"
+
+
+def test_the_most_declared_unit_wins_not_the_first_pattern_tested():
+    assert page_unit_hint("` In Crores\nsome row 1.00\n` In Crores\n` In Lakhs") == "INR_cr"
+    assert page_unit_hint("` In Lakhs\nsome row 1.00\n` In Lakhs\n` In Crores") == "INR_lakh"
+
+
 # ---- row extraction with provenance -------------------------------------------------------------
 def test_extract_labeled_rows_provenance_and_columns():
     rows = extract_labeled_rows([PAGE_PNL, PAGE_BS])

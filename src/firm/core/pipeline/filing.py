@@ -24,7 +24,12 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Mapping, Sequence
 
-from firm.adapters.base.tables import ExtractedValue, find_statement_row, to_canonical_crore
+from firm.adapters.base.tables import (
+    ExtractedValue,
+    find_statement_row,
+    find_statement_row_sum,
+    to_canonical_crore,
+)
 from firm.adapters.india.filings import disclosure_gaps, forensic_sections
 from firm.adapters.india.notes_content import related_party_summary
 from firm.adapters.india.notes import (
@@ -57,8 +62,18 @@ from firm.schemas.report import CheckOutcome
 FILING_ROWS: Mapping[str, tuple[str, tuple[str, ...], tuple[str, ...]]] = {
     D.RECEIVABLES: ("balance_sheet", ("trade receivable", "sundry debtor"), ("ageing", "schedule")),
     D.INVENTORY: ("balance_sheet", ("inventories", "inventory"), ("ageing", "policy")),
+    # "Trade Payables" appears on the balance sheet as a bare header with the split (micro/small vs others)
+    # on the lines beneath, so `total outstanding dues` is the label that actually carries the figure on
+    # several of these filings; both spellings are accepted (ADR-0038).
+    D.PAYABLES: ("balance_sheet", ("trade payable", "total outstanding dues"), ("ageing", "schedule")),
     D.CASH: ("balance_sheet", ("cash and cash equivalent",), ("ageing", "policy", "other bank")),
     D.SALES: ("pnl", ("revenue from operations", "revenue from operation"), ("note", "policy")),
+}
+
+#: Rows whose total is printed only as components: metric -> (anchor keywords, component keywords).
+#: See `find_statement_row_sum` for why a single-row read of these is not merely incomplete but wrong.
+COMPONENT_SUM_ROWS: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    D.PAYABLES: (("trade payable",), ("outstanding dues",)),
 }
 
 #: Note taxonomy category -> the deterministic checks that read that note. A note whose category has no
@@ -126,6 +141,22 @@ def register_filing_facts(
     fact_ids: list[str] = []
     for metric, (statement, keywords, excluded) in FILING_ROWS.items():
         row = find_statement_row(filing.pages, statement, keywords, exclude=excluded)
+        # Schedule III splits trade payables into micro/small and other, and the balance-sheet HEADER
+        # carries no figure — so the single-row reader returns the micro/small component (₹1,550cr of a
+        # ₹15,121cr line) as though it were the total. Sum the components instead (ADR-0038).
+        if metric in COMPONENT_SUM_ROWS:
+            anchors, components = COMPONENT_SUM_ROWS[metric]
+            summed = find_statement_row_sum(filing.pages, statement, anchors, components)
+            if summed is not None:
+                row = summed
+            elif row is not None:
+                unresolved[metric] = (
+                    f"{row.label!r} found at {row.locator} but its Schedule III component rows could not "
+                    f"be summed, and the row the reader landed on is one component rather than the line "
+                    f"total — storing it would publish a fraction of the real figure at grade "
+                    f"{filing.grade}"
+                )
+                continue
         if row is None or not row.values:
             continue
 

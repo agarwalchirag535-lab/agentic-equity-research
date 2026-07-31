@@ -89,9 +89,13 @@ def test_every_referenced_metric_is_one_the_pipeline_could_actually_produce(stor
 
     # Metrics the registry asks for on purpose that no derivation exists for YET. Each one is a real
     # capability gap with a named owner in STATUS.md §3; shrinking this set is the work.
-    known_capability_gaps = {
-        "receivable_days", "receivable_days_delta", "inventory_days",
-    }
+    #
+    # EMPTIED 2026-07-31 (ADR-0038). It held `receivable_days`, `receivable_days_delta` and
+    # `inventory_days` — all three derivable from balance-sheet rows the pipeline had been storing as
+    # grade-A facts for ten years. The allowlist was not documenting a data gap; it was licensing the
+    # report to answer "unavailable" to a question we could already answer. Keep it empty if you can:
+    # adding an entry here is a decision to publish an excuse, so it needs a STATUS.md line saying why.
+    known_capability_gaps: set[str] = set()
     referenced = {q["metric"] for _, q in QUESTIONS if "metric" in q}
     unknown = referenced - derivable - known_capability_gaps
     assert not unknown, (

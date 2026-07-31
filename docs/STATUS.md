@@ -180,6 +180,18 @@ Not a defect — the floor is right and the coverage is not there yet. Needs not
 receivables, borrowings, contingent liabilities, tax, leases, employee benefits and segment, on the pattern of
 `notes_content.related_party_summary`. Several sessions of work, one note category at a time.
 
+**The ageing schedules are now READ (ADR-0038)** — `adapters/india/ageing.py` parses receivables, payables
+and CWIP; all three reconcile to their balance-sheet rows on FY26. **Not yet wired** into the checks, the
+note dispositions or the agent packet, so `substantive_share` has not moved and `ageing_cwip` still has no
+input. That wiring is the immediate next commit. What the tables already show on ALKYLAMINE: ₹16.29cr of
+CWIP in projects *temporarily suspended*, ₹34.50cr of CWIP aged beyond a year, and a receivable book with
+zero disputed and zero credit-impaired balances.
+
+**The working-capital cycle exists (ADR-0038)** — receivable/inventory/payable days, the cash conversion
+cycle and the two deltas. Metric set went 26 derived / 2 missing → **33 derived / 0 missing**, seven of them
+grade A. The `known_capability_gaps` allowlist in `tests/test_line_item_registry.py` is now **empty**;
+adding to it is a decision to publish an excuse.
+
 **Enumeration itself was fixed 2026-07-31 (ADR-0037)** — it found 11 notes where the FY26 filing has 45,
 because the heading regex was defeated by the `` ` In Lakhs`` unit marker printed on the heading line. The
 denominator is now real, which is why this entry reads 7% rather than 9%. **The three ageing schedules
@@ -361,6 +373,16 @@ blank — see the ALKYLAMINE note.
   `what_it_does` and `disconfirming_search`. `authored_texts()` now checks every `str` field on the agent
   output, so a new schema field is covered the moment it exists. If you ever narrow it back to a name list,
   you have re-opened the hole.
+- **A prose rupee amount is not a unit declaration.** `page_unit_hint` tested crore first and took the first
+  match, so one sentence saying "Rs. 1.26 crores" beat two table headers saying "` In Lakhs" and every figure
+  on the page was read 100x too large *with a grade-A locator on it*. A declaration has no digits between the
+  rupee sign and the unit word; an amount does. Where a page declares two units, the most-declared wins.
+- **A Schedule III split line has no total of its own.** Trade payables prints a header with no figure and
+  two "Total outstanding dues of…" components beneath it, the second wrapping. A single-row reader returns
+  the micro/small component (₹1,550cr of ₹15,121cr) as the whole line. Use `find_statement_row_sum`.
+- **Before writing "unavailable", check whether the inputs are already in the fact store.** `receivable_days`
+  claimed "no derivation exists" for months while receivables, inventory and revenue sat there as grade-A
+  rows. A capability gap that is never re-tested becomes a permanent excuse (ADR-0038).
 - **A keyword scan for a mandated disclosure must match the FILING's wording, not the STATUTE's.** Searching
   "ageing schedule of trade receivable" against a filing that prints an ageing table headed "Outstanding for
   following periods from due date of payment" produced six false disclosure gaps and a published `REVIEW`
