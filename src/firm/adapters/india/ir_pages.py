@@ -36,11 +36,20 @@ from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 #: "Annual Return" (the MGT-7 statutory filing) and "Annual Secretarial Compliance Report" are different
 #: documents, and matching them would put non-financial PDFs into the financial manifest.
 _ANNUAL_REPORT = re.compile(r"annual[-_\s]*report", re.IGNORECASE)
-_NOT_ANNUAL_REPORT = re.compile(r"annual[-_\s]*(return|secretarial)", re.IGNORECASE)
+#: Documents that name the annual report without BEING it. The notice convening the AGM at which the
+#: report is adopted is titled "Reg 34 AnnualReport Notice" on City Union Bank's site, and it was
+#: discovered as that year's annual report — a two-page notice standing in for a 200-page filing, which
+#: every downstream extractor would then read as an empty AR rather than as the wrong document.
+_NOT_ANNUAL_REPORT = re.compile(
+    r"annual[-_\s]*(return|secretarial)|notice|extract|highlights|summary|action[-_\s]*plan",
+    re.IGNORECASE)
 #: `.../uploads/2026/06/...` — the WordPress convention nearly every Indian IR site uses.
 _UPLOAD_MONTH = re.compile(r"/(20\d{2})/(0[1-9]|1[0-2])/")
 #: "FY-2025-26", "FY 2025-2026", "2016-17", "FY-2024-25" — the year the report covers.
 _FY_RANGE = re.compile(r"(20\d{2})\s*[-_]\s*(20\d{2}|\d{2})")
+#: `AnnualReport2019.pdf`, `CUB_Annual_Report_2014.pdf` — a BARE year, no range. Common enough to matter:
+#: City Union Bank names five of its archived reports this way, and dropping them costs half the archive.
+_BARE_YEAR = re.compile(r"(?<!\d)(20[0-3]\d)(?!\d)")
 _HREF = re.compile(r'href="([^"]+\.pdf)"', re.IGNORECASE)
 
 #: The IR sections every SEBI-compliant Indian listed company publishes (Reg. 46 LODR). Fetching only the
@@ -148,6 +157,13 @@ class FilingCandidate:
     published_at: date
     published_at_basis: str      # 'upload-path' | 'statutory-proxy'
     suggested_file: str          # a stable local name for the bronze store
+    #: How the FISCAL YEAR was established, which is a separate question from how the date was.
+    #: `range` — the link states "2023-24", so the year it covers is unambiguous.
+    #: `bare-year-convention` — the link says only "2019". An Indian annual report labelled with one year
+    #: means the year ENDED in it (FY2018-19), which is a naming convention rather than an observation, so
+    #: it is recorded as such. Dropping these instead would have cost City Union Bank five of eleven
+    #: reports; guessing silently would put a mislabelled year into a point-in-time series, which is worse.
+    period_basis: str = "range"
 
 
 def _fy_from_range(start: int, end_token: str) -> str:
@@ -191,9 +207,16 @@ def discover_filings(html: str, ticker: str, base_url: str | None = None) -> lis
         if not _ANNUAL_REPORT.search(label) or _NOT_ANNUAL_REPORT.search(label):
             continue
         fy = _FY_RANGE.search(label)
-        if fy is None:
-            continue
-        period = _fy_from_range(int(fy.group(1)), fy.group(2))
+        if fy is not None:
+            period, period_basis = _fy_from_range(int(fy.group(1)), fy.group(2)), "range"
+        else:
+            # No range. Fall back to a bare year read from the FILENAME only — never from the directory
+            # path, where `/2022/03/` is an upload month and `/july24/` a batch folder, neither of which
+            # says anything about the year the report covers.
+            bare = _BARE_YEAR.search(label.rsplit("/", 1)[-1])
+            if bare is None:
+                continue
+            period, period_basis = f"FY{int(bare.group(1)) % 100:02d}", "bare-year-convention"
         prior = f"FY{(int(period[2:]) - 1) % 100:02d}"
 
         deadline = _statutory_deadline(period)
@@ -209,9 +232,14 @@ def discover_filings(html: str, ticker: str, base_url: str | None = None) -> lis
         candidate = FilingCandidate(
             url=url, period=period, prior_period=prior, published_at=published,
             published_at_basis=basis, suggested_file=f"{ticker}-AR-{period}.pdf",
+            period_basis=period_basis,
         )
-        # One report per fiscal year; prefer the entry whose date rests on evidence.
+        # One report per fiscal year. Prefer the entry whose FISCAL YEAR is stated outright over one read
+        # off a convention, and within that the one whose DATE rests on evidence.
         existing = seen.get(period)
-        if existing is None or (existing.published_at_basis != "upload-path" and basis == "upload-path"):
+        better_period = existing is not None and existing.period_basis != "range" and period_basis == "range"
+        better_date = (existing is not None and existing.published_at_basis != "upload-path"
+                       and basis == "upload-path")
+        if existing is None or better_period or better_date:
             seen[period] = candidate
     return sorted(seen.values(), key=lambda c: c.period, reverse=True)

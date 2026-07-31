@@ -1,0 +1,2249 @@
+{
+  "ticker": "CUB",
+  "source": [
+    "https://www.cityunionbank.com/investor-relations"
+  ],
+  "retrieved_at": "2026-07-31",
+  "documents": [
+    {
+      "file": "CUB-annual_report-8-27-07-2021-Reg-34-AnnualReport-Notice.pdf",
+      "doc_class": "annual_report",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/8_27.07.2021_Reg%2034_AnnualReport_Notice.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-8-27-07-2022-Reg-34-AnnualReport-Notice.pdf",
+      "doc_class": "annual_report",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/8_27.07.2022_Reg%2034_AnnualReport_Notice.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-AnnualReport2017.pdf",
+      "doc_class": "annual_report",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/AnnualReport2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-AnnualReport2018.pdf",
+      "doc_class": "annual_report",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/AnnualReport2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-AnnualReport2019.pdf",
+      "doc_class": "annual_report",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/AnnualReport2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-CUB-Annual-Report-2014.pdf",
+      "doc_class": "annual_report",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CUB_Annual_Report_2014.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-CUB-Annual-Report-2015.pdf",
+      "doc_class": "annual_report",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CUB_Annual_Report_2015.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-ANNUAL-REPORT-2009-10.pdf",
+      "doc_class": "annual_report",
+      "period": "FY10",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2009-10.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-ANNUAL-REPORT-2010-11.pdf",
+      "doc_class": "annual_report",
+      "period": "FY11",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2010-11.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-ANNUAL-REPORT-2011-12.pdf",
+      "doc_class": "annual_report",
+      "period": "FY12",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2011-12.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-ANNUAL-REPORT-2012-13.pdf",
+      "doc_class": "annual_report",
+      "period": "FY13",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2012-13.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-Annual-Report-2020-21.pdf",
+      "doc_class": "annual_report",
+      "period": "FY21",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Annual%20Report_2020-21.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_report-ANNUALREPORT2023-24.pdf",
+      "doc_class": "annual_report",
+      "period": "FY24",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/july24/ANNUALREPORT2023-24.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_return-annual-return-2021.pdf",
+      "doc_class": "annual_return",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/annual-return-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_return-MGT7-2023.pdf",
+      "doc_class": "annual_return",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr24/MGT7_2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_return-ANNUALRETURN2024.pdf",
+      "doc_class": "annual_return",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun25/ANNUALRETURN2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_return-MGT7-AB6841657.pdf",
+      "doc_class": "annual_return",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Nov25/MGT7-AB6841657.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-annual_return-MGT-7-2022.pdf",
+      "doc_class": "annual_return",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/MGT-7_2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-credit_rating-CREDITRATINGICRA19112025.pdf",
+      "doc_class": "credit_rating",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Nov25/CREDITRATINGICRA19112025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-10-31-07-2019-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/10_31.07.2019_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-11-06-08-2021-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/11_06.08.2021_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-11-08-08-2019-Reg-33-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/11_08.08.2019_Reg%2033_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-11-27-07-2017-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/11_27.07.2017_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-12-26-10-2017-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/12_26.10.2017_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-13-08-11-2017-Reg-33-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/13_08.11.2017_Reg%2033_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-14-02-11-2020-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/14_02.11.2020_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-14-24-01-2018-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/14_24.01.2018_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-15-30-10-2019-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/15_30.10.2019_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-16-07-11-2019-Reg-33-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/16_07.11.2019_Reg%2033_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-17-12-11-2021-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/17_12.11.2021_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-18-03-02-2021-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/18_03.02.2021_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-19-27-01-2022-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/19_27.01.2022_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-1-12-03-2016-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/1_12.03.2016_Reg%20_30_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-20-05-02-2020-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/20_05.02.2020_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-21-12-02-2020-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/21_12.02.2020_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-26-19-03-2020-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/26_19.03.2020_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-2-15-05-2017-Reg-29-1-Intimation-of-Board-Meeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/2_15.05.2017_Reg%2029%281%29_Intimation%20of%20Board%20Meeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-2-27-07-2018-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/2_27.07.2018_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-3-01-11-2016-Reg-29-1-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/3_01.11.2016_Reg%2029%281%29_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-3-08-05-2019-Reg-29-1-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/3_08.05.2019_Reg%2029%281%29_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-3-28-05-2021-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/3_28.05.2021_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-3-29-05-2017-Reg-33-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/3_29.05.2017_Reg%2033_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-4-17-05-2019-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/4_17.05.2019_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-4-18-06-2020-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/4_18.06.2020_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-5-24-10-2018-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/5_24.10.2018_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-5-27-01-2017-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/5_27.01.2017_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-6-02-11-2018-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/6_02.11.2018_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-7-13-07-2020-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/7_13.07.2020_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-7-19-07-2021-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/7_19.07.2021_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-7-21-01-2019-Reg-29-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/7_21.01.2019_Reg%2029_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-8-06-08-2020-Reg-29-1-Intimation-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/8_06.08.2020_Reg%2029%281%29_Intimation_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-9-13-08-2020-Reg-30-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/9_13.08.2020_Reg%2030_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-9-21-07-2017-Reg-33-Outcome-of-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/9_21.07.2017_Reg%2033_Outcome_of_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BoardDiversityPolicy.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/BoardDiversityPolicy.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Code-of-conduct-PIT-230322.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Code_of_conduct_PIT_230322.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Corporate-Governance-March-2021.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Corporate%20Governance%20March%202021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Corporate-Governance-Dec2020.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Corporate%20Governance_Dec2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Corporate-Governance-30-03-2020.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Corporate_Governance_30.03.2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Corporate-Governance-31-12-2019.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Corporate_Governance_31.12.2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Corporate-Governance-June-2019.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Corporate_Governance_June_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Outcome-of-Board-Meeting-08-08-2022.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Outcome_of_Board_Meeting_08.08.2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Outcome-of-Board-Meeting-27052022.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Outcome_of_Board_Meeting_27052022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Outcome-of-Board-Meeting-QIP-06072022.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Outcome_of_Board_Meeting_QIP_06072022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Outcome-of-the-Board-Meeting-08022017.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Outcome_of_the_Board_Meeting_08022017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Reg29-Intimation-Board-Meeting-20052022.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Reg29_Intimation_Board_Meeting_20052022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Report-on-Corporate-Governance-Dec-2018.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Report_on_Corporate_Governance_Dec_2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Report-on-Corporate-Governance-Jun-2022.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Report_on_Corporate_Governance_Jun_2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Report-on-Corporate-Governance-Mar-2019.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Report_on_Corporate_Governance_Mar_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Report-on-Corporate-Governance-Sep-2018.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Report_on_Corporate_Governance_Sep_2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Report-on-Corporate-Governance-Sep-2022.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Report_on_Corporate_Governance_Sep_2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-SuccessionPlanningPolicy.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/SuccessionPlanningPolicy.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-corporate-governance-dec-2021.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/corporate-governance-dec-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-corporate-governance-march-2022.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/corporate-governance-march-2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-corporate-governance-sept-2021.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/corporate-governance-sept-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-outcome-board-meeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/outcome_board_meeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Code-of-Banks-Commitment-to-Customers-Eng.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/privacy/Code_of_Banks_Commitment_to_Customers_Eng.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Code-of-Banks-Commitment-to-Customers-Hindi.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/privacy/Code_of_Banks_Commitment_to_Customers_Hindi.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCE-31032024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr24/CORPORATEGOVERNANCE_31032024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETING02052025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr25/BOARDMEETING02052025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCEREPORTMARCH2025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr25/CORPORATEGOVERNANCEREPORTMARCH2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETINGINTIMATION27042026.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr26/BOARDMEETINGINTIMATION27042026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Outcome-of-Boardmeeting-31072025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Aug25/Outcome_of_Boardmeeting_31072025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETING01022024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/JAN24/BOARDMEETING01022024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETING31012025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jan25/BOARDMEETING31012025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCE-DEC2024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jan25/CORPORATEGOVERNANCE_DEC2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETING02022026.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jan26/BOARDMEETING02022026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCE-DEC2025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jan26/CORPORATEGOVERNANCE_DEC2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETINGINTIMATION21072025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jul25/BOARDMEETINGINTIMATION21072025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETINGINTIMATIONNSE26072024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/July24/BOARDMEETINGINTIMATIONNSE26072024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCEJUNE2024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/July24/CORPORATEGOVERNANCEJUNE2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-ArchivalPolicy.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun25/ArchivalPolicy.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARD-MEETING-INTIMATION-05062025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun25/BOARD_MEETING_INTIMATION_05062025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-PITPolicy-31-01-2025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun25/PITPolicy_31.01.2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-REVISEDOUTCOMEBOARDMEETINGJUNE112025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun25/REVISEDOUTCOMEBOARDMEETINGJUNE112025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-WHISTLE-BLOWER-POLICY-2025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun25/WHISTLE_BLOWER_POLICY_2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CSR-Policy-June2026.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun26/CSR_Policy_June2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CUB-Prior-Intimation-BoardMeeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun26/CUB_Prior_Intimation_BoardMeeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Code-of-conduct-DIR-SMP-2026.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun26/Code_of_conduct_DIR_SMP_2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Dividend-Distribution-Policy-2026.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun26/Dividend_Distribution_Policy_2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-RPT-Policy-2026.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun26/RPT_Policy_2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Compensation-Policy-26032024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May24/Compensation%20Policy_26032024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-NSEBOARDMEETING20052024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May24/NSEBOARDMEETING20052024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCE-30092023.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct23/CORPORATEGOVERNANCE_30092023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Board-meeting-intimation-14102024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct24/Board_meeting_intimation_14102024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCE-SEP2024.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct24/CORPORATEGOVERNANCE_SEP2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BOARDMEETINGINTIMATION23102025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct25/BOARDMEETINGINTIMATION23102025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCESEP2025.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct25/CORPORATEGOVERNANCESEP2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-ANTI-BRIBERY-AND-CORRUPTION-POLICY.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/ANTI%20BRIBERY%20AND%20CORRUPTION%20POLICY.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Board-Meeting-26-05-2023.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Board%20Meeting%2026.05.2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-BoardMeeting-Intimation01022023.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/BoardMeeting_Intimation01022023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-CORPORATEGOVERNANCE30062023.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/CORPORATEGOVERNANCE30062023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-EQUAL-OPPORTUNITY-POLICY.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/EQUAL%20OPPORTUNITY%20POLICY.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-POLICY-ON-RESPONSIBLE-ADVOCACY.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/POLICY%20ON%20RESPONSIBLE%20ADVOCACY.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-REPORTONCORPORATEGOVERNANCEMARCH2023.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/REPORTONCORPORATEGOVERNANCEMARCH2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-Reg-29-intimation-board-meeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Reg%2029_intimation_board%20meeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-intimation-of-board-meeting.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/intimation%20of%20board%20meeting.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-governance-outcome-of-Board-meeting-11-08-2023.pdf",
+      "doc_class": "governance",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/outcome%20of%20Board%20meeting%2011.08.2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-City-Union-Bank-Investor-Presentation-Sep-2022.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/City_Union_Bank_Investor_Presentation_Sep_2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-CUB-Investor-Presentation-March-2021.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CUB_Investor%20Presentation_March%202021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-CUB-Investor-Presentation-Mar-2020.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CUB_Investor_Presentation_Mar_2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-City-Union-Bank-Investor-Presentation-Sep-2015.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/City%20Union%20Bank%20Investor%20Presentation%20Sep%202015.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-City-Union-Bank-Investor-Presentation-Jun-2019.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/City%20Union_Bank_Investor_Presentation_Jun_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-INVESTOR-PRESENTATION-DEC-2013.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_PRESENTATION_DEC_2013.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-INVESTOR-PRESENTATION-JUNE-2013.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_PRESENTATION_JUNE_2013.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-INVESTOR-PRESENTATION-JUN-2014.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_PRESENTATION_JUN_2014.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-INVESTOR-PRESENTATION-MAR-2014.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_PRESENTATION_MAR_2014.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-INVESTOR-PRESENTATION-SEP2014.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_PRESENTATION_SEP2014.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-INVESTOR-PRESENTATION-SEP-2013.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_PRESENTATION_SEP_2013.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-CUB-Sep-2021.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor%20Presentation%20CUB%20Sep%202021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-DEC2020.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor%20Presentation%20DEC2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Jun-2018.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor%20Presentation%20Jun%202018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Sep-2020-new.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor%20Presentation%20Sep%202020_new.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Dec-2016.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Dec%202016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Dec2017.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Dec2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Jun-2016.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Jun%202016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Jun-2017.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Jun_2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Jun-2020.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Jun_2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Mar-2017.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Mar%202017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Mar2018.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Mar2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Mar-2016.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Mar_2016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Sep2017.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Sep2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Sep-2016.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Sep_2016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Sep-2018.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investor_Presentation_Sep_2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investors-Presentation-Dec-18.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investors%20Presentation%20Dec%2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investors-Presentation-Mar-19.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Investors%20Presentation%20Mar%2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-City-Union-Bank-Investor-Presentation-June2025.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Aug25/City_Union_Bank_Investor_Presentation_June2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-Investor-Presentation-Sep-2024.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Investor_Presentation_Sep_2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-CUB-Investor-Presentation-Mar2025.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May25/CUB_Investor_Presentation_Mar2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-CUB-InvestorPresentation-Mar2026.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May26/CUB_InvestorPresentation_Mar2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-City-Union-Bank-Investor-Presentation-Dec-2022.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/City-Union-Bank-Investor-Presentation-Dec-2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-presentation-investor-presentation.pdf",
+      "doc_class": "presentation",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/investor%20presentation.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUB-Q2-Advt-Result23.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/CUB_Q2_Advt_Result23.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUB-Result-Paper-Advt-SEP2020.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/CUB_Result_Paper_Advt_SEP2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUB-Result-paper-advt-Dec-2020.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/CUB_Result_paper_advt_Dec_2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUB-Results-Paper-advt-June-2020.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/CUB_Results_Paper_advt_June_2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Consideration-of-Audited-Financial-Result-March-2017.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Consideration-of-Audited-Financial-Result-March-2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Consideration-of-Un-audited-Result-Dec-2018.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Consideration_of_Un-audited_Result_Dec_2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Consideration-of-Un-Audited-Result-Sep-2018.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Consideration_of_Un_Audited_Result_Sep_2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Consideration-of-Unaudited-Financial-ResultJune2017.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Consideration_of_Unaudited_Financial_ResultJune2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Dec-2019-Result-Feb-13-2020.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Dec%2C2019_Result_Feb_13%2C2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-June-2019-Result-Aug-9-2019.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/June%2C2019_Result_Aug_9%2C2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-March-2019-Result-May-18-2019.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/March%2C2019_Result_May_18%2C2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Result-March-2020.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Result_March_2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Sep-2019-Result-Nov8-2019.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Sep%2C2019_Result_Nov8%2C2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-1-14-05-2018-Reg-29-1-Audited-Financial-Result.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/1_14.05.2018_Reg%2029%281%29_Audited_Financial%20Result.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-2-12-06-2020-Reg-29-1-FinancialResults.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/2_12.06.2020_Reg%2029%281%29_FinancialResults.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-8-07-07-2017-Reg-44-Intimation-of-PostalBallot-Result.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/8_07.07.2017_Reg%2044_Intimation_of_PostalBallot_Result.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Audited-March-2021-Results.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Audited-March-2021-Results.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Audited-results-MAR2020.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Audited_results_MAR2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUB-MAR22-AUD-RESULTS-new.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/CUB-MAR22-AUD-RESULTS_new.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUB-UNAUDITED-FIN-RESULTS-JUNE22.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/CUB-UNAUDITED-FIN-RESULTS_JUNE22.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUBK-Q3FY22-REVIEWED-RESULTS.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/CUBK-Q3FY22-REVIEWED-RESULTS.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUBUNAUDITEDRESULTS-SEP-2014.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/CUBUNAUDITEDRESULTS_SEP_2014.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CUB-Q2-FY2023-Results.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/CUB_Q2_FY2023_Results.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Financial-Results-Mar-16.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Financial_Results_Mar_16.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-JUN-RESULTS.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/JUN-RESULTS.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Q1FY21-Reveiwed-Results.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Q1FY21-Reveiwed-Results.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-REVIEWED-RESULTS-SEP-2020-new.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/REVIEWED-RESULTS-SEP-2020_new.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Reviewed-Financial-Results-Dec-2020.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Reviewed-Financial-Results_Dec_2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-UNAUDITED-RESULTS-JUNE2018.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/UNAUDITED-RESULTS_JUNE2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-UNAUDITED-RESULTS-DEC-2015.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/UNAUDITED_RESULTS_DEC_2015.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-UNAUDITED-RESULTS-JUN-2016.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/UNAUDITED_RESULTS_JUN_2016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-UNAUDITED-RESULTS-JUN-2017.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/UNAUDITED_RESULTS_JUN_2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Unaudited-Financial-Results-Dec2017.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Unaudited_Financial_Results_Dec2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Unaudited-Financial-Results-Sep2017.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Unaudited_Financial_Results_Sep2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Unaudited-results-30-06-2019.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/Unaudited_results_30_06_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-unaudited-results-sep-2016.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/unaudited_results_sep_2016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-result-paper-advt-dec-2021.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/result-paper-advt-dec-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-result-paper-advt-mar-2022.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/result-paper-advt-mar-2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-result-paper-advt-sep-2021.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/result-paper-advt-sep-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-RESULTSQ4FY2026.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr26/RESULTSQ4FY2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-RESULTSQ1FY26.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jul25/RESULTSQ1FY26.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Ambit-CityUnionBank-Results-Conference-Call-28Jul2026.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jul26/Ambit_CityUnionBank_Results_Conference_Call_28Jul2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-CORRIGENDUMFINANCIALRESULTS-22052024.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May24/CORRIGENDUMFINANCIALRESULTS_22052024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-FINANCIALRESULTSCUBMARCH2024.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May24/FINANCIALRESULTSCUBMARCH2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Postal-Ballot-Result30042024.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May24/Postal%20Ballot%20Result30042024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-postal-ballot-result-may2025.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May25/postal_ballot_result_may2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-result-Mar-2025.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May25/result_Mar_2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-RESULTSQ2FY202603112025.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Nov25/RESULTSQ2FY202603112025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-financial-results-sep-2023-sign.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct23/financial%20results_sep%202023%20sign.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Financial-results-Q3-FY-23.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Financial%20results%20Q3%20FY%2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Financial-results-Q4-FY-March-2023.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Financial%20results%20Q4%20FY%20March%202023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Paper-Advertisement-of-un-audited-results-june-2023.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Paper%20Advertisement%20of%20un-audited%20results%20june%202023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-Un-audited-financial-results-Q1-FY-2024.pdf",
+      "doc_class": "quarterly_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Un-audited%20financial%20results%20Q1%20FY%202024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-quarterly_result-UNAUDITED-RESULTS-Q32016-17.pdf",
+      "doc_class": "quarterly_result",
+      "period": "FY17",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/quarterly/UNAUDITED_RESULTS_Q32016-17.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDINGPATTERNSEP2024.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/SHAREHOLDINGPATTERNSEP2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-March-2021.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding-Pattern-March-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-31-12-2019.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_31.12.2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-Dec-2018.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_Dec_2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-Dec-2020.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_Dec_2020.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-Jun-2022.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_Jun_2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-June-2019.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_June_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-June-2021.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_June_2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-Mar-2019.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_Mar_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-SEP-2018.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_SEP_2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-SEP-2022.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/Shareholding_Pattern_SEP_2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-shareholding-pattern-June-2015.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/shareholding%20pattern_June_2015.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-shareholding-pattern-dec-2021.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/shareholding-pattern-dec-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-shareholding-pattern-march-2022.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/shareholding-pattern-march-2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-shareholding-pattern-sept-2021.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/documents/shareholding-pattern-sept-2021.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-shareholding-pattern-31-03-2024.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr24/shareholding%20pattern_31.03.2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDINGPATTERNMARCH2025.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr25/SHAREHOLDINGPATTERNMARCH2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDINGPATTERN31032026.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr26/SHAREHOLDINGPATTERN31032026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDINGPATTERN-DEC2024.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jan25/SHAREHOLDINGPATTERN_DEC2024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDINGPATTERNDEC2025.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jan26/SHAREHOLDINGPATTERNDEC2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-shareholding-pattern-30-06-2025.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jul25/shareholding_pattern_30.06.2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDING-PATTERN-30092023.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct23/SHAREHOLDING%20PATTERN_30092023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDINGPATTERN30062023.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/SHAREHOLDINGPATTERN30062023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-SHAREHOLDINGPATTERN31032023.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/SHAREHOLDINGPATTERN31032023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-shareholding-Shareholding-Pattern-DEC-2022.pdf",
+      "doc_class": "shareholding",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Shareholding_Pattern_DEC_2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-AGM-Transcript-Revised.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/AGM_Transcript_Revised.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Ambit-MD-concall-mar22.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Ambit_MD_concall_mar22.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CON-CALL-TRANSCRIPT-DEC2017.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CON-CALL-TRANSCRIPT-DEC2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CONCALL-TRANS-FINAL-JUNE2017.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CONCALL-TRANS-FINAL-JUNE2017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CONCALL-WRITEUP-JUNE-2016.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CONCALL_WRITEUP_JUNE_2016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CONCALL-WRITE-UP-DEC2015.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CONCALL_WRITE_UP_DEC2015.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CONCALL-WRITE-UP-MAR2016.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CONCALL_WRITE_UP_MAR2016.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CUB-Q2FY19-CONCALL-TRANSCRIPT.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CUB_Q2FY19_CONCALL_TRANSCRIPT.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Concal-Transcript-SEP19.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Concal_Transcript_SEP19.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Concall-Transcript-Mar-2018.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Concall_Transcript_Mar%202018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Concall-Transcript-june2018.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Concall_Transcript_june2018.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Consoln-Concall-MD-CFO-QA-1.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Consoln%20Concall%20MD_CFO_QA-1.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-FY14-Q4-Transcript-CUB.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/FY14%20Q4%20-%20Transcript%20-%20CUB.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-FY15-Q4Transcript-CUB.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/FY15_Q4Transcript_CUB.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-FY15-Transcript-SEP2014.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/FY15_Transcript_SEP2014.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-INVESTOR-CONCALL-TRANSCRIPT-DEC-16.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_CONCALL_TRANSCRIPT_DEC_16.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-INVESTOR-CONCALL-TRANSCRIPT-MAR-17.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_CONCALL_TRANSCRIPT_MAR_17.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-INVESTOR-CONCALL-TRANSCRIPT-SEP-16.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/INVESTOR_CONCALL_TRANSCRIPT_SEP_16.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-MAR-CONCALL-FULL.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/MAR-CONCALL-FULL.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-MD-AmbitCap-CON-CALL-FINAL.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/MD-AmbitCap-CON-CALL-FINAL.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-SEP-CON-CALL-DETAILS-NEW.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/SEP-CON-CALL-DETAILS-NEW.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-concall-June15.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/concall_June15.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-concall-Sep15.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/concall_Sep15.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-concall-final-Dec-2019.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/concall_final_Dec_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Q4FY2026EARNINGSCALL27042026.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr26/Q4FY2026EARNINGSCALL27042026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-EARNINGSCALLRECORDINGQ1FY2026.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Aug25/EARNINGSCALLRECORDINGQ1FY2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-EARNINGSCALLTRANSCRIPTQ1FY2026.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Aug25/EARNINGSCALLTRANSCRIPTQ1FY2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CUBQ3FY24CONCALLTRANSCRIPT.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Feb24/CUBQ3FY24CONCALLTRANSCRIPT.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-TRANSCRIPTQ39MFY2026.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Feb26/TRANSCRIPTQ39MFY2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-EARNINGSCALLQ1FY2026.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jul25/EARNINGSCALLQ1FY2026.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Outcome-of-AnalystConCall-Kotak.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun26/Outcome_of_AnalystConCall_Kotak.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-4QFY24EARNINGSCALLTRANSCRIPT.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May24/4QFY24EARNINGSCALLTRANSCRIPT.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-ANALYSTEARNINGSCALL20052024.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May24/ANALYSTEARNINGSCALL20052024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-EARNINGSTRANSCRIPTQ4FY2025.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/May25/EARNINGSTRANSCRIPTQ4FY2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-2QFY2024EARNINGSCALLTRANSCRIPT.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct23/2QFY2024EARNINGSCALLTRANSCRIPT.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-TRANSCRIPTSQ2FY2025.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Oct24/TRANSCRIPTSQ2FY2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CONCALLJUNE2023.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/CONCALLJUNE2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-CONCALLMARCH2023.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/CONCALLMARCH2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Conference-call-transcript.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Conference%20call%20transcript.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-transcript-Transcriptcall-AmbitCap-CityUnion-04Nov-2022.pdf",
+      "doc_class": "transcript",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/Transcriptcall-AmbitCap-CityUnion-04Nov-2022.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-Bonus-Issue-2017-Scrutinizer-Report.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Bonus_Issue_2017-Scrutinizer_Report.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-E-voting-Result-2019.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/E-voting_Result_2019.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-REG44SCRUTINIZERREPORT230820241.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/REG44SCRUTINIZERREPORT230820241.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-Scrutinizer-Report-2017.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Scrutinizer%20Report%202017.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-Scrutinizer-Report.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/Scrutinizer_Report.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-1-CUB-Postal-Ballot-Outcome-and-Voting-Results.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Apr26/1_CUB_Postal_Ballot_Outcome_and_Voting_Results.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-Scrutinizerreport-2025.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Aug25/Scrutinizerreport_2025.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-CUB-Postal-Ballot-Outcome-Voting-Results.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/Jun26/CUB_Postal_Ballot_Outcome_Voting_Results.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-CUB-E-Voting-results-2024.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/CUB_E-Voting%20results%202024.pdf",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-voting_result-REG44SCRUTINIZERREPORT2023.pdf",
+      "doc_class": "voting_result",
+      "period": null,
+      "source_url": "https://www.cityunionbank.com/filemanager/PDF/REG44SCRUTINIZERREPORT2023.pdf",
+      "sha256": "",
+      "bytes": 0
+    }
+  ]
+}

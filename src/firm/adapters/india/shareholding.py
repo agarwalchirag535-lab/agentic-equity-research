@@ -34,9 +34,27 @@ from firm.adapters.base.tables import numbers_on_line
 #: Alkyl Amines' 27 filings the cell wraps as `A Promoter &` / `Promoter` / `Group`, with the figures several
 #: lines below. Anchoring on the category letter plus its first word matches the row wherever the extractor
 #: chose to break it; `_row_block` then reads the whole row rather than one line of it.
-_PROMOTER_ROW = re.compile(r"^\(?A\)?[\s.]+promoter\b", re.I)
-_PUBLIC_ROW = re.compile(r"^\(?B\)?[\s.]+public\b", re.I)
-_NON_PROMOTER_ROW = re.compile(r"^\(?C\)?[\s.]+non[\s-]*promoter\b", re.I)
+#: MATCHED AGAINST A DE-SPACED LINE, and the category letter is OPTIONAL. Both concessions were forced by
+#: City Union Bank, where the parser scored 0 of 25 against Alkyl Amines' 27 of 27:
+#:
+#: * the category letter lives in its own table column, so the row arrives as "Promoter & Promoter" with
+#:   no "(A)" anywhere on the line — requiring the letter meant the row was never located;
+#: * the text layer splits words mid-token ("encum bered", "Promoter& PromoterGroup"), so any pattern with
+#:   a space in it is a coin flip.
+#:
+#: Removing whitespace before matching handles both, and is the general answer to PDF word-splitting
+#: rather than a patch for one issuer. Figures are still read off the ORIGINAL line — squashing is for
+#: recognition only, because "1,234 56.78" squashed would weld two columns into one number.
+#: A PREFIX match, because a wrapped cell only carries the start of the label ("A Promoter &" on 14 of
+#: Alkyl Amines' filings). Demanding the full "promoter&promotergroup" cost 12 of those 27 immediately.
+_PROMOTER_ROW = re.compile(r"^\(?a?\)?[.\-]?promoter")
+_PUBLIC_ROW = re.compile(r"^\(?b?\)?[.\-]?public")
+_NON_PROMOTER_ROW = re.compile(r"^\(?c?\)?[.\-]?nonpromoter")
+
+
+def _squash(line: str) -> str:
+    """Lowercase with every space removed — the form the category and pledge patterns match against."""
+    return re.sub(r"\s+", "", line).lower()
 
 #: A row's figures never run more than this many wrapped lines past its label. A cap matters: without one a
 #: mis-detected category marker would swallow the rest of the document and scavenge a reconciling pair out
@@ -44,11 +62,9 @@ _NON_PROMOTER_ROW = re.compile(r"^\(?C\)?[\s.]+non[\s-]*promoter\b", re.I)
 _MAX_ROW_LINES = 40
 
 #: "Whether any shares held by promoters are pledge or otherwise encumbered? No"
+#: Also matched de-spaced: City Union Bank's text layer renders it "pledge or otherwise encum bered?".
 _PLEDGE_QUESTION = re.compile(
-    r"whether\s+any\s+shares?\s+held\s+by\s+promoters?\s+are\s+pledge[d]?\s+or\s+otherwise\s+"
-    r"encumbered\s*\??\s*(yes|no)?",
-    re.I,
-)
+    r"whetheranyshares?heldbypromoters?arepledged?orotherwiseencumbered\??(yes|no)?")
 #: The reporting date. SEBI's own cover page writes "4. Share Holding Pattern as on : 31-Mar-2022", so the
 #: separator is optional-colon and the month is as often a NAME as a number. The numeric-only pattern found
 #: the date on **none** of Alkyl Amines' 27 filings, which for a point-in-time system is the whole ballgame:
@@ -142,7 +158,11 @@ def _candidate_pcts(line: str) -> list[float]:
     """
     out: list[float] = []
     for value in numbers_on_line(line):
-        if 0 < value <= _MAX_PCT and value != int(value):
+        # ZERO IS A HOLDING. A bank or a widely-held company often has NO promoter at all — City Union
+        # Bank's category (A) is 0.00% and its public category is 100.00% — and excluding zero meant the
+        # only correct reading of that filing could never be produced. The `0 <` bound was written for a
+        # promoter-controlled manufacturer and quietly encoded the assumption that every company has one.
+        if 0 <= value <= _MAX_PCT and value != int(value):
             out.append(value)
     for token in re.findall(r"\d+\.\d+", line):
         whole, _, decimals = token.partition(".")
@@ -176,7 +196,7 @@ def _integer_pcts(text: str) -> list[float]:
     """
     out: list[float] = []
     for value in numbers_on_line(text):
-        if 0 < value <= _MAX_PCT and value == int(value) and value not in out:
+        if 0 <= value <= _MAX_PCT and value == int(value) and value not in out:
             out.append(value)
     return out
 
@@ -226,7 +246,7 @@ def parse_shareholding(pages: tuple[str, ...]) -> ShareholdingSummary:
             lines.append(stripped)
             page_of.append(index)
 
-            pledge_match = _PLEDGE_QUESTION.search(stripped)
+            pledge_match = _PLEDGE_QUESTION.search(_squash(stripped))
             if pledge_match is not None and pledged is None:
                 answer = (pledge_match.group(1) or "").lower()
                 # An unanswered question stays None: the form was present, the answer was not.
@@ -245,21 +265,25 @@ def parse_shareholding(pages: tuple[str, ...]) -> ShareholdingSummary:
     # wraps. Look one line on before concluding the form was left blank.
     if pledged is None:
         for index, line in enumerate(lines):
-            if _PLEDGE_QUESTION.search(line) and index + 1 < len(lines):
+            if _PLEDGE_QUESTION.search(_squash(line)) and index + 1 < len(lines):
                 answer = lines[index + 1].strip().lower()
                 if answer in ("yes", "no"):
                     pledged = answer == "yes"
                     break
 
-    starts = {"promoter": None, "public": None, "non_public": None}
-    boundaries: list[int] = []
+    starts: dict[str, int | None] = {"promoter": None, "public": None, "non_public": None}
+    hits: dict[str, list[int]] = {"promoter": [], "public": [], "non_public": []}
     for index, line in enumerate(lines):
-        for key, pattern in (("promoter", _PROMOTER_ROW), ("public", _PUBLIC_ROW),
-                             ("non_public", _NON_PROMOTER_ROW)):
-            if pattern.match(line):
-                boundaries.append(index)
+        squashed = _squash(line)
+        for key, pattern in (("non_public", _NON_PROMOTER_ROW), ("promoter", _PROMOTER_ROW),
+                             ("public", _PUBLIC_ROW)):
+            # `non_public` is tested FIRST: "Non Promoter- Non Public" would otherwise be claimed by the
+            # promoter prefix and the real category-C row would never be seen.
+            if pattern.match(squashed):
+                hits[key].append(index)
                 if starts[key] is None:
                     starts[key] = index
+                break
 
     if starts["promoter"] is None or starts["public"] is None:
         return ShareholdingSummary(
@@ -267,8 +291,17 @@ def parse_shareholding(pages: tuple[str, ...]) -> ShareholdingSummary:
             rejected_because="the promoter and public category rows were not both located",
         )
 
-    promoter_block = _row_block(lines, starts["promoter"], boundaries)
-    public_block = _row_block(lines, starts["public"], boundaries)
+    # A ROW ENDS AT A DIFFERENT CATEGORY, NEVER AT ITSELF. The prefix patterns necessarily also match the
+    # continuation lines of their own wrapped cell — "A Promoter &" / "Promoter" / "Group" — so treating
+    # every match as a block boundary truncated each row to its label and threw away the figures below it.
+    # That silently cost 12 of Alkyl Amines' 27 filings the moment the patterns were loosened for CUB.
+    def block_for(key: str) -> str:
+        start = starts[key]
+        others = [i for other, idx in hits.items() if other != key for i in idx]
+        return _row_block(lines, start, others)
+
+    promoter_block = block_for("promoter")
+    public_block = block_for("public")
     page_found = page_of[starts["promoter"]]
 
     counts = [v for v in numbers_on_line(promoter_block) if v == int(v) and v > 0]

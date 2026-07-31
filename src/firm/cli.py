@@ -258,6 +258,78 @@ def discover_filings_cmd(
     typer.echo(f"  firm deep-dive --ticker {ticker} --filings {path}")
 
 
+@app.command("discover-documents")
+def discover_documents_cmd(
+    ticker: str = typer.Option(..., "--ticker", help="NSE/BSE symbol, e.g. CUB"),
+    url: list[str] = typer.Option(..., "--url", help="an IR page; repeat for several sections"),
+    out: str = typer.Option("", "--out", help="default data/manifests/{TICKER}-documents.json"),
+) -> None:
+    """Find the governance documents on a company's IR pages and write a documents manifest.
+
+    THE GAP THIS CLOSES. `discover_documents()` existed in `adapters/india/ir_pages.py` and no command
+    called it — the one documents manifest in the repo had been assembled by hand in an earlier session.
+    So the pipeline "worked" on one company because a human built its manifest once, and there was no path
+    at all for a second company. That is the definition of an overfit: the demo generalises and the
+    product does not.
+
+    Shareholding patterns, concall transcripts, voting results and credit ratings are what staff
+    `management_analyst`, `transcript_analyst` and `ownership_flows_analyst`. Downloads nothing —
+    retrieval is `fetch-filings`, deliberately separate (ADR-0026).
+    """
+    import json
+    import ssl
+    import urllib.request
+    from collections import Counter
+    from pathlib import Path
+
+    from firm.adapters.india.ir_pages import discover_documents
+
+    try:
+        import certifi
+
+        context = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:  # pragma: no cover
+        context = ssl.create_default_context()
+
+    found: dict[str, object] = {}
+    for page in url:
+        request = urllib.request.Request(page, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urllib.request.urlopen(request, timeout=60, context=context) as response:  # noqa: S310
+                html = response.read().decode("utf-8", errors="replace")
+        except Exception as exc:  # noqa: BLE001 - an unreachable section is reported, not fatal
+            typer.echo(f"  FAIL {page}: {exc}")
+            continue
+        for doc in discover_documents(html, ticker, base_url=page):
+            found.setdefault(doc.url, doc)
+        typer.echo(f"  read {page} -> {len(found)} documents so far")
+
+    if not found:
+        typer.echo("no recognised documents found")
+        raise typer.Exit(1)
+
+    documents = sorted(found.values(), key=lambda d: (d.doc_class, d.period or "", d.url))  # type: ignore[union-attr]
+    manifest = {
+        "ticker": ticker,
+        "source": list(url),
+        "retrieved_at": date.today().isoformat(),
+        "documents": [
+            {"file": d.suggested_file, "doc_class": d.doc_class, "period": d.period,  # type: ignore[union-attr]
+             "source_url": d.url, "sha256": "", "bytes": 0}  # type: ignore[union-attr]
+            for d in documents
+        ],
+    }
+    path = Path(out or f"data/manifests/{ticker}-documents.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, indent=2) + "\n")
+
+    counts = Counter(d.doc_class for d in documents)  # type: ignore[union-attr]
+    typer.echo(f"{len(documents)} document(s) -> {path}")
+    for name, n in counts.most_common():
+        typer.echo(f"  {n:4d}  {name}")
+    typer.echo(f"\nNext: firm fetch-filings --manifest {path} --bronze data/bronze/{ticker}")
+
+
 @app.command("fetch-filings")
 def fetch_filings_cmd(
     manifest: str = typer.Option(..., "--manifest", help="a filings or documents manifest"),

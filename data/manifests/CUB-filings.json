@@ -1,0 +1,129 @@
+{
+  "ticker": "CUB",
+  "company_name": "City Union Bank Limited",
+  "source": "https://www.cityunionbank.com/investor-relations",
+  "retrieved_at": "2026-07-31",
+  "filings": [
+    {
+      "file": "CUB-AR-FY24.pdf",
+      "period": "FY24",
+      "prior_period": "FY23",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/july24/ANNUALREPORT2023-24.pdf",
+      "published_at": "2024-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "14ed9769636267eec42db0eb4f92ca70071ed5463a9d7b4014c12117fb07829b",
+      "bytes": 24015304
+    },
+    {
+      "file": "CUB-AR-FY21.pdf",
+      "period": "FY21",
+      "prior_period": "FY20",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/Annual%20Report_2020-21.pdf",
+      "published_at": "2021-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "a00be693dca7949c2b7645db11cf41b08c6eee82275bd1fa88a5b0983a583e44",
+      "bytes": 6409364
+    },
+    {
+      "file": "CUB-AR-FY19.pdf",
+      "period": "FY19",
+      "prior_period": "FY18",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/AnnualReport2019.pdf",
+      "published_at": "2019-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "663882da4df90715976e6b07c8dc527ae0fa05494626f0ded226751ee3c05faf",
+      "bytes": 7178806
+    },
+    {
+      "file": "CUB-AR-FY18.pdf",
+      "period": "FY18",
+      "prior_period": "FY17",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/AnnualReport2018.pdf",
+      "published_at": "2018-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "87ecff1d69a0385e4f23880f160d412418edbc3d1ece7ba8a4fd7c062ce5f5b7",
+      "bytes": 7256840
+    },
+    {
+      "file": "CUB-AR-FY17.pdf",
+      "period": "FY17",
+      "prior_period": "FY16",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/AnnualReport2017.pdf",
+      "published_at": "2017-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "4ccd9c6b22675696b0ff42ee2f8a6721d417e1b427e33bb733ef2f7ab3a116fb",
+      "bytes": 5383404
+    },
+    {
+      "file": "CUB-AR-FY15.pdf",
+      "period": "FY15",
+      "prior_period": "FY14",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CUB_Annual_Report_2015.pdf",
+      "published_at": "2015-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-AR-FY14.pdf",
+      "period": "FY14",
+      "prior_period": "FY13",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/CUB_Annual_Report_2014.pdf",
+      "published_at": "2014-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-AR-FY13.pdf",
+      "period": "FY13",
+      "prior_period": "FY12",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2012-13.pdf",
+      "published_at": "2013-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-AR-FY12.pdf",
+      "period": "FY12",
+      "prior_period": "FY11",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2011-12.pdf",
+      "published_at": "2012-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-AR-FY11.pdf",
+      "period": "FY11",
+      "prior_period": "FY10",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2010-11.pdf",
+      "published_at": "2011-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "CUB-AR-FY10.pdf",
+      "period": "FY10",
+      "prior_period": "FY09",
+      "source_url": "https://www.cityunionbank.com/assets/frontend/pdf/others/ANNUAL_REPORT_2009-10.pdf",
+      "published_at": "2010-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    }
+  ]
+}
