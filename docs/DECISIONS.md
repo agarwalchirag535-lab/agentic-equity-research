@@ -919,3 +919,163 @@ into a better verdict, which is the separation of powers working.
 `transcript_analyst` scores no guidance drift, `ownership_flows_analyst` cites no holding, and
 `unit_economics_analyst` reports both unit counts as zero-meaning-unknown. That is the correct output for
 this state of the ingest, and far more useful than invented tonnage or a tone reading from a skim.
+
+### ADR-0035 — Shareholding and transcripts become evidence, not files on disk
+**Context.** ADR-0034 ended with three of the five new agents honestly reporting that their inputs existed
+but were unparsed. `adapters/india/shareholding.py` was written, tested against real filings, and called by
+**nothing outside its own test file**; there was no transcript parser at all. So 27 SEBI shareholding
+patterns and 14 concall transcripts sat in `data/bronze/ALKYLAMINE/` where no part of the pipeline could
+read them.
+
+**Decision.** `core/ingest/documents.py` walks the documents manifest the way `ingest/filings.py` walks the
+annual reports: shareholding patterns become point-in-time grade-A facts (`ownership:promoter_pct`,
+`ownership:public_pct`, `ownership:promoter_pledge_pct`), transcripts become quoted, dated, page-bound
+evidence.
+
+**The asymmetry is deliberate.** A shareholding pattern states a number the company filed and we can bind to
+a locator. A transcript states what a person *said*. Turning "we expect margins to normalise" into a margin
+forecast would be Law 1 in its most tempting form, because the sentence *feels* quantitative — so nothing in
+the transcript path mints a fact. The agent gets the words and owns any judgment about them, on the record.
+
+**Pledge stays tri-state.** `False` (asked under Reg. 31 and answered No) is a real governance finding and
+becomes the figure zero. `True` means shares are pledged but this parser does not read the pledged-share
+*count*, so the percentage is genuinely unknown and no fact is minted. `None` means the question was never
+located. Collapsing these would re-open ADR-0027's false-clean problem on the governance section.
+
+**What it took to actually read them.** Three format defects, each of which had made a working parser look
+like missing data:
+* the SEBI category rows wrap across lines in 14 of 27 filings, so rows are read as **blocks**, not lines;
+* a promoter stake of exactly 72% is filed as `72`, and the decimal-only candidate scan refused it — integer
+  readings are now tried as a fallback, decimals first, so the 13 filings that already parsed parse by
+  exactly the route they did;
+* the reporting date is written `as on : 31-Mar-2022`, which the numeric-only pattern matched on **none** of
+  the 27 filings. For a point-in-time system that is the whole ballgame. Where a filing carries no "as on"
+  line the date is recovered from the NSDL/CDSL header and labelled `depository-date`, so a recovered date
+  never passes for a stated one.
+
+27/27 filings now parse and date, against 13/27 parsed and 0/27 dated.
+
+### ADR-0036 — Numeric discipline is derived from the schema and fails closed
+**Context.** `_numeric_discipline` iterated a seven-entry dict of field names. Read as an allow-list that is
+correct. Read as the enforcement of Law 1 it is a hole: **a numeric field absent from the dict was not
+refused, it was never examined.** With three agents every numeric field was in the dict, so the hole was
+invisible. The roster grew to eight and brought thirteen unexamined numeric fields with it —
+`units_today`, `smart_money_score`, `days_to_exit_at_20pct_adv`, `payback_years`,
+`contribution_margin_per_unit` and the rest — free text for an LLM in a system whose first law is that an
+LLM never produces a number.
+
+`UnitEconomicsOutput.units_today` was worse than unchecked: a **required** int. The contract ordered a Law-1
+violation, and ADR-0034 records the agent duly returning "zero-meaning-unknown".
+
+**Decision.** Every numeric leaf on an agent's output is enumerated from the schema and classified by
+`config/numeric_fields.yaml` as `computed` (must equal a named derivation, or be null when none exists) or
+`judgment` (epistemic, not financial). Anything unclassified must be null. Adding a numeric field to a
+schema now breaks a test until someone says where it comes from.
+
+**Why `judgment` exists at all.** A confidence of 0.4, a sector tailwind score of -0.3 and a subjective
+scenario probability are opinions on a scale; no filing discloses them and no formula computes them.
+Refusing them would not increase rigour, it would delete the calibration record Phase 6 scores. The test for
+adding one: *could a company disclose it, or could `core/compute` derive it?* If yes it is not judgment.
+
+### ADR-0037 — Reading a transcript needs the layout, and the reader is chosen by result
+**Context.** Concall transcripts are two-column: speaker names down the left, speech down the right.
+`extract_text` returns a page in stream order, so on 11 of 14 Alkyl Amines transcripts that is every name in
+one block followed by every paragraph in another — the attribution is gone, and the parser saw 3-10 turns on
+a 19-page call and paired no questions with answers.
+
+**Decision.** `extract_layout` reconstructs lines from glyph baselines via pypdf's visitor API
+(`extraction_mode="layout"` returns empty on these files). But neither reader wins every time: these PDFs
+come from several transcription houses, and on the files where stream order is already correct the layout
+reconstruction inserts spaces inside small-caps and kerned text. Picking by *file* would be guessing.
+`read_transcript` runs both and keeps the read that recovered more question-and-answer exchanges — a
+measurement of the thing we need rather than a proxy for it. The losing read's date backfills the winner's,
+because both are the same document.
+
+13 of 14 transcripts now yield an attributed conversation, against 2. The fourteenth is the *announcement*
+of a call, misfiled as a transcript by the IR-page classifier, and is reported as a refusal.
+
+**A guidance quote is a sentence, not a turn.** Whole turns averaged 1,387 characters and ran to 5,900 — one
+commitment buried in an answer that wandered across four subjects. That is worse evidence as well as more of
+it: a promise ledger wants each dated commitment as its own entry. 108 blob quotes became 150 discrete
+promises, and the ledger went from 150KB to 23KB.
+
+**The period is derived from the call date, not scraped from the title.** Title-scraping labelled the 16 May
+2024 call `FY23Q4` because a comparative mention matched first. A wrong period misfiles a call in the
+sequence, and the sequence is the entire value of the parser.
+
+### ADR-0038 — Each agent is briefed on its own mandate's evidence
+**Context.** `build_packets` handed one payload object to every agent. Correct for the three Phase-2 agents,
+who genuinely reason about the same statements — and the reason five of the eight could not work. Hashing
+the rendered evidence block per agent returned **one hash across all eight**. So `transcript_analyst`, whose
+mandate is "read 12+ quarters of concalls as a time series", received no transcript text and was asked for
+`guidance_drift`, `dodged_questions` and `tone_trace`. `ownership_flows_analyst`, asked for a days-to-exit
+number, received no shareholding pattern and no price history.
+
+An agent in that position has two options and both are failures: invent something plausible, or return nulls
+that read as "nothing to report".
+
+**Decision.** `core/pipeline/briefs.py` builds one evidence block per input the roster declares for that
+agent, so the roster and the brief cannot drift. An input named with no builder raises rather than thinning
+the brief in silence.
+
+`config/roster.yaml` gains `uses:` beside `requires:`. Two different questions had been collapsed into one
+list — what *blocks* an agent, and what an agent *reads*. `management_analyst` is gated on the concall
+guidance its scorecard is built from, but should also see the promoter-stake series; gating it on
+shareholding would silence the whole governance section over a secondary input.
+
+**An absent input is stated, never omitted.** An `UNAVAILABLE` block names the mandate obligation it blocks,
+instructs the agent to return null for the dependent field, and says whose gap it is (ADR-0019 — never the
+company's). Omission would ask a model to notice an absence, and models fill absences rather than noticing
+them. `ownership_flows_analyst` is now told in as many words that it has no price history.
+
+### ADR-0039 — A peer is another company through the same pipeline
+**Context.** `sector_analyst` was the one roster agent that could never be staffed: it requires `peers`, and
+nothing in the codebase ingested a peer. The standing answer had been that peer data was unavailable. It is
+not — every Indian listed company publishes its annual reports on its own website under Reg. 46 of the SEBI
+LODR, which is the same obligation this firm already relies on for the subject.
+
+**Decision.** No peer-specific data path. A peer is another company run through the identical pipeline:
+`discover-filings` against its own IR page, `fetch-filings`, the same PDF walk, the same fact store, the same
+`core/compute` derivations. `config/peers.yaml` declares the set and requires a `why` per peer.
+
+**Why the aggregator shortcut is refused.** It would work today and poison everything downstream. The
+figures would be grade B where the filing is grade A, so the worst-input rule would drag every comparison
+built on them down with it — a `sector_analyst` conclusion resting on exactly the secondary sourcing owner
+directive 1 exists to prevent. And an aggregator's "OPM" is its own definition applied to its own
+normalisation; putting that beside ours produces a difference that measures the vendors, not the companies.
+
+**Why `why` is mandatory.** A comparator set assembled without a stated basis is a guess about what competes
+with what, and a sector conclusion resting on a guessed set is worse than none — it looks rigorous. The
+shipped example does not use a sector code: Alkyl Amines' own management describes the domestic market as
+two players plus imports, so the peer set is the company's framing of its competitive set, published with
+the comparison so a reader can reject the set rather than only the conclusion.
+
+**Three defects it exposed, all of which had looked like missing data.** Relative hrefs (Alkyl Amines
+publishes absolute links, so nothing had ever needed resolving); the ₹ glyph resolving to `H` rather than a
+backtick, which made "in H lakh" an unrecognised scale and — correctly, under ADR-0024 — caused six of seven
+cleanly-walked annual reports to register zero facts; and `FILING_ROWS` never reading the profit line, so a
+walk produced four balance-sheet facts and an empty `DerivedSet`. The last was invisible on the subject,
+whose PAT arrives from the grade-B screener snapshot, and fatal on a peer where there is no snapshot.
+
+### ADR-0040 — The report is composed from the agents that ran
+**Context.** `_narration` read three agents by name. Once the roster staffed eight, the other five produced
+validated, cited, schema-conformant output that was discarded — everything except their
+`disconfirming_search` and `open_questions`.
+
+The Management section was worse than discarded. It was a hardcoded string asserting that
+`management_analyst`, `transcript_analyst` and `ownership_flows_analyst` "are Phase 3 agents and did not
+run", printed verbatim into reports where all three **had** run and had findings. No validator could catch
+it: the sentence is grammatical, correctly hedged, and false. It is the inward-facing form of the failure
+the coverage-gap machinery exists to prevent — the firm misreporting its own coverage.
+
+**Decision.** Sections are composed from the agents actually present and attributed by name, so a reader can
+weigh a governance paragraph differently from a business-model one. The honest fallback survives and is
+reached only when no agent that owns the section ran. `sector_analyst`, `macro_strategist` and
+`unit_economics_analyst` get a section of their own rather than an appendix to someone else's.
+
+**A defect found by writing the test.** The citation validator's label pattern accepted `FY24` and `Q1FY25`
+but not `FY24Q1` — the form `ingest.documents.quarter_label` and `transcripts._reported_quarter` both
+generate and every quarterly fact id is keyed by. So `transcript_analyst`, whose definition of done is that
+"every observation is anchored to a quarter", could not name a quarter without failing the run. Same class
+as the fact ids containing colons the id grammar rejected: the validator was satisfiable only by declining
+to say the thing the system exists to say.

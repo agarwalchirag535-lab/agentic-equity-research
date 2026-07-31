@@ -2,11 +2,11 @@
 
 > **Read this first if you are new to this repo** (new session, new agent, new platform, or the owner
 > after a break). It is the single authoritative answer to *"what is built, what is not, and what
-> should happen next."* Last updated **2026-07-30**.
+> should happen next."* Last updated **2026-07-31**.
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0021). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0040). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -24,12 +24,12 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 0 — skeleton + contracts | ✅ complete |
 | 1 — compute layer | ✅ complete (100% coverage enforced by `make cov`) |
 | **2 — three agents, deep** | ✅ **complete — acceptance test passes; first report published (§6a)** |
-| 3 — full roster + orchestrator | ⚠️ DAG/gates/budget code exists; the other 11 agents are not wired |
+| 3 — full roster + orchestrator | ⚠️ **nine agents run on their own primary-source evidence** (ADR-0035…0040); the Phase-4 judgment tier is the remainder |
 | 4 — judgment tier | ⚠️ agent prompts exist as markdown; no validated outputs flowing |
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 563 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 646 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -40,9 +40,7 @@ line coverage (derive 97%, filing 100%).
 python -m pytest --cov --cov-fail-under=100
 ```
 
-**Git:** branch `feat/forensic-primary-source-layer` — `75ffbfa` (initial: compute core + primary-source
-forensic layer), `97901ea` (dual-verdict report generator + model-specific checks), plus uncommitted
-Phase-2 work. Not merged to `main`.
+**Git:** branch `claude/eight-agents-efficiency-d96960`. Not merged to `main`.
 
 ## 2. What is BUILT (with file paths)
 
@@ -73,6 +71,17 @@ aggregates to PASS / REVIEW / HARD_FAIL.
   disposition per note, 100%-coverage gate, Schedule III mandatory rows, CARO 2020 clause triage
 - `core/ingest/bronze.py` — immutable content-addressed archive + resumable, polite backfill
 - `core/facts/store.py` — provenance + point-in-time query layer (Laws 2 & 3)
+- `adapters/india/shareholding.py` + `core/ingest/documents.py` — SEBI Reg. 31 quarterly patterns →
+  point-in-time grade-A `ownership:*` facts. Tri-state pledge (ADR-0027): answered-No is a finding,
+  unlocated is not, and they must never look alike.
+- `adapters/india/transcripts.py` — concalls → turns, speakers with roles, analyst attendance, paired Q&A,
+  guidance quotes and deflection candidates, all bound to `(source, page, speaker, date)`. **Produces
+  quotes, never facts**: turning "we expect margins to normalise" into a forecast is Law 1's most tempting
+  failure, because the sentence feels quantitative.
+- `adapters/base/extract.py:extract_layout` — column-preserving extraction from glyph baselines, for
+  documents whose LAYOUT carries meaning. `read_transcript` runs both readers and keeps the better result.
+- `core/pipeline/peers.py` + `config/peers.yaml` — a peer set built from each peer's OWN filings by the
+  identical pipeline, so a difference in the table measures the companies rather than two vendors.
 
 **Evidence + reporting**
 - `schemas/evidence.py` + `core/validators/evidence_graph.py` — claim/evidence/entity graph with six
@@ -109,6 +118,24 @@ What the pipeline enforces that nothing before it could:
 CLI: `firm deep-dive` (provider `local|claude_code|anthropic|openai`) and `firm packets` → answer each
 `{agent}.md` by hand → `firm deep-dive --answers <dir>` (ADR-0010: agents run with no API key).
 
+**2c. Phase 3 — every agent reads its own sources (ADR-0035…0040).** `core/pipeline/briefs.py` builds one
+evidence block per input `config/roster.yaml` declares for that agent (`requires` gates, `uses` only
+informs). An input the run could not supply is an explicit `UNAVAILABLE` block naming the mandate obligation
+it blocks and instructing the agent to return null — stated, never omitted, because models fill absences
+rather than noticing them. The end-to-end command for a fully staffed run:
+
+```bash
+firm discover-filings --ticker TICKER --url <IR page>      # writes the filings manifest
+firm fetch-filings --manifest data/manifests/TICKER-filings.json --bronze data/bronze/TICKER
+firm packets --ticker TICKER --phase 3 \
+  --documents data/manifests/TICKER-documents.json --bronze data/bronze
+firm deep-dive --ticker TICKER --phase 3 --answers <dir> \
+  --filings data/manifests/TICKER-filings.json --documents data/manifests/TICKER-documents.json
+```
+
+Repeat the first two lines against a **peer's** IR page and add it to `config/peers.yaml` to staff
+`sector_analyst`.
+
 **Docs that matter:** `FORENSIC_METHODOLOGY.md` (reverse-engineered investigation patterns + the gap
 analysis), `ADAPTIVE_FORENSICS.md` (business-model playbooks + line-by-line spec),
 `REPORT_ARCHITECTURE.md` (the publishable report), `VALIDATION_TIER0.md` (live calibration evidence).
@@ -127,16 +154,42 @@ a company for the firm's own unfinished note-parser would reject every good busi
 
 ## 3. What is REMAINING (priority order)
 
-### PHASE 3 IN PROGRESS — roster wired, 89% staffed (ADR-0030/0031)
-`config/roster.yaml` declares all 14 agents with stage, gate, phase and data prerequisites; `plan_run`
-enforces build order and reports three distinct kinds of skip. 54 governance documents ingested from the IR
-sections that discovery had never opened. Remaining in this phase:
-1. ~~wire `deep_dive` to the roster~~ DONE (ADR-0033) — `--phase`/`--documents`; coverage gaps reach the
-   report but never the verdict; pre-flight names unstaffed agents. DONE (ADR-0034): 8 agents now appear in a published report's
-   `agent_versions`. Remaining: parsers to turn ingested documents into citable facts (shareholding and
-   transcripts are downloaded and parsed but not registered), then peer ingest for `sector_analyst`.
-2. parsers for shareholding (promoter %, pledge %, institutional trend) and transcripts (guidance extraction)
-3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
+### PHASE 3 — roster fully staffed; the agents now read primary sources (ADR-0035…0040, 2026-07-31)
+`config/roster.yaml` declares all 14 agents with stage, gate, phase, `requires` (gating) and `uses` (read but
+not gating); `plan_run` enforces build order and reports three distinct kinds of skip. **A phase-3 run now
+plans NINE agents**, `sector_analyst` included.
+
+The gap this closed was not "the agents are not wired" — they were. It was that **all eight received a
+byte-identical payload of 26 financial ratios**, proven by hashing the rendered evidence block per agent.
+`transcript_analyst` was asked to trace guidance drift across twelve quarters of concalls it had not been
+given; `ownership_flows_analyst` was asked for a days-to-exit number with no shareholding and no prices.
+What landed:
+
+1. **Documents become evidence** (ADR-0035). `core/ingest/documents.py` walks the documents manifest.
+   27/27 SEBI shareholding patterns parse and date (was 13/27 parsed, **0/27 dated**) into point-in-time
+   grade-A `ownership:*` facts; 13/14 concalls yield an attributed Q&A conversation (was 2/14).
+2. **Per-agent briefs** (ADR-0038). `core/pipeline/briefs.py` builds one evidence block per input the roster
+   declares. An input the run cannot supply is an explicit `UNAVAILABLE` block naming the mandate obligation
+   it blocks and instructing the agent to return null — never an omission, because models fill absences
+   rather than noticing them.
+3. **Law 1 closed at the seam it was open** (ADR-0036). Numeric discipline is derived from the schema and
+   fails closed; 13 numeric fields on the new agents had been unchecked, and `UnitEconomicsOutput.units_today`
+   was a *required* int — a contract that ordered a Law-1 violation.
+4. **The report uses everyone who ran** (ADR-0040). Five agents' narratives were discarded, and the
+   Management section was a hardcoded string asserting three agents "did not run", printed over their live
+   findings.
+5. **Peers from primary sources** (ADR-0039). 7 Balaji Amines annual reports fetched from their own IR site;
+   FY22-FY25 give grade-A comparables.
+
+Remaining in this phase — all now *extraction quality*, not missing capability:
+- **`FILING_ROWS` is 11 rows.** Operating Profit, Borrowings, Reserves, Equity Capital and CFO are not read,
+  so `opm_latest`, `roic_latest`, `incremental_roic_3y` and `cum_cfo_pat` are UNAVAILABLE for any company
+  without a screener snapshot — which is every peer. This is the single highest-value extraction item.
+- **Two older-format annual reports refuse to parse** (BALAMINES FY19-FY21): FY21 reports in absolute rupees
+  (no `INR` scale in `_TO_CRORE` — do NOT infer scale from magnitude, ADR-0024), FY19 splits labels from
+  values across lines and needs `extract_layout`.
+- **Segment note unparsed**, so `unit_economics_analyst` correctly reports it cannot do the arithmetic.
+- **No price/volume adapter**, so `ownership_flows_analyst`'s days-to-exit is structurally unavailable. — same pipeline aimed at a peer's IR site
 
 
 ### 0. ~~RECENCY BEATS PROVENANCE~~ — FIXED 2026-07-30 (ADR-0029)
@@ -339,6 +392,23 @@ blank — see the ALKYLAMINE note.
 - **Screener data cannot produce a forensic pass.** Receivables, inventory and cash are not broken out in
   the screener snapshot, so four of seven universal checks are structurally unavailable from it. Any run
   without an AR walk should be expected to return `INSUFFICIENT_DISCLOSURE`; that is the design working.
+- **An allow-list read as a deny-list enforces nothing.** `_numeric_discipline` iterated a dict of field
+  names, so a numeric field that was not in it was not refused — it was never examined. Correct with three
+  agents (every field was listed), a hole the moment the roster grew. Any check over "the fields we care
+  about" has this failure mode; derive the list from the schema and fail closed instead (ADR-0036).
+- **The ₹ glyph is whatever the issuer's font says it is.** It extracts as a backtick from Alkyl Amines'
+  reports and as a capital `H` from Balaji Amines'. Enumerating glyphs loses; read the scale positionally
+  ("in <one short token> lakh"). An undetected scale is not a missing figure — before ADR-0024 it was a
+  figure stored 100x wrong *carrying a grade-A stamp*, and after it, six of seven cleanly-walked annual
+  reports silently registering zero facts.
+- **Two PDF readers, and the document picks.** Stream-order extraction flattens a two-column transcript into
+  every-name-then-every-paragraph; layout reconstruction from glyph baselines fixes those and mangles the
+  files stream order already handled. Run both, keep the read that recovered more Q&A exchanges (ADR-0037).
+- **A required numeric schema field can order a Law-1 violation.** `units_today: int` gave the agent no
+  legal answer, and it duly returned a fabricated zero. A number no source produces must be `| None = None`.
+- **`derive_metrics` needs Sales AND PAT in the same period, or it returns nothing at all.** A filing walk
+  that read revenue but not profit produced facts and an empty `DerivedSet` — which reads downstream as "no
+  facts ingested". Invisible while PAT arrived from the screener snapshot; fatal for a peer.
 
 ## 6. Live calibration evidence (what has actually been tested on real data)
 
@@ -400,11 +470,18 @@ would have been the dishonest answer. It is also a concrete work list — see §
 
 ## 7. Suggested next step
 
-**§3A, close the data gap the ALKYLAMINE run exposed** — specifically the cash balance and the
-receivables/inventory rows out of the audited AR, plus exposing `backfill_filings()` on the CLI so a run
-can fetch and walk the filing itself. That single push moves real companies from
-`INSUFFICIENT_DISCLOSURE` to a verdict with a thesis behind it, and it is the prerequisite for the golden
-set having anything to score.
+**Widen `FILING_ROWS`** (`core/pipeline/filing.py`). It reads 11 rows; Operating Profit, Borrowings,
+Reserves, Equity Capital and CFO are not among them. Those five are what stand between the current state and
+`roic_latest` / `incremental_roic_3y` / `cum_cfo_pat` / `opm_latest` being derivable **from the filing
+alone** — which is the difference between a company that needs a grade-B screener snapshot and one that does
+not. It is also the whole of what the peer comparison is currently missing: BALAMINES has revenue and profit
+and nothing to compute a return on capital from, so `sector_analyst` can compare growth and not quality.
+
+The reason to do this before anything else: it is the same work for the subject and for every peer, it moves
+figures from grade B to grade A, and every remaining Phase-3 gap named in §3 is downstream of it.
+
+Then the segment note (unblocks `unit_economics_analyst`'s arithmetic), then §3C (the memory loop's
+resolver), then the golden set.
 
 Then §3C (logging the now-deterministic, dated `Criterion` objects as predictions — a small wire-up), then
 Phase 3, then the golden set.
