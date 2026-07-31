@@ -91,6 +91,8 @@ def render_markdown(report: ResearchReport) -> str:
     # 3. business model in plain language
     if r.business_model_plain:
         out += ["## What this business actually does", "", r.business_model_plain, ""]
+    if r.sector_narrative:
+        out += ["## Sector, cycle and unit economics", "", r.sector_narrative, ""]
 
     # 4. the numbers, each citation-locked
     if r.computed_facts:

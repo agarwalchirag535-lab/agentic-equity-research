@@ -311,6 +311,11 @@ class Narration:
 
     executive_summary: str = ""
     business_model_plain: str = ""
+    #: Sector position, cycle and unit economics — `sector_analyst`, `macro_strategist` and
+    #: `unit_economics_analyst`. A section of their own rather than an appendix to the business model:
+    #: until ADR-0040 these three agents ran, produced validated cited output, and had it discarded
+    #: because `_narration` read three agents by name.
+    sector_narrative: str = ""
     forensic_narrative: str = ""
     management_narrative: str = ""
     valuation_narrative: str = ""
@@ -364,6 +369,7 @@ def assemble_report(
         executive_summary=narration.executive_summary,
         load_bearing_points=load_bearing_points(graph, load_bearing_ids),
         business_model_plain=narration.business_model_plain,
+        sector_narrative=narration.sector_narrative,
         computed_facts=computed,
         fact_citations=citations,
         line_items=build_line_items(interrogation),

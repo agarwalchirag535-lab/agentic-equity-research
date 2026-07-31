@@ -33,7 +33,15 @@ _NUMBER = re.compile(r"(?<![\d.])[-+]?\d[\d,]*(?:\.\d+)?%?")
 # screener-ALKYLAMINE-2026-07-23:pnl:Sales:FY26.
 _CITE = re.compile(r"\[fact:([A-Za-z0-9_.:\-]+)\]")
 # Tokens that look numeric but are labels, not claims.
-_LABEL = re.compile(r"\b(FY\d{2,4}|Q[1-4]FY\d{2,4})\b", re.IGNORECASE)
+#
+# `FY24Q1` IS THE FORM THIS CODEBASE GENERATES. The original pattern accepted `FY24` and `Q1FY25` but not
+# `FY24Q1`, which is what `ingest.documents.quarter_label` and `transcripts._reported_quarter` both
+# produce and what every quarterly fact id is keyed by. So the firm's own period label was unciteable:
+# `transcript_analyst`, whose definition of done is that "every observation is anchored to a quarter",
+# could not name a quarter without failing the run. Same class of defect as the fact ids that contained
+# colons the id grammar rejected (design point 1) — the validator was satisfiable only by not saying the
+# thing the system exists to say.
+_LABEL = re.compile(r"\b(FY\d{2,4}(?:Q[1-4])?|Q[1-4]\s?FY\d{2,4})\b", re.IGNORECASE)
 
 #: A quoted figure may be rounded, and may be written as a percentage of the underlying ratio.
 _VALUE_REL_TOL = 0.02

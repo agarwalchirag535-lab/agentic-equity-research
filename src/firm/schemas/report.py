@@ -182,6 +182,8 @@ class ResearchReport(BaseModel):
     executive_summary: str = ""
     load_bearing_points: list[ReportClaim] = Field(default_factory=list)
     business_model_plain: str = ""
+    #: Sector position, cycle and unit economics (ADR-0040) — the three Tier-1/unit agents' own section.
+    sector_narrative: str = ""
 
     # 4. numbers
     computed_facts: dict[str, float] = Field(default_factory=dict)

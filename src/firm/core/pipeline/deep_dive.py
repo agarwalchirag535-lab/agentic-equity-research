@@ -495,6 +495,24 @@ def build_packets(
     return out
 
 
+def _section(
+    outputs: Mapping[str, AgentOutputBase], *, agents: Sequence[str], absent: str
+) -> str:
+    """One report section, attributed to each agent that contributed to it.
+
+    Attribution is not decoration. A governance paragraph and a business-model paragraph carry different
+    weight and different failure modes, and a reader who cannot tell which agent wrote which cannot
+    weigh either. It also keeps the honest fallback honest: `absent` is only reached when none of the
+    named agents actually ran, so the report can never claim an agent was missing while quoting it.
+    """
+    parts = [
+        f"**{name}:** {outputs[name].narrative.strip()}"
+        for name in agents
+        if name in outputs and outputs[name].narrative.strip()
+    ]
+    return "\n\n".join(parts) if parts else absent
+
+
 def _narration(
     outputs: Mapping[str, AgentOutputBase],
     screen: quality.ForensicScreenResult,
@@ -502,13 +520,25 @@ def _narration(
     derived: DerivedSet,
     feasibility: multibagger.FeasibilityResult | None,
 ) -> Narration:
-    """Compose the report's prose sections from the three agents' designated fields.
+    """Compose the report's prose sections from whichever agents actually ran (ADR-0040).
 
-    Phase 2 has no `thesis_synthesizer` (Phase 4) and no `red_team`, so the report does not pretend to
-    have one: the thesis is the business analyst's case, and the anti-thesis is built from every agent's
+    Phase 4 has no `thesis_synthesizer` and no `red_team`, so the report does not pretend to have one:
+    the thesis is the business analyst's case, and the anti-thesis is built from every agent's
     **mandatory** `disconfirming_search` plus the flags that actually fired. Both sections therefore have
     a real author, and P2's "the opposing case is mandatory" gate is satisfied by evidence rather than by
     a paragraph invented to satisfy a validator.
+
+    WHAT CHANGED, AND WHY IT WAS SERIOUS
+    This function read three agents by name. Once the roster staffed eight, the other five produced
+    validated, cited output that was then discarded — everything but their `disconfirming_search` and
+    `open_questions`. Worse, the Management section was a *hardcoded string* asserting that
+    `management_analyst`, `transcript_analyst` and `ownership_flows_analyst` "are Phase 3 agents and did
+    not run", printed into reports where all three had run and had findings. That is a published
+    falsehood about the firm's own coverage, and it is the exact failure the coverage-gap machinery
+    exists to prevent — pointed inward.
+
+    Every section is now composed from the agents present, and an absent section says which agent is
+    missing rather than asserting a roster state nobody checked.
     """
     ba = outputs.get("business_analyst")
     fsa = outputs.get("financial_statement_analyst")
@@ -544,11 +574,19 @@ def _narration(
         "price is asserted — that tier is not built yet, and a valuation narrative without it would be "
         "invented."
     )
-    management = (
-        "No management or governance assessment is made in this report: `management_analyst`, "
-        "`transcript_analyst` and `ownership_flows_analyst` are Phase 3 agents and did not run. "
-        "Promoter-pledge, promise-vs-delivery and board-interlock findings are therefore absent rather "
-        "than clean."
+    management = _section(
+        outputs,
+        agents=("management_analyst", "transcript_analyst", "ownership_flows_analyst"),
+        absent=("No management or governance assessment is made in this report: none of "
+                "`management_analyst`, `transcript_analyst` or `ownership_flows_analyst` ran. "
+                "Promoter-pledge, promise-vs-delivery and board-interlock findings are therefore absent "
+                "rather than clean."),
+    )
+    sector = _section(
+        outputs,
+        agents=("sector_analyst", "macro_strategist", "unit_economics_analyst"),
+        absent=("No sector, cycle or unit-economics assessment is in this report: none of "
+                "`sector_analyst`, `macro_strategist` or `unit_economics_analyst` ran."),
     )
 
     open_questions: list[str] = []
@@ -575,6 +613,7 @@ def _narration(
     return Narration(
         executive_summary=(fsa.narrative if fsa is not None else ""),
         business_model_plain=business,
+        sector_narrative=sector,
         forensic_narrative=(fa.narrative if fa is not None else ""),
         management_narrative=management,
         valuation_narrative=valuation,
