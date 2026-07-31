@@ -1,0 +1,34 @@
+# peers.yaml — the declared comparator set per company (ADR-0039).
+#
+# WHY A PEER SET IS DECLARED AND NOT INFERRED
+# `sector_analyst` was the one roster agent that could never be staffed: it requires `peers`, and nothing
+# in the codebase ingested a peer. The tempting fix is to pull a "peer comparison" table off an aggregator,
+# and it is the wrong fix twice over — the figures would be grade B (owner directive 1 makes the audited
+# filing the source of record), and they would be computed to somebody else's definitions, so a difference
+# in the table would measure the two vendors rather than the two companies.
+#
+# So a peer here is just another company run through the identical pipeline: `firm discover-filings`
+# against its OWN investor-relations page, `firm fetch-filings`, the same PDF walk, the same fact store,
+# the same `core/compute` derivations. Both sides of every comparison are numbers this firm computed the
+# same way from primary sources.
+#
+# `why` IS MANDATORY IN SPIRIT
+# A comparator set assembled without a stated basis is a guess about what competes with what, and a sector
+# conclusion resting on a guessed set is worse than none — it looks rigorous. The `why` is published
+# alongside the comparison so a reader can reject the peer set rather than only the conclusion.
+
+universe:
+  ALKYLAMINE:
+    sector: chemicals
+    peers:
+      - ticker: BALAMINES
+        name: Balaji Amines Limited
+        ir_url: https://www.balajiamines.com/results.php?ref=1
+        # Not a sector-code match: the subject's own management names this comparator on the record.
+        # From the FY24Q2 call — "we have two players in domestic market, and the rest are from the
+        # Chinese or the Europeans" — so the domestic aliphatic-amines duopoly is the company's own
+        # framing of its competitive set, not ours imposed on it.
+        why: >-
+          The other domestic producer of aliphatic amines at scale. Alkyl Amines' own management
+          describes the Indian market as two domestic players plus imports, which makes this the
+          comparator its pricing-power and capacity claims should be read against.

@@ -30,6 +30,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
+from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
 #: An annual report, in the wording Indian companies actually use on their IR pages. Deliberately narrow:
 #: "Annual Return" (the MGT-7 statutory filing) and "Annual Secretarial Compliance Report" are different
@@ -89,7 +90,32 @@ def classify(url: str) -> str | None:
     return None
 
 
-def discover_documents(html: str, ticker: str) -> list[Document]:
+def absolute_links(html: str, base_url: str | None) -> list[tuple[str, str]]:
+    """Every PDF href on the page, resolved against the page's own URL and percent-encoded.
+
+    RELATIVE HREFS ARE THE COMMON CASE, NOT THE EXCEPTION. Alkyl Amines happens to publish absolute
+    `https://.../wp-content/uploads/...` links, so the first version of this module never had to resolve
+    anything — and the first peer we pointed it at (Balaji Amines) publishes `pdfn/37th Annual Report
+    2024-25.pdf`, which is unfetchable as written and additionally carries raw spaces that a bare
+    `urlopen` rejects. Both are ordinary; a discovery pass that only works on one site's conventions is
+    not a discovery pass.
+
+    Returns `(fetch_url, label)` pairs. The two differ and both are needed: the fetchable URL is
+    percent-encoded, and the label is the human-readable form the classifiers read. Matching against the
+    encoded form would break every pattern here — the annual-report pattern does not match
+    `Annual%20Report` — so a site that puts spaces in its filenames would silently discover nothing.
+    """
+    out: list[tuple[str, str]] = []
+    for href in _HREF.findall(html):
+        url = urljoin(base_url, href) if base_url else href
+        # Encode the PATH only. Quoting the whole URL would mangle the scheme separator, and leaving
+        # spaces raw makes an otherwise valid link unfetchable.
+        split = urlsplit(url)
+        out.append((urlunsplit(split._replace(path=quote(split.path, safe="/%:@"))), unquote(url)))
+    return out
+
+
+def discover_documents(html: str, ticker: str, base_url: str | None = None) -> list[Document]:
     """Every recognised primary-source document in an IR page's HTML, de-duplicated by URL.
 
     Unlike `discover_filings` this does not require a fiscal year: a shareholding pattern for a quarter or a
@@ -98,13 +124,13 @@ def discover_documents(html: str, ticker: str) -> list[Document]:
     wrongly dated document breaks Law 3 more quietly than a missing one.
     """
     out: dict[str, Document] = {}
-    for url in _HREF.findall(html):
-        doc_class = classify(url)
+    for url, label in absolute_links(html, base_url):
+        doc_class = classify(label)
         if doc_class is None:
             continue
-        fy = _FY_RANGE.search(url)
+        fy = _FY_RANGE.search(label)
         period = _fy_from_range(int(fy.group(1)), fy.group(2)) if fy else None
-        stem = re.sub(r"[^A-Za-z0-9]+", "-", url.rsplit("/", 1)[-1][:-4]).strip("-")[:60]
+        stem = re.sub(r"[^A-Za-z0-9]+", "-", label.rsplit("/", 1)[-1][:-4]).strip("-")[:60]
         out[url] = Document(
             url=url, doc_class=doc_class, period=period,
             suggested_file=f"{ticker}-{doc_class}-{stem}.pdf",
@@ -153,7 +179,7 @@ def _plausible_publication(uploaded: date, fy_close: date, deadline: date) -> bo
     return fy_close <= uploaded <= grace
 
 
-def discover_filings(html: str, ticker: str) -> list[FilingCandidate]:
+def discover_filings(html: str, ticker: str, base_url: str | None = None) -> list[FilingCandidate]:
     """Annual-report candidates found in an IR page's HTML, newest fiscal year first.
 
     Nothing is fetched and nothing is written. A link is a candidate only if its text names an annual report
@@ -161,10 +187,10 @@ def discover_filings(html: str, ticker: str) -> list[FilingCandidate]:
     series, so it is dropped rather than guessed at.
     """
     seen: dict[str, FilingCandidate] = {}
-    for url in _HREF.findall(html):
-        if not _ANNUAL_REPORT.search(url) or _NOT_ANNUAL_REPORT.search(url):
+    for url, label in absolute_links(html, base_url):
+        if not _ANNUAL_REPORT.search(label) or _NOT_ANNUAL_REPORT.search(label):
             continue
-        fy = _FY_RANGE.search(url)
+        fy = _FY_RANGE.search(label)
         if fy is None:
             continue
         period = _fy_from_range(int(fy.group(1)), fy.group(2))
@@ -172,7 +198,7 @@ def discover_filings(html: str, ticker: str) -> list[FilingCandidate]:
 
         deadline = _statutory_deadline(period)
         fy_close = date(2000 + int(period[2:]), 3, 31)
-        month = _UPLOAD_MONTH.search(url)
+        month = _UPLOAD_MONTH.search(label)
         if month is not None and _plausible_publication(
             date(int(month.group(1)), int(month.group(2)), 1), fy_close, deadline
         ):

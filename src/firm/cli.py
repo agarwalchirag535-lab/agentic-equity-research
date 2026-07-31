@@ -229,7 +229,7 @@ def discover_filings_cmd(
 
     from firm.adapters.india.ir_pages import discover_filings
 
-    found = discover_filings(html, ticker)
+    found = discover_filings(html, ticker, base_url=url)
     if not found:
         typer.echo(f"no annual reports recognised at {url}")
         raise typer.Exit(1)
@@ -256,6 +256,76 @@ def discover_filings_cmd(
         typer.echo(f"  {c.period}  {c.published_at}  ({c.published_at_basis})  {c.suggested_file}")
     typer.echo("\nNext: download each source_url into data/bronze/ under `file`, fill sha256/bytes, then")
     typer.echo(f"  firm deep-dive --ticker {ticker} --filings {path}")
+
+
+@app.command("fetch-filings")
+def fetch_filings_cmd(
+    manifest: str = typer.Option(..., "--manifest", help="a filings or documents manifest"),
+    bronze: str = typer.Option("data/bronze", "--bronze", help="where to write the PDFs"),
+    only: str = typer.Option("", "--only", help="comma-separated periods to fetch, e.g. FY23,FY24,FY25"),
+    limit: int = typer.Option(0, "--limit", help="stop after N files (0 = all)"),
+) -> None:
+    """Download the PDFs a manifest names, into the immutable bronze store, and record their hashes.
+
+    Discovery and retrieval are separate steps on purpose (ADR-0026): pulling tens of megabytes off a
+    company's servers is a decision a human makes per company. This is that step made repeatable, which
+    is what a PEER set needs — the whole point of a peer comparison is that the peer's figures come from
+    the peer's own audited filings, computed by the same code, and that is only true if we actually
+    fetched them.
+
+    Bronze is content-addressed and immutable (Law 7): a file already present with the right size is not
+    re-fetched, so an interrupted run resumes rather than restarts.
+    """
+    import hashlib
+    import json
+    import ssl
+    import urllib.request
+    from pathlib import Path
+
+    try:
+        import certifi
+
+        context = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:  # pragma: no cover
+        context = ssl.create_default_context()
+
+    path = Path(manifest)
+    data = json.loads(path.read_text())
+    entries = data.get("filings") or data.get("documents") or []
+    wanted = {p.strip().upper() for p in only.split(",") if p.strip()}
+    if wanted:
+        entries = [e for e in entries if str(e.get("period", "")).upper() in wanted]
+    if limit:
+        entries = entries[:limit]
+
+    out_dir = Path(bronze)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fetched = skipped = failed = 0
+    for entry in entries:
+        target = out_dir / str(entry["file"])
+        if target.exists() and target.stat().st_size > 0:
+            typer.echo(f"  have  {target.name} ({target.stat().st_size:,} bytes)")
+            skipped += 1
+            continue
+        request = urllib.request.Request(
+            str(entry["source_url"]), headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urllib.request.urlopen(request, timeout=120, context=context) as response:  # noqa: S310
+                payload = response.read()
+        except Exception as exc:  # noqa: BLE001 - a failed fetch is reported, never fatal
+            typer.echo(f"  FAIL  {entry['file']}: {exc}")
+            failed += 1
+            continue
+        target.write_bytes(payload)
+        entry["sha256"] = hashlib.sha256(payload).hexdigest()
+        entry["bytes"] = len(payload)
+        typer.echo(f"  got   {target.name} ({len(payload):,} bytes)")
+        fetched += 1
+
+    path.write_text(json.dumps(data, indent=2) + "\n")
+    typer.echo(f"{fetched} fetched, {skipped} already present, {failed} failed -> {out_dir}")
+    if failed:
+        raise typer.Exit(1)
 
 
 @app.command("deep-dive")
@@ -364,6 +434,21 @@ def deep_dive(
             )
         if latest_filing is not None:
             satisfied |= {"financials", "filing", "segments"}
+
+        # PEERS (ADR-0039). Built from facts already in the store, which for a peer means that peer's own
+        # annual reports were discovered, fetched and walked by the identical pipeline. `sector_analyst`
+        # is only staffed when a peer actually came out the other end — a declared peer whose filings were
+        # never ingested leaves the agent skipped WITH THE REASON, rather than running it on nothing.
+        from firm.core.pipeline.peers import build_peer_set
+
+        peer_set = build_peer_set(store, ticker, run_date)
+        if peer_set.companies:
+            satisfied.add("peers")
+            typer.echo(f"  peers: {len(peer_set.companies)} comparable from primary sources "
+                       f"({', '.join(p.ticker for p in peer_set.companies)})")
+        for missing_ticker, reason in peer_set.missing:
+            typer.echo(f"  peer {missing_ticker} unavailable: {reason}")
+
         available: tuple[str, ...] = tuple(sorted(satisfied))
         roster_agents, coverage_gaps = plan_agents(phase=phase, available_inputs=available)
         if answers:
@@ -374,6 +459,7 @@ def deep_dive(
         result = run_deep_dive(
             store, ticker, run_date, provider=llm, answers=prepared, filing=latest_filing,
             agents=roster_agents, coverage_gaps=coverage_gaps, documents=ingested_documents,
+            peers=peer_set if peer_set.companies else None,
             company_name=company or ticker, model=model, reports_root=reports_root,
             write=not force,
         )
@@ -489,6 +575,16 @@ def packets(
         from firm.core.orchestrator.roster import available_inputs_from
 
         satisfied |= set(available_inputs_from(_json.loads(_Path(documents).read_text())))
+
+    from firm.core.pipeline.peers import build_peer_set
+
+    peer_store = FactStore(db)
+    peer_set = build_peer_set(peer_store, ticker, run_date)
+    peer_store.close()
+    if peer_set.companies:
+        satisfied.add("peers")
+        typer.echo(f"  peers: {len(peer_set.companies)} comparable from primary sources "
+                   f"({', '.join(p.ticker for p in peer_set.companies)})")
     roster_agents, _gaps = plan_agents(phase=phase, available_inputs=tuple(sorted(satisfied)))
 
     # THE PACKET IS WHERE THE EVIDENCE HAS TO ARRIVE. On the Claude-in-the-loop path (ADR-0010) the
@@ -501,6 +597,7 @@ def packets(
         ticker=ticker, as_of=run_date, derived=derived, evaluation=evaluation, screen=screen,
         feasibility=feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
         models=models, notes=NotesReview(), documents=ingested_documents,
+        peers=peer_set if peer_set.companies else None,
     )
     briefs = build_briefs(agent_requirements(roster_agents), bundle)
 

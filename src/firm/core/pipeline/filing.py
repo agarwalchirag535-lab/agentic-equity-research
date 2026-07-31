@@ -59,6 +59,21 @@ FILING_ROWS: Mapping[str, tuple[str, tuple[str, ...], tuple[str, ...]]] = {
     D.INVENTORY: ("balance_sheet", ("inventories", "inventory"), ("ageing", "policy")),
     D.CASH: ("balance_sheet", ("cash and cash equivalent",), ("ageing", "policy", "other bank")),
     D.SALES: ("pnl", ("revenue from operations", "revenue from operation"), ("note", "policy")),
+    # THE PROFIT LINE, WITHOUT WHICH A FILING PRODUCES NO DERIVATIONS AT ALL. `derive_metrics` keys every
+    # metric off periods that have BOTH Sales and PAT, so a filing walk that read revenue and not profit
+    # contributed four balance-sheet facts and zero derived metrics. Invisible on the subject company,
+    # whose PAT arrives from the grade-B screener snapshot — and fatal on a PEER, where there is no
+    # snapshot and the whole comparison is built from the filing. Balaji Amines walked cleanly, registered
+    # 8 facts a year, and produced an empty `DerivedSet`, which `build_peer_set` correctly reported as
+    # "no facts in the store" — a true statement about derivations that read as a false one about ingest.
+    D.PAT: ("pnl", ("profit for the year", "profit for the period", "profit after tax"),
+            ("comprehensive", "attributable", "before tax", "share of", "per share", "policy")),
+    D.PBT: ("pnl", ("profit before tax",), ("comprehensive", "share of", "policy")),
+    D.DEPRECIATION: ("pnl", ("depreciation and amortisation", "depreciation and amortization"),
+                     ("policy", "accumulated", "schedule")),
+    D.INTEREST: ("pnl", ("finance cost",), ("policy", "note")),
+    D.OTHER_INCOME: ("pnl", ("other income",), ("policy", "note", "comprehensive")),
+    D.EXPENSES: ("pnl", ("total expenses",), ("policy",)),
 }
 
 #: Note taxonomy category -> the deterministic checks that read that note. A note whose category has no

@@ -1,0 +1,173 @@
+{
+  "ticker": "BALAMINES",
+  "company_name": "Balaji Amines Limited",
+  "source": "https://www.balajiamines.com/results.php?ref=1",
+  "retrieved_at": "2026-07-31",
+  "filings": [
+    {
+      "file": "BALAMINES-AR-FY25.pdf",
+      "period": "FY25",
+      "prior_period": "FY24",
+      "source_url": "https://www.balajiamines.com/pdfn/177252203237th%20Annual%20Report%202024-25.pdf",
+      "published_at": "2025-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "fdd7a6e8e85876121e1827af254fbaac4c0440515e57696cfd6ae907825ba918",
+      "bytes": 4797762
+    },
+    {
+      "file": "BALAMINES-AR-FY24.pdf",
+      "period": "FY24",
+      "prior_period": "FY23",
+      "source_url": "https://www.balajiamines.com/pdfn/177252198536th%20Annual%20Report%202023-24.pdf",
+      "published_at": "2024-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "b49c8d6cf57fadeb17f499b6d4aa3ca0f1107089ba385e2be2a47bce5f6e46ac",
+      "bytes": 25151457
+    },
+    {
+      "file": "BALAMINES-AR-FY23.pdf",
+      "period": "FY23",
+      "prior_period": "FY22",
+      "source_url": "https://www.balajiamines.com/pdfn/177252192635th%20Annual%20Report%202022-23.pdf",
+      "published_at": "2023-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "d4df727f75a4523891aeaa9569eb11768c88da3d8f8863e2dc29a1361a2efd8e",
+      "bytes": 9942258
+    },
+    {
+      "file": "BALAMINES-AR-FY22.pdf",
+      "period": "FY22",
+      "prior_period": "FY21",
+      "source_url": "https://www.balajiamines.com/pdfn/177252185534th%20Annual%20Report%202021-22%20Revised.pdf",
+      "published_at": "2022-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "7546c6db853a163a74fc173dab8613623ab9c7cb36fb6273b942791bf4c91258",
+      "bytes": 10727300
+    },
+    {
+      "file": "BALAMINES-AR-FY21.pdf",
+      "period": "FY21",
+      "prior_period": "FY20",
+      "source_url": "https://www.balajiamines.com/pdfn/177252176333rd%20Annual%20Report%202020-2021.pdf",
+      "published_at": "2021-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "8976a1a1062377d274f50a25843ca5c90d68d414495710490d1ea8e9de53f3b3",
+      "bytes": 4110733
+    },
+    {
+      "file": "BALAMINES-AR-FY20.pdf",
+      "period": "FY20",
+      "prior_period": "FY19",
+      "source_url": "https://www.balajiamines.com/pdfn/177252172732nd%20Annual%20Report%202019-2020.pdf",
+      "published_at": "2020-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "cbeccdd7f0eaad2668a0bc1675663719c082bfed54da44491b67b24c96f22032",
+      "bytes": 2735787
+    },
+    {
+      "file": "BALAMINES-AR-FY19.pdf",
+      "period": "FY19",
+      "prior_period": "FY18",
+      "source_url": "https://www.balajiamines.com/pdfn/177252168031st%20Annual%20Report%202018-2019.pdf",
+      "published_at": "2019-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "f71485be09a8700bba3dbf1dc99adbc3b03558b461b0f709c1c088343b33203d",
+      "bytes": 8237808
+    },
+    {
+      "file": "BALAMINES-AR-FY18.pdf",
+      "period": "FY18",
+      "prior_period": "FY17",
+      "source_url": "https://www.balajiamines.com/pdfn/177252163430th%20Annual%20Report%202017-2018.pdf",
+      "published_at": "2018-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "BALAMINES-AR-FY17.pdf",
+      "period": "FY17",
+      "prior_period": "FY16",
+      "source_url": "https://www.balajiamines.com/pdfn/177252158829th%20Annual%20Report%202016-2017.pdf",
+      "published_at": "2017-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "BALAMINES-AR-FY16.pdf",
+      "period": "FY16",
+      "prior_period": "FY15",
+      "source_url": "https://www.balajiamines.com/pdfn/177252155328th%20Annual%20Report%202015-2016.pdf",
+      "published_at": "2016-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "BALAMINES-AR-FY15.pdf",
+      "period": "FY15",
+      "prior_period": "FY14",
+      "source_url": "https://www.balajiamines.com/pdfn/177252151627th%20Annual%20Report%202014-2015.pdf",
+      "published_at": "2015-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "BALAMINES-AR-FY14.pdf",
+      "period": "FY14",
+      "prior_period": "FY13",
+      "source_url": "https://www.balajiamines.com/pdfn/177252147026th%20Annual%20Report%202013-2014.pdf",
+      "published_at": "2014-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "BALAMINES-AR-FY13.pdf",
+      "period": "FY13",
+      "prior_period": "FY12",
+      "source_url": "https://www.balajiamines.com/pdfn/177252142725th%20Annual%20Report%202012-2013.pdf",
+      "published_at": "2013-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "BALAMINES-AR-FY12.pdf",
+      "period": "FY12",
+      "prior_period": "FY11",
+      "source_url": "https://www.balajiamines.com/pdfn/177252115924th%20Annual%20Report%202011-2012.pdf",
+      "published_at": "2012-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    },
+    {
+      "file": "BALAMINES-AR-FY11.pdf",
+      "period": "FY11",
+      "prior_period": "FY10",
+      "source_url": "https://www.balajiamines.com/pdfn/177252109923rd%20Annual%20Report%202010-2011.pdf",
+      "published_at": "2011-09-30",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "",
+      "bytes": 0
+    }
+  ]
+}

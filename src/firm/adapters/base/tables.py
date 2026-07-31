@@ -38,14 +38,26 @@ _NUMBER = re.compile(r"\(?[-+]?\d[\d,]*(?:\.\d+)?\)?%?")
 #: falls back to its default of crore, and every figure read from the filing is stored 100x too large —
 #: with a grade-A provenance stamp on it. This is the most dangerous silent failure in the extraction path.
 _RUPEE = r"(?:₹|`|Rs\.?|INR)"
+#: An UNRECOGNISED currency glyph sitting between "in" and the scale word. Balaji Amines' annual reports
+#: declare "(All amounts are in H lakh, except for share data)" — the ₹ glyph resolves to a capital H in
+#: that font, exactly as it resolves to a backtick in Alkyl Amines'. Enumerating glyphs is a losing game
+#: (every issuer's typesetter picks a different font), so the scale is read POSITIONALLY instead: one
+#: short non-numeric token may sit between "in" and "lakh". Digits are excluded so "in 2 lakh tonnes"
+#: cannot be mistaken for a scale declaration.
+#:
+#: This matters more than it looks. An undetected scale is not a missing figure, it is a figure stored
+#: 100x wrong with a grade-A stamp on it — or, since ADR-0024, a filing that yields nothing at all. On
+#: this peer it was the latter: 6 of 7 annual reports walked cleanly and registered zero facts.
+_GLYPH = r"(?:[^\s\d]{1,4}\s+)?"
 #: "(₹ in Lakhs)" and "` In Lakhs" and a bare "Amount in Lakhs" all mean the same thing. The `in <unit>`
 #: alternative catches the last form; requiring the word "in" keeps it from firing on prose like
 #: "lakhs of tonnes".
 _UNIT_HINTS = [
-    (re.compile(rf"{_RUPEE}[^\n]{{0,20}}?\bcr(?:ore)?s?\b|\bin\s+cr(?:ore)?s?\b", re.IGNORECASE),
+    (re.compile(rf"{_RUPEE}[^\n]{{0,20}}?\bcr(?:ore)?s?\b|\bin\s+{_GLYPH}cr(?:ore)?s?\b", re.IGNORECASE),
      "INR_cr"),
-    (re.compile(rf"{_RUPEE}[^\n]{{0,20}}?\blakhs?\b|\bin\s+lakhs?\b", re.IGNORECASE), "INR_lakh"),
-    (re.compile(rf"(?:{_RUPEE}|\$)[^\n]{{0,20}}?\b(?:million|mn|MM)\b|\bin\s+millions?\b", re.IGNORECASE),
+    (re.compile(rf"{_RUPEE}[^\n]{{0,20}}?\blakhs?\b|\bin\s+{_GLYPH}lakhs?\b", re.IGNORECASE), "INR_lakh"),
+    (re.compile(rf"(?:{_RUPEE}|\$)[^\n]{{0,20}}?\b(?:million|mn|MM)\b|\bin\s+{_GLYPH}millions?\b",
+                re.IGNORECASE),
      "MM"),
 ]
 
