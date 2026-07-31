@@ -417,11 +417,21 @@ def packets(
         help="build phase; selects the roster from config/roster.yaml (ADR-0030). Packets are written for "
              "every agent the roster plans, so a phase-3 run can actually be staffed."),
     documents: str = typer.Option("", "--documents", help="documents manifest, for roster availability"),
+    filings: str = typer.Option(
+        "", "--filings",
+        help="path to a filings manifest. Pass the SAME manifest you will pass to `deep-dive`: without it "
+             "the packet is built from the screener snapshot alone and shows a different forensic screen, "
+             "checklist and note coverage than the run that will validate the answers (ADR-0036)."),
+    bronze: str = typer.Option("data/bronze", "--bronze", help="where the manifests' PDFs live"),
 ) -> None:
     """Write the planned agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
 
     Answer each `{agent}.md` with a single JSON object, save it as `{agent}.json` beside it, then run
     `firm deep-dive --answers <dir>`. This is how agents run on a subscription with no API key (ADR-0010).
+
+    The evidence in the packet is built the way `deep-dive` builds it — same ingest, same filing walk, same
+    governance facts — because an agent that answers a different brief from the one the run validates
+    against is answering the wrong question. Pass the same `--filings` / `--documents` to both.
     """
     from firm.core.compute import quality
     from firm.core.compute.models import build_playbook, detect_models
@@ -435,19 +445,65 @@ def packets(
         universal_forensic_thresholds,
     )
     from firm.core.pipeline import derive as D
-    from firm.core.pipeline.checks import evaluate_checks
+    from firm.core.pipeline.checks import ExternalInputs, evaluate_checks
     from firm.core.pipeline.deep_dive import (
         agent_facts_payload,
+        feasibility_at_target,
         plan_agents,
         statement_shape,
         write_packets,
     )
+    from firm.core.pipeline.filing import disposition_notes, walk_filing
     from firm.core.report.assemble import NotesReview
 
     run_date = date.fromisoformat(as_of) if as_of else date.today()
     store = FactStore(db)
-    facts = D.load_company_facts(store, ticker, run_date)
-    store.close()
+    try:
+        # Mirror `deep-dive`'s steps 1-4 exactly. Anything skipped here becomes a discrepancy between what
+        # the agent was shown and what its answer is held to.
+        latest_filing = None
+        if filings:
+            from firm.core.ingest.filings import (
+                filing_from_manifest,
+                ingest_manifest,
+                load_manifest,
+            )
+
+            manifest = load_manifest(filings)
+            ingest_manifest(store, manifest, bronze=bronze, as_of=run_date)
+            usable = [
+                entry for entry in sorted(manifest["filings"], key=lambda e: str(e["period"]))
+                if date.fromisoformat(str(entry["published_at"])) <= run_date
+            ]
+            if usable:
+                latest_filing = filing_from_manifest(usable[-1], bronze)
+
+        # Packets follow the ROSTER, not a fixed trio (ADR-0034): a phase-3 run that plans eight agents
+        # needs eight packets, or it can never be staffed and the phase stalls at "wired, not staffed".
+        satisfied: set[str] = set()
+        if documents:
+            import json as _json
+            from pathlib import Path as _Path
+
+            from firm.core.ingest.governance import ingest_shareholding_manifest
+            from firm.core.orchestrator.roster import available_inputs_from
+
+            manifest_json = _json.loads(_Path(documents).read_text())
+            satisfied |= set(available_inputs_from(manifest_json))
+            ingest_shareholding_manifest(
+                store, manifest_json, bronze=f"{bronze}/{ticker}", as_of=run_date)
+        if latest_filing is not None:
+            satisfied |= {"financials", "filing", "segments"}
+        roster_agents, _gaps = plan_agents(phase=phase, available_inputs=tuple(sorted(satisfied)))
+
+        facts = D.load_company_facts(store, ticker, run_date)
+        walk = None
+        if latest_filing is not None and latest_filing.published_at <= run_date:
+            walk = walk_filing(store, ticker, latest_filing)
+            facts = D.load_company_facts(store, ticker, run_date)  # re-read: the AR's grade-A facts
+    finally:
+        store.close()
+
     derived = D.derive_metrics(facts)
     models = detect_models(statement_shape(facts, derived), model_detection_thresholds())
     playbook = build_playbook(models, model_playbooks())
@@ -455,26 +511,19 @@ def packets(
     evaluation = evaluate_checks(
         playbook, derived, facts, forensic=thresholds["forensic"],
         universal=universal_forensic_thresholds(), model_specific=model_forensic_thresholds(),
+        external=walk.external if walk is not None else ExternalInputs(),
     )
     screen = quality.forensic_screen(
         quality.SectorClass.NON_FINANCIAL, evaluation.metrics, forensic_thresholds())
-
-    from firm.core.pipeline.deep_dive import feasibility_at_target
+    notes, _ = (
+        disposition_notes(walk.notes, evaluation, disclosure_gaps_found=walk.missing_disclosures)
+        if walk is not None else (NotesReview(), ())
+    )
 
     payload = agent_facts_payload(
-        derived, evaluation, screen, feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
-        models, NotesReview())
-    # Packets follow the ROSTER, not a fixed trio (ADR-0034): a phase-3 run that plans eight agents needs
-    # eight packets, or it can never be staffed and the phase stalls at "wired, not staffed".
-    satisfied: set[str] = {"financials", "filing", "segments"}
-    if documents:
-        import json as _json
-        from pathlib import Path as _Path
-
-        from firm.core.orchestrator.roster import available_inputs_from
-
-        satisfied |= set(available_inputs_from(_json.loads(_Path(documents).read_text())))
-    roster_agents, _gaps = plan_agents(phase=phase, available_inputs=tuple(sorted(satisfied)))
+        derived, evaluation, screen,
+        feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
+        models, notes, facts)
 
     out_dir = out or f"runs/{ticker}-{run_date.isoformat()}/packets"
     written = write_packets(payload, out_dir, agents=roster_agents)

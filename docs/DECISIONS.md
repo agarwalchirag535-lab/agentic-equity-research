@@ -953,3 +953,54 @@ human-readable label couples two things that have no reason to agree.
 primary-source governance claim: *"Promoter holding at the latest quarter read is 72.05%
 [fact:SHP-Q4FY26-…:promoter_holding:Q4FY26]"* — grade A, and the pledge question answered no in every
 quarter that answers it. The verdict is unchanged; a positive governance finding did not buy a better one.
+
+### ADR-0036 — An agent must answer the brief the run will hold it to
+**Context.** ADR-0034 staffed eight agents and ADR-0035 registered the shareholding as grade-A facts, so
+Phase 3 looked done. Running the whole chain by hand against a real company found four defects, and all four
+share one shape: something the pipeline *had* never reached the agent, and nothing in the system could tell
+the difference between an agent that found nothing and an agent that was shown nothing.
+
+**1. The packet was not the evidence the run validates against.** `firm packets` read the fact store and
+stopped; `firm deep-dive` ingested the filings manifest, walked the latest annual report's notes and ingested
+the shareholding. On ALKYLAMINE the packet therefore showed `forensic_screen: PASS`, zero notes and
+`disclosure_gap: UNAVAILABLE`, while the run that would grade the answers computed `REVIEW`, eleven notes and
+`disclosure_gap: FLAG`. An operator answering the packet as written would have had the forensic agent
+narrating a screen that does not exist — and the citation validator would not have caught it, because the
+prose was correctly cited to facts that were merely about a different run. `packets` now takes `--filings`
+and mirrors the run's ingest → walk → check sequence. **Pass the same manifests to both commands.**
+
+**2. All eight packets carried a byte-identical evidence payload.** `agent_facts_payload` rendered the annual
+derivations and nothing else, so `ownership_flows_analyst` — the agent ADR-0035 was written for — received a
+brief containing not one holding it could quote, and could only abstain again. The facts were in the store,
+they were loaded by `load_company_facts`, and they were in `known_fact_ids`, which is the trap: the agent
+could have cited them if it had somehow known they existed. A `quarterly_facts` block now renders them with
+their own `cite_as` tokens. **A fact an agent cannot see is a fact the firm does not have** — the same
+"wired, not working" failure as ADR-0027 and ADR-0035, one layer further out.
+
+**3. The report asserted that work it had just done never happened.** `_narration` hardcoded *"`management_
+analyst`, `transcript_analyst` and `ownership_flows_analyst` are Phase 3 agents and did not run"*. True when
+written; false the moment the roster staffed them, and it would have shipped inside a published report. A
+report with no governance section is honest; a report stating its own governance work was never performed is
+wrong on the record. The section is now composed from whichever of the three actually ran, and the
+absent-rather-than-clean disclaimer is kept only for the seats still empty.
+
+**4. A schema required a number no derivation can produce.** `UnitEconomicsOutput.units_today` and
+`units_plausible_in_7y` were non-nullable `int`, and neither appeared in `NUMERIC_FIELD_SOURCES` — so the
+schema *compelled* the Law-1 breach the numeric validator exists to prevent, and then did not check it.
+(ADR-0034 recorded these being answered as "zero-meaning-unknown", which is exactly the confusion a
+non-nullable count forces.) Both are now `int | None`, and they plus `contribution_margin_per_unit`,
+`payback_years`, `smart_money_score` and `days_to_exit_at_20pct_adv` are registered as `None`, which makes
+the null enforceable instead of merely advised.
+
+**Result.** The run published first time: `INSUFFICIENT_DISCLOSURE`, confidence 0.26, refused on the
+9%-substantive-notes floor with five new narrators unable to talk it upward. Two of the three load-bearing
+points are grade A, from the shareholding — the first primary-source governance evidence to carry a published
+report's load.
+
+**Left open, deliberately.** `available_inputs_from` treats a document *on disk* as a satisfied input. Nothing
+parses the 14 concall transcripts, so `transcript_analyst` and `management_analyst` are staffed with packets
+containing no transcript content and can only abstain; `macro_strategist` is admitted on `financials` while
+needing macro series the firm does not ingest at all. Tightening `SATISFIES` would drop three agents from the
+roster and reclassify them as coverage gaps — more honest per ADR-0031's own wording ("derived from what is
+actually ingested"), but it trades a visible empty seat for an invisible one, and that is the owner's call
+rather than a fix to slip into a plumbing ADR.

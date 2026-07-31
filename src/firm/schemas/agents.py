@@ -40,9 +40,18 @@ class BusinessAnalystOutput(AgentOutputBase):
 
 
 class UnitEconomicsOutput(AgentOutputBase):
+    """The unit counts are NULLABLE on purpose (ADR-0036).
+
+    They were required ints, which made this agent the one place in the roster where the schema *compelled*
+    a Law-1 breach: no derivation in `core/compute` produces a plant, store or tonne count, so any integer
+    written here is authored by the agent — and `_numeric_discipline` did not cover the field, so it would
+    have been published unchallenged. A count the firm cannot source must be `null` with the disclosure
+    named in prose, exactly as `working_capital_days` already is.
+    """
+
     unit_definition: str
-    units_today: int
-    units_plausible_in_7y: int
+    units_today: int | None = None
+    units_plausible_in_7y: int | None = None
     contribution_margin_per_unit: float | None = None
     payback_years: float | None = None
 

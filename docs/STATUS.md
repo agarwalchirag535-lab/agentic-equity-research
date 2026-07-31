@@ -2,7 +2,7 @@
 
 > **Read this first if you are new to this repo** (new session, new agent, new platform, or the owner
 > after a break). It is the single authoritative answer to *"what is built, what is not, and what
-> should happen next."* Last updated **2026-07-30**.
+> should happen next."* Last updated **2026-07-31**.
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
@@ -134,10 +134,21 @@ sections that discovery had never opened. Remaining in this phase:
 1. ~~wire `deep_dive` to the roster~~ DONE (ADR-0033) — `--phase`/`--documents`; coverage gaps reach the
    report but never the verdict; pre-flight names unstaffed agents. DONE (ADR-0034): 8 agents now appear in a published report's
    `agent_versions`. Shareholding is now registered as grade-A quarterly facts and CITED in the report (ADR-0035).
-   Remaining: the transcript parser (guidance extraction), the older shareholding layout (14 quarters that
-   fail at location), and peer ingest for `sector_analyst`.
+   DONE (ADR-0036): the packet an agent answers is now built the way the run builds its evidence, the
+   governance facts actually reach the agent that needs them, and the report no longer claims its own
+   Phase-3 agents did not run. **A full hand-run published on `2026-07-31`** —
+   `reports/ALKYLAMINE/2026-07-31-375a05afd440/`, verdict `INSUFFICIENT_DISCLOSURE`, confidence 0.26, with
+   two of three load-bearing points at grade A from the shareholding.
+   Remaining: the transcript parser (guidance extraction), the older shareholding layout (15 filings that
+   fail at location or have no reporting date), and peer ingest for `sector_analyst`.
 2. parsers for shareholding (promoter %, pledge %, institutional trend) and transcripts (guidance extraction)
 3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
+4. **decide what `SATISFIES` means** (ADR-0036, left open). A document on disk currently satisfies a roster
+   prerequisite even though no extractor reads it, so `transcript_analyst` and `management_analyst` are
+   staffed with packets containing no transcript content, and `macro_strategist` is admitted on `financials`
+   while needing a macro ingest that does not exist. They abstain loudly, which is visible — but an agent
+   that is staffed and empty is not the same thing as a coverage gap, and today the roster cannot tell them
+   apart. Tightening it drops three agents from the roster; that is an owner decision.
 
 
 ### 0. ~~RECENCY BEATS PROVENANCE~~ — FIXED 2026-07-30 (ADR-0029)
@@ -337,6 +348,16 @@ blank — see the ALKYLAMINE note.
   `what_it_does` and `disconfirming_search`. `authored_texts()` now checks every `str` field on the agent
   output, so a new schema field is covered the moment it exists. If you ever narrow it back to a name list,
   you have re-opened the hole.
+- **`firm packets` and `firm deep-dive` must be given the SAME manifests.** The packet is the brief an agent
+  answers; the run is what grades the answer. Before ADR-0036 `packets` skipped the filing walk and the
+  governance ingest, so the packet said `screen: PASS` / 0 notes while the run computed `REVIEW` / 11 notes —
+  and the citation validator cannot catch this, because prose cited to real facts about the *wrong run* is
+  still correctly cited. Both commands now take `--filings`; pass them identically or the answers are to a
+  question nobody asked.
+- **A fact in the store that no packet renders is a fact the agent does not have.** It will still be in
+  `known_fact_ids`, so the agent *could* cite it — if it had any way to know it existed. This is how
+  ADR-0035's shareholding ingest still left `ownership_flows_analyst` abstaining. When you add a fact
+  category, add it to `agent_facts_payload` in the same change or you have not finished.
 - **Screener data cannot produce a forensic pass.** Receivables, inventory and cash are not broken out in
   the screener snapshot, so four of seven universal checks are structurally unavailable from it. Any run
   without an AR walk should be expected to return `INSUFFICIENT_DISCLOSURE`; that is the design working.

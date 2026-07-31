@@ -130,6 +130,15 @@ NUMERIC_FIELD_SOURCES: Mapping[str, str | None] = {
     "customer_concentration": None,
     "promise_delivery_score": None,
     "promoter_pledge_pct": None,
+    # Unit economics (ADR-0036). No derivation counts plants, stores or tonnes, so every one of these is
+    # authored if it is not null — and the schema used to *require* two of them. Registering them here is
+    # what makes the null enforceable rather than merely recommended.
+    "units_today": None,
+    "units_plausible_in_7y": None,
+    "contribution_margin_per_unit": None,
+    "payback_years": None,
+    "smart_money_score": None,
+    "days_to_exit_at_20pct_adv": None,
 }
 
 _ARITHMETIC_REL_TOL = 0.01   # 1%: an agent restating a computed ratio may round it, not change it
@@ -230,16 +239,53 @@ def feasibility_at_target(derived: DerivedSet, policy: Mapping[str, Any],
     )
 
 
+def quarterly_series(facts: CompanyFacts | None) -> dict[str, list[dict[str, Any]]]:
+    """The quarterly (governance) facts, rendered so an agent can cite them (ADR-0035, ADR-0036).
+
+    ADR-0035 registered the SEBI shareholding pattern as grade-A facts and `load_company_facts` reads them,
+    but `agent_facts_payload` never rendered them, so `ownership_flows_analyst`'s packet was byte-identical
+    to the business analyst's and contained not one holding it could quote. The agent could only abstain —
+    the same "wired, not working" failure ADR-0027 named for notes: the ingest existed, the *agent* had
+    nothing. A fact an agent cannot see is a fact the firm does not have.
+
+    Unlike `computed_metrics` these are raw facts, not derivations, so each is cited by its own id.
+    """
+    if facts is None:
+        return {}
+    out: dict[str, list[dict[str, Any]]] = {}
+    for metric in D.QUARTERLY_METRICS:
+        periods = facts.series.get(metric) or {}
+        if not periods:
+            continue
+        out[metric] = [
+            {
+                "period": period,
+                "value": fact.value,
+                "unit": fact.unit,
+                "fact_id": fact.fact_id,
+                "cite_as": f"[fact:{fact.fact_id}]",
+                "published_at": fact.published_at.isoformat(),
+                "grade": fact.grade,
+                "locator": fact.locator,
+            }
+            for period, fact in sorted(periods.items(), key=lambda kv: kv[1].published_at)
+        ]
+    return out
+
+
 def agent_facts_payload(
     derived: DerivedSet, evaluation: CheckEvaluation, screen: quality.ForensicScreenResult,
     feasibility: multibagger.FeasibilityResult | None, models: Sequence[BusinessModel],
-    notes: NotesReview,
+    notes: NotesReview, facts: CompanyFacts | None = None,
 ) -> dict[str, Any]:
     """What the agents are shown: computed numbers WITH their fact ids, and nothing they must compute.
 
     Every metric arrives as `{value, formula, fact_ids, grade}` so the agent can cite it correctly — the
     citation validator will hold it to exactly these ids, and the arithmetic validator to exactly these
     values.
+
+    `facts` is optional only so existing callers keep working; omit it and the governance section is empty,
+    which is exactly the state that left the ownership agent with nothing to say.
     """
     return {
         "ticker": derived.ticker,
@@ -257,6 +303,9 @@ def agent_facts_payload(
             for name, d in derived.values.items()
         },
         "metrics_unavailable": {k: list(v) for k, v in derived.missing.items()},
+        # Raw quarterly facts, cited by their own ids — the annual derivations above cannot carry them
+        # because a promoter stake is a point-in-time holding, not a flow to compound.
+        "quarterly_facts": quarterly_series(facts),
         "forensic_screen": {
             "verdict": screen.verdict.value,
             "hard_fail": screen.hard_fail,
@@ -469,11 +518,27 @@ def _narration(
         "price is asserted — that tier is not built yet, and a valuation narrative without it would be "
         "invented."
     )
-    management = (
-        "No management or governance assessment is made in this report: `management_analyst`, "
-        "`transcript_analyst` and `ownership_flows_analyst` are Phase 3 agents and did not run. "
-        "Promoter-pledge, promise-vs-delivery and board-interlock findings are therefore absent rather "
-        "than clean."
+    # The management section used to be a hardcoded "these are Phase 3 agents and did not run". Once the
+    # roster actually staffs them (ADR-0034) that sentence is simply false, and a published report asserting
+    # its own governance work never happened is worse than one that has none: it is wrong on the record.
+    # So compose it from whoever ran, and keep the honest disclaimer only for the seats still empty.
+    governance_agents = ("management_analyst", "transcript_analyst", "ownership_flows_analyst")
+    present = [name for name in governance_agents if name in outputs]
+    absent = [name for name in governance_agents if name not in outputs]
+    management_parts = [
+        f"**{name}:** {outputs[name].narrative.strip()}"
+        for name in present if outputs[name].narrative.strip()
+    ]
+    if absent:
+        management_parts.append(
+            "No finding from " + ", ".join(f"`{n}`" for n in absent) + ": "
+            + ("they did not run in this report, so the matters they cover are absent rather than clean."
+               if len(absent) > 1 else
+               "it did not run in this report, so the matters it covers are absent rather than clean.")
+        )
+    management = "\n\n".join(management_parts) or (
+        "No management or governance assessment is made in this report. Promoter-pledge, "
+        "promise-vs-delivery and board-interlock findings are absent rather than clean."
     )
 
     open_questions: list[str] = []
@@ -587,7 +652,7 @@ def run_deep_dive(
     )
 
     # ---- 4. the agents: narration only -----------------------------------------------------------
-    payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes)
+    payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes, facts)
     packets = build_packets(payload, agents_dir=agents_path, repo_root=repo, agents=agents)
     known_fact_ids = set(facts.all_fact_ids()) | {f"derived:{n}" for n in derived.values}
     # {fact_id: value} so a number cited to a real fact must state that fact's figure (Law 1): the most
@@ -749,6 +814,7 @@ __all__ = [
     "build_packets",
     "compute_run_id",
     "feasibility_at_target",
+    "quarterly_series",
     "read_answers",
     "run_deep_dive",
     "statement_shape",
