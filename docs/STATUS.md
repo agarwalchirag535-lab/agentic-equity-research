@@ -468,6 +468,52 @@ no AR walked). Verdict **`INSUFFICIENT_DISCLOSURE`**: 4 of 7 applicable checks h
 That verdict is the system working, not failing: on a grade-B snapshot with the notes unread, a thesis
 would have been the dishonest answer. It is also a concrete work list — see §3A.
 
+## 6b. The exchange feed, and what it did and did not solve (ADR-0042/0043, 2026-07-31)
+
+Pointing the pipeline at a company it had never seen (City Union Bank, a bank, from zero) found that the
+document-parsing approach was overfitted to one issuer's typesetting — and then that a large part of it
+was the wrong approach entirely.
+
+**Structured beats parsed, decisively.** NSE disseminates Reg. 31 shareholding and every quarterly result
+as data. Measured on the same 25 CUB shareholding filings:
+
+| | OCR of the company's PDF | NSE structured feed |
+|---|---|---|
+| parsed | 2 of 25 | **20 of 20** |
+| dated | **0 of 25** | **20 of 20** |
+| effort | four rounds of tuning | one request |
+
+The dating decides it: an undated filing cannot enter a point-in-time store, so no amount of further
+parser work would ever have produced an ownership series for this company.
+
+**Cross-checking is wired in and has already earned its place.** Two independent readings of the same
+filing are set against each other quarter by quarter — the exchange feed and the PDF parser. On Alkyl
+Amines all 18 comparable quarters agree exactly. On CUB it caught a real double-count: the
+`period=Annual` XBRL for a bank contains the *Q4 context*, not a 12-month one, so Q4 arrived twice and
+FY24 summed to PAT ₹1,043.3cr against ₹1,015.7cr in the audited accounts.
+
+**What the XBRL removed.** The whole bank-statement-vocabulary problem, for every company at once: no
+hunting for the P&L page, no per-issuer revenue synonyms, no unit-scale guessing. The filing declares its
+own audit status (so the grade is read, not assumed) and carries a `bank: B|N` flag, so ADR-0002's sector
+branch arrives as data. It also supplies `GrossNonPerformingAssets` / `PercentageOfGrossNpa` /
+`ReturnOnAssets` — the lender checks in `quality.py` have existed since Phase 1 with no data behind them.
+
+**The two blockers that remain, both about the SOURCE and not the code:**
+1. **~20% of NSE's XBRL links 404** (3 of 4 for CUB FY23, 1 of 5 for FY24). The index lists the filing and
+   the archive has lost the file. A year missing a quarter is recorded incomplete and NOT stored, so CUB
+   currently has no annual financial series.
+2. **BSE — the documented fallback (ADR-0018) — is blocked by browsing policy in the current environment**,
+   from both a plain client and the browser tool. Its guessed API endpoint names all redirect to an error
+   page, and the page itself cannot be read to find the real ones.
+
+So the fallback for a missing NSE quarter is presently either BSE (needs an environment that can reach it)
+or the audited annual report PDF, which for CUB is already downloaded and whose P&L `extract_layout` reads
+cleanly — it needs an `INR_thousand` scale and a handful of banking row labels, and it is grade A.
+
+**OCR is kept and is not wasted.** It belongs on PROSE — auditor language, related-party notes — where
+there is no column structure to lose and no reconciliation test to fail. `adapters/base/ocr_vision.py`
+uses macOS Vision (no tesseract, no admin) and detects page orientation per page, which these scans need.
+
 ## 7. Suggested next step
 
 **Make a filing self-sufficient**, so a company needs no screener snapshot. The measurement that sizes this,
