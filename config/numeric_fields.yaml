@@ -1,0 +1,68 @@
+# numeric_fields.yaml — which numbers an agent may write, and where each one must come from (Law 1).
+#
+# WHY THIS FILE EXISTS
+# `_numeric_discipline` used to iterate a seven-entry dict in `deep_dive.py`. That was adequate while three
+# agents ran: every numeric field any of them had was in the dict. It stopped being adequate the moment the
+# roster grew, because the check was an ALLOW-list read as a DENY-list — a numeric field absent from the dict
+# was not refused, it was never looked at. `unit_economics_analyst.units_today`,
+# `ownership_flows_analyst.smart_money_score`, `days_to_exit_at_20pct_adv`,
+# `contribution_margin_per_unit`, `payback_years` and eight more could be filled with any number an LLM
+# liked, in a system whose first law is that an LLM never produces a number.
+#
+# The rule is now FAIL-CLOSED and derived from the schema: every numeric leaf on an agent's output is
+# enumerated, and one that appears in neither section below must come back null. Adding a numeric field to a
+# schema therefore forces a decision here, which is the point — the previous design let a new field arrive
+# unclassified and unchecked.
+#
+# Keys are `Model.field`, not bare field names: `Confidence.value` and `SectorScore.tailwind_score` are both
+# "value-ish" scores with entirely different provenance rules, and two agents may legitimately name a field
+# the same thing and mean different things by it.
+
+# ---------------------------------------------------------------------------------------------------
+# COMPUTED — the agent may state this number only if it equals what `core/compute` produced.
+# The value is the derived-metric name in `DerivedSet`. A null value means "the compute layer cannot
+# produce this in the current pipeline", so the field must be null until a derivation exists — the honest
+# form of "we do not know", and the reason a valuation figure cannot appear before the valuation tier is
+# built.
+# ---------------------------------------------------------------------------------------------------
+computed:
+  FinancialStatementOutput.incremental_roic: incremental_roic_3y
+  FinancialStatementOutput.cfo_to_ebitda: cfo_to_ebitda_latest
+  FinancialStatementOutput.fcf_to_pat: fcf_to_pat_cum
+  FinancialStatementOutput.working_capital_days: null
+  BusinessAnalystOutput.customer_concentration: null
+  ManagementAnalystOutput.promise_delivery_score: null
+  # Promoter stake and pledge are now parsed from the SEBI shareholding pattern (ADR-0035), so this is a
+  # real primary-source figure rather than a refusal. The agent must quote the filing, not estimate it.
+  ManagementAnalystOutput.promoter_pledge_pct: promoter_pledge_pct_latest
+  UnitEconomicsOutput.units_today: null
+  UnitEconomicsOutput.units_plausible_in_7y: null
+  UnitEconomicsOutput.contribution_margin_per_unit: null
+  UnitEconomicsOutput.payback_years: null
+  OwnershipFlowsOutput.smart_money_score: null
+  OwnershipFlowsOutput.days_to_exit_at_20pct_adv: null
+  ValuationModelerOutput.reverse_dcf_implied_growth: null
+  ValuationModelerOutput.base_case_value_per_share: null
+  ScenarioLine.return_multiple: null
+  RedTeamOutput.base_rate_of_failure: null
+  PortfolioManagerOutput.position_size_pct: null
+  PortfolioManagerOutput.expectancy: null
+  PostMortemOutput.brier: null
+  PostMortemOutput.resolved_predictions: null
+
+# ---------------------------------------------------------------------------------------------------
+# JUDGMENT — numbers an agent is SUPPOSED to author, because they are epistemic rather than financial.
+# Law 1 bans an LLM from producing a *financial* number. A confidence of 0.4, a tailwind score of -0.3 and
+# a subjective scenario probability are the agent's opinion expressed on a scale; there is no filing that
+# discloses them and no formula that computes them. Refusing these would not increase rigour, it would
+# delete the calibration record that Phase 6 scores.
+#
+# The test for adding something here: could a company disclose it, or could `core/compute` derive it? If
+# yes, it is not judgment — it belongs above.
+# ---------------------------------------------------------------------------------------------------
+judgment:
+  - Confidence.value               # the agent's own stated confidence (house style §5)
+  - Confidence.evidence_count      # a count of the citations it is relying on
+  - SectorScore.tailwind_score     # -1..1 opinion on a sector's direction
+  - SectorScore.horizon_years      # the horizon that opinion is held over
+  - ScenarioLine.probability       # subjective probability; the multiple beside it is NOT judgment

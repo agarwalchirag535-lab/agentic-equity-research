@@ -28,9 +28,20 @@ from dataclasses import dataclass
 from firm.adapters.base.tables import numbers_on_line
 
 #: The category rows, as SEBI names them. Matched at line start after an optional "(A)"-style marker.
-_PROMOTER_ROW = re.compile(r"^\(?A\)?\s+promoter\s*&?\s*promoter\s*group\b", re.I)
-_PUBLIC_ROW = re.compile(r"^\(?B\)?\s+public\b", re.I)
-_NON_PROMOTER_ROW = re.compile(r"^\(?C\)?\s+non[\s-]*promoter[\s-]*non[\s-]*public\b", re.I)
+#:
+#: DELIBERATELY SHORTER THAN THE FULL CATEGORY NAME. The first version required
+#: `A Promoter & Promoter Group` to appear on ONE line, and a PDF text layer does not promise that: on 14 of
+#: Alkyl Amines' 27 filings the cell wraps as `A Promoter &` / `Promoter` / `Group`, with the figures several
+#: lines below. Anchoring on the category letter plus its first word matches the row wherever the extractor
+#: chose to break it; `_row_block` then reads the whole row rather than one line of it.
+_PROMOTER_ROW = re.compile(r"^\(?A\)?[\s.]+promoter\b", re.I)
+_PUBLIC_ROW = re.compile(r"^\(?B\)?[\s.]+public\b", re.I)
+_NON_PROMOTER_ROW = re.compile(r"^\(?C\)?[\s.]+non[\s-]*promoter\b", re.I)
+
+#: A row's figures never run more than this many wrapped lines past its label. A cap matters: without one a
+#: mis-detected category marker would swallow the rest of the document and scavenge a reconciling pair out
+#: of unrelated tables.
+_MAX_ROW_LINES = 40
 
 #: "Whether any shares held by promoters are pledge or otherwise encumbered? No"
 _PLEDGE_QUESTION = re.compile(
@@ -38,9 +49,45 @@ _PLEDGE_QUESTION = re.compile(
     r"encumbered\s*\??\s*(yes|no)?",
     re.I,
 )
-#: The reporting date: "as on 30/09/2024", "as at September 30, 2024", "30-09-2024".
-_AS_ON = re.compile(
-    r"as\s+(?:on|at|of)\s+(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})", re.I)
+#: The reporting date. SEBI's own cover page writes "4. Share Holding Pattern as on : 31-Mar-2022", so the
+#: separator is optional-colon and the month is as often a NAME as a number. The numeric-only pattern found
+#: the date on **none** of Alkyl Amines' 27 filings, which for a point-in-time system is the whole ballgame:
+#: an undated quarterly filing cannot be placed in a series and cannot be filtered by `published_at <= as_of`.
+_MONTHS = {m: i for i, m in enumerate(
+    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), start=1)}
+_AS_ON_NUMERIC = re.compile(
+    r"as\s+(?:on|at|of)\s*:?\s*(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})", re.I)
+_AS_ON_NAMED = re.compile(
+    r"as\s+(?:on|at|of)\s*:?\s*(\d{1,2})[\s/\-.]*([A-Za-z]{3,9})[\s/\-.,]*(\d{4})", re.I)
+
+
+#: Some filings carry no "as on" line at all, only the depository extraction header:
+#: `GENERATED ON :13/01/2026   NSDL : 31/12/2025   CDSL :31/12/2025`. The NSDL/CDSL date is the quarter end
+#: the register was pulled as of — the reporting date by another name — while GENERATED ON is the day the
+#: form was produced, which is later and is NOT the reporting date. Read the former, never the latter, and
+#: label the basis so a reader can tell a stated date from a recovered one.
+_DEPOSITORY_DATE = re.compile(r"\b(?:NSDL|CDSL)\s*:?\s*(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})", re.I)
+
+
+def _as_on_date(line: str) -> str | None:
+    """The reporting date in ISO form, or None. Both `31-03-2022` and `31-Mar-2022` are the same filing."""
+    numeric = _AS_ON_NUMERIC.search(line)
+    if numeric is not None:
+        return f"{numeric.group(3)}-{int(numeric.group(2)):02d}-{int(numeric.group(1)):02d}"
+    named = _AS_ON_NAMED.search(line)
+    if named is not None:
+        month = _MONTHS.get(named.group(2)[:3].lower())
+        if month is not None:
+            return f"{named.group(3)}-{month:02d}-{int(named.group(1)):02d}"
+    return None
+
+
+def _depository_date(line: str) -> str | None:
+    """The quarter-end the depository register was extracted as of, or None."""
+    found = _DEPOSITORY_DATE.search(line)
+    if found is None:
+        return None
+    return f"{found.group(3)}-{int(found.group(2)):02d}-{int(found.group(1)):02d}"
 
 #: A holding percentage is in (0, 100]. Share COUNTS are large integers, so a decimal in range is the
 #: discriminator that survives column interleaving.
@@ -60,6 +107,11 @@ class ShareholdingSummary:
     promoter_shareholders: int | None = None
     pledged: bool | None = None
     as_on: str | None = None
+    #: How `as_on` was established — `stated` (the filing's own "as on" line) or `depository-date` (recovered
+    #: from the NSDL/CDSL extraction header on a filing that carries no "as on" line). Travels with the date
+    #: for the same reason `published_at_basis` travels with a filing's: a point-in-time claim resting on a
+    #: recovered date should not be indistinguishable from one resting on a stated one.
+    as_on_basis: str | None = None
     page: int = 0
     rejected_because: str | None = None
 
@@ -113,30 +165,66 @@ def _holding_pct(line: str) -> float | None:
     return candidates[0] if candidates else None
 
 
+def _integer_pcts(text: str) -> list[float]:
+    """Whole-number readings of a holding percentage — the `72` / `28` case.
+
+    Kept SEPARATE from the decimal candidates and consulted only if no decimal pair reconciles. A promoter
+    stake that is exactly 72.00% is filed as `72`, and refusing it would reject a real disclosure over a
+    formatting choice — but a row also contains shareholder counts, and `13` or `28` are perfectly good
+    integers too. Trying decimals first means the 13 filings that already parsed keep parsing by exactly the
+    route they did, and the integer reading is reached only where the alternative is reporting nothing.
+    """
+    out: list[float] = []
+    for value in numbers_on_line(text):
+        if 0 < value <= _MAX_PCT and value == int(value) and value not in out:
+            out.append(value)
+    return out
+
+
+def _row_block(lines: list[str], start: int, boundaries: list[int]) -> str:
+    """One category row as a single string, however many lines the text layer wrapped it across.
+
+    Joined with SPACES, never concatenated. Concatenation would repair `3678526` + `8` into the true share
+    count but would equally weld `72.03` onto whatever preceded it, inventing figures. Spacing leaves the
+    split share count as two meaningless integers — which the percentage scan ignores — while the holding
+    percentage, printed once per column, survives intact as a standalone token.
+    """
+    ends = [b for b in boundaries if b > start]
+    end = min(ends) if ends else len(lines)
+    return " ".join(line.strip() for line in lines[start:min(end, start + _MAX_ROW_LINES)])
+
+
+def _best_pair(
+    promoter: list[float], public: list[float]
+) -> tuple[float, float] | None:
+    """The (promoter, public) reading closest to summing to 100, or None if either side has no candidate."""
+    if not promoter or not public:
+        return None
+    return min(
+        ((p, q) for p in promoter for q in public),
+        key=lambda pair: abs(pair[0] + pair[1] - 100.0),
+    )
+
+
 def parse_shareholding(pages: tuple[str, ...]) -> ShareholdingSummary:
     """Promoter holding, public holding and pledge status from a SEBI shareholding pattern.
 
     Returns `located=False` with `rejected_because` set when the categories cannot be reconciled, rather
     than a plausible-looking wrong stake.
     """
-    promoter_candidates: list[float] = []
-    public_candidates: list[float] = []
-    promoter_holders = None
+    # Flatten to lines once, remembering which page each came from: a row's label and its figures can
+    # straddle a page break, and the row is the unit of meaning, not the page.
+    lines: list[str] = []
+    page_of: list[int] = []
     pledged: bool | None = None
     as_on: str | None = None
-    page_found = 0
-
+    as_on_basis: str | None = None
+    depository_on: str | None = None
     for index, page in enumerate(pages, start=1):
         for line in page.splitlines():
             stripped = line.strip()
-            if not promoter_candidates and _PROMOTER_ROW.match(stripped):
-                promoter_candidates = _candidate_pcts(stripped)
-                counts = [v for v in numbers_on_line(stripped) if v == int(v) and v > 0]
-                promoter_holders = int(counts[0]) if counts else None
-                page_found = page_found or index
-            elif not public_candidates and _PUBLIC_ROW.match(stripped):
-                public_candidates = _candidate_pcts(stripped)
-                page_found = page_found or index
+            lines.append(stripped)
+            page_of.append(index)
 
             pledge_match = _PLEDGE_QUESTION.search(stripped)
             if pledge_match is not None and pledged is None:
@@ -145,34 +233,85 @@ def parse_shareholding(pages: tuple[str, ...]) -> ShareholdingSummary:
                 pledged = True if answer == "yes" else (False if answer == "no" else None)
 
             if as_on is None:
-                on = _AS_ON.search(stripped)
-                if on is not None:
-                    as_on = f"{on.group(3)}-{int(on.group(2)):02d}-{int(on.group(1)):02d}"
+                as_on = _as_on_date(stripped)
+                as_on_basis = "stated" if as_on else None
+            if depository_on is None:
+                depository_on = _depository_date(stripped)
 
-    if not promoter_candidates or not public_candidates:
+    if as_on is None and depository_on is not None:
+        as_on, as_on_basis = depository_on, "depository-date"
+
+    # The SEBI wording sometimes puts the pledge answer on the line AFTER the question, because the question
+    # wraps. Look one line on before concluding the form was left blank.
+    if pledged is None:
+        for index, line in enumerate(lines):
+            if _PLEDGE_QUESTION.search(line) and index + 1 < len(lines):
+                answer = lines[index + 1].strip().lower()
+                if answer in ("yes", "no"):
+                    pledged = answer == "yes"
+                    break
+
+    starts = {"promoter": None, "public": None, "non_public": None}
+    boundaries: list[int] = []
+    for index, line in enumerate(lines):
+        for key, pattern in (("promoter", _PROMOTER_ROW), ("public", _PUBLIC_ROW),
+                             ("non_public", _NON_PROMOTER_ROW)):
+            if pattern.match(line):
+                boundaries.append(index)
+                if starts[key] is None:
+                    starts[key] = index
+
+    if starts["promoter"] is None or starts["public"] is None:
         return ShareholdingSummary(
-            located=False, pledged=pledged, as_on=as_on,
+            located=False, pledged=pledged, as_on=as_on, as_on_basis=as_on_basis,
             rejected_because="the promoter and public category rows were not both located",
         )
+
+    promoter_block = _row_block(lines, starts["promoter"], boundaries)
+    public_block = _row_block(lines, starts["public"], boundaries)
+    page_found = page_of[starts["promoter"]]
+
+    counts = [v for v in numbers_on_line(promoter_block) if v == int(v) and v > 0]
+    promoter_holders = int(counts[0]) if counts else None
+
+    promoter_candidates = _candidate_pcts(promoter_block)
+    public_candidates = _candidate_pcts(public_block)
 
     # THE IDENTITY DISAMBIGUATES. Promoter % + public % = 100 by construction, so where the text layer welded
     # a percentage onto a share count the correct split is the one that reconciles. This turns an acceptance
     # test into a repair — and one that cannot invent a stake, because a wrong split simply fails to sum.
-    best = min(
-        ((p, q) for p in promoter_candidates for q in public_candidates),
-        key=lambda pair: abs(pair[0] + pair[1] - 100.0),
-    )
+    #
+    # Decimals are tried alone first and integers folded in only if nothing reconciles, so a filing that
+    # states 72.03/27.97 is never at risk of a coincidental integer pair, while one that states a flat 72/28
+    # is still read. Fall back rather than merge.
+    best = _best_pair(promoter_candidates, public_candidates)
+    if best is None or abs(best[0] + best[1] - 100.0) > _RECONCILE_TOLERANCE:
+        widened = _best_pair(
+            promoter_candidates + _integer_pcts(promoter_block),
+            public_candidates + _integer_pcts(public_block),
+        )
+        if widened is not None and (best is None
+                                    or abs(widened[0] + widened[1] - 100.0)
+                                    < abs(best[0] + best[1] - 100.0)):
+            best = widened
+
+    if best is None:
+        return ShareholdingSummary(
+            located=False, pledged=pledged, as_on=as_on, as_on_basis=as_on_basis,
+            rejected_because="no percentage could be read from the promoter or public category row",
+        )
     promoter_pct, public_pct = best
 
     summary = ShareholdingSummary(
         located=True, promoter_pct=promoter_pct, public_pct=public_pct,
-        promoter_shareholders=promoter_holders, pledged=pledged, as_on=as_on, page=page_found,
+        promoter_shareholders=promoter_holders, pledged=pledged, as_on=as_on,
+        as_on_basis=as_on_basis, page=page_found,
     )
     if not summary.reconciles:
         # A stake that reads 71.96% when it is really 17.96% would look entirely plausible and drive a
         # governance verdict off a cliff. Refuse rather than report.
         return ShareholdingSummary(
-            located=False, pledged=pledged, as_on=as_on,
+            located=False, pledged=pledged, as_on=as_on, as_on_basis=as_on_basis,
             rejected_because=(
                 f"promoter {promoter_pct}% + public {public_pct}% = "
                 f"{promoter_pct + public_pct:.2f}%, which does not reconcile to 100% — the columns were "

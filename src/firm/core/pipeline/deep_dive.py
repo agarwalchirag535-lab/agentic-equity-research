@@ -70,6 +70,7 @@ from firm.core.config import (
     model_detection_thresholds,
     model_forensic_thresholds,
     model_playbooks,
+    numeric_field_policy,
     report_policy,
     universal_forensic_thresholds,
 )
@@ -119,18 +120,6 @@ def plan_agents(
 
     plan = plan_run(load_roster(roster_path), available_inputs=available_inputs, max_phase=phase)
     return plan.names, plan.disclosure_gaps()
-
-#: Agent numeric field -> the derived metric it must equal. `None` = the compute layer cannot produce it
-#: in this pipeline, so the agent MUST return null (Law 1: no LLM-authored numbers).
-NUMERIC_FIELD_SOURCES: Mapping[str, str | None] = {
-    "incremental_roic": "incremental_roic_3y",
-    "cfo_to_ebitda": "cfo_to_ebitda_latest",
-    "fcf_to_pat": "fcf_to_pat_cum",
-    "working_capital_days": None,
-    "customer_concentration": None,
-    "promise_delivery_score": None,
-    "promoter_pledge_pct": None,
-}
 
 _ARITHMETIC_REL_TOL = 0.01   # 1%: an agent restating a computed ratio may round it, not change it
 
@@ -290,28 +279,82 @@ def agent_facts_payload(
     }
 
 
-def _numeric_discipline(output: AgentOutputBase, derived: DerivedSet) -> list[str]:
-    """Law 1 check: every numeric field the agent filled must match a computed value, or be null."""
+def _walk_numbers(
+    label: str, value: object, owner: str, out: list[tuple[str, str, float]]
+) -> None:
+    """Collect `(path, 'Model.field', value)` for every number an agent actually filled in.
+
+    A `bool` is skipped before the `int` branch on purpose: Python makes `bool` a subclass of `int`, so
+    `veto=True` and `national_relevance=False` would otherwise arrive as the numbers 1 and 0 and be
+    refused as un-sourced figures.
+    """
+    if isinstance(value, BaseModel):
+        cls = type(value).__name__
+        for name in type(value).model_fields:
+            if name in _IDENTITY_FIELDS or name in _NON_PROSE_FIELDS:
+                continue
+            _walk_numbers(
+                f"{label}.{name}" if label else name, getattr(value, name), f"{cls}.{name}", out
+            )
+    elif isinstance(value, list):
+        for index, item in enumerate(value, start=1):
+            _walk_numbers(f"{label}[{index}]", item, owner, out)
+    elif isinstance(value, bool):
+        return
+    elif isinstance(value, (int, float)):
+        out.append((label, owner, float(value)))
+
+
+def authored_numbers(output: AgentOutputBase) -> list[tuple[str, str, float]]:
+    """Every number the agent put in a numeric field, with the `Model.field` key that classifies it.
+
+    Derived from the schema for the same reason `authored_texts` is (ADR-0036). The list version of this
+    check was an allow-list being read as a deny-list: a numeric field that was not in it was not refused,
+    it was never examined. Thirteen fields across the Phase-3/4 agents — `units_today`,
+    `smart_money_score`, `days_to_exit_at_20pct_adv`, `payback_years` and the rest — were therefore free
+    text for an LLM in a system whose first law is that an LLM never produces a number.
+    """
+    out: list[tuple[str, str, float]] = []
+    _walk_numbers("", output, type(output).__name__, out)
+    return out
+
+
+def _numeric_discipline(
+    output: AgentOutputBase, derived: DerivedSet, policy: Mapping[str, Any] | None = None
+) -> list[str]:
+    """Law 1 check: every number an agent wrote is a computed figure, a judgment, or a violation.
+
+    Fail-closed. `config/numeric_fields.yaml` classifies each `Model.field`; anything it does not classify
+    must be null, so a schema growing a numeric field forces a decision instead of opening a hole.
+    """
+    rules = policy if policy is not None else numeric_field_policy()
+    computed_map: Mapping[str, str | None] = rules["computed"]
+    judgment: frozenset[str] = rules["judgment"]
+
     problems: list[str] = []
-    for field_name, metric in NUMERIC_FIELD_SOURCES.items():
-        if not hasattr(output, field_name):
+    for path, key, quoted in authored_numbers(output):
+        if key in judgment:
             continue
-        quoted = getattr(output, field_name)
-        if quoted is None:
+        if key not in computed_map:
+            problems.append(
+                f"field '{path}' = {quoted} is not classified in config/numeric_fields.yaml. Law 1: a "
+                "number an agent may write is either a value the compute layer produced or a declared "
+                "judgment — an unclassified numeric field must be null."
+            )
             continue
+        metric = computed_map[key]
         computed = None if metric is None else derived.value(metric)
         if computed is None:
             problems.append(
-                f"field '{field_name}' = {quoted} but the compute layer produced no such number "
+                f"field '{path}' = {quoted} but the compute layer produced no such number "
                 f"({'no derivation exists in this pipeline' if metric is None else metric + ' unavailable'})"
                 " — Law 1: agents never author numbers"
             )
             continue
-        check = arithmetic.check(field_name, float(quoted), float(computed),
-                                rel_tol=_ARITHMETIC_REL_TOL)
+        check = arithmetic.check(path, float(quoted), float(computed), rel_tol=_ARITHMETIC_REL_TOL)
         if not check.ok:
             problems.append(
-                f"field '{field_name}' = {quoted} but {metric} computes to {computed} "
+                f"field '{path}' = {quoted} but {metric} computes to {computed} "
                 f"(difference {check.abs_diff:.6g})"
             )
     return problems
@@ -378,13 +421,14 @@ def _run_one_agent(
     known_fact_ids: set[str],
     known_values: Mapping[str, float],
     max_citation_retries: int,
+    numeric_policy: Mapping[str, Any] | None = None,
 ) -> AgentOutputBase:
     """Run an agent and hold it to Laws 1 and 2, with one corrective retry before failing the run."""
     prompt = user
     last: list[str] = []
     for attempt in range(max_citation_retries + 1):
         output = run_agent(provider, system=system, user=prompt, model=model, schema=schema)
-        problems = (_numeric_discipline(output, derived)
+        problems = (_numeric_discipline(output, derived, numeric_policy)
                     + _citation_problems(output, known_fact_ids, known_values))
         if not problems:
             return output
@@ -616,6 +660,7 @@ def run_deep_dive(
     run = _AgentRun()
     specs = [spec for spec, _, _ in packets.values()]
     run_id = compute_run_id(ticker, as_of, specs, facts.all_fact_ids())
+    numeric_policy = numeric_field_policy()
 
     for name, (spec, system, user) in packets.items():
         agent_provider = provider
@@ -626,7 +671,7 @@ def run_deep_dive(
         output = _run_one_agent(
             spec, AGENT_OUTPUTS[name], provider=agent_provider, model=model, system=system, user=user,
             derived=derived, known_fact_ids=known_fact_ids, known_values=known_values,
-            max_citation_retries=max_citation_retries,
+            max_citation_retries=max_citation_retries, numeric_policy=numeric_policy,
         )
         run.outputs[name] = output
         run.fragments.append(build_fragment(
@@ -741,11 +786,11 @@ def read_answers(answers_dir: str | Path, agents: Sequence[str] = PHASE2_AGENTS)
 
 
 __all__ = [
-    "NUMERIC_FIELD_SOURCES",
     "PHASE2_AGENTS",
     "AgentDisciplineError",
     "DeepDiveResult",
     "agent_facts_payload",
+    "authored_numbers",
     "build_packets",
     "compute_run_id",
     "feasibility_at_target",

@@ -83,6 +83,20 @@ def reconciliation_thresholds() -> dict[str, float]:
     return load_thresholds()["reconciliation"]
 
 
+def numeric_field_policy() -> dict[str, Any]:
+    """Which numbers an agent may author and where each must come from (Law 1, ADR-0036).
+
+    Returns `{"computed": {Model.field: metric|None}, "judgment": {Model.field, ...}}`. A numeric field in
+    neither collection must be null — the check is fail-closed, so a schema that grows a numeric field
+    forces a classification here rather than slipping through unexamined.
+    """
+    raw = load_yaml("numeric_fields.yaml")
+    return {
+        "computed": dict(raw.get("computed") or {}),
+        "judgment": frozenset(raw.get("judgment") or ()),
+    }
+
+
 def load_playbooks() -> dict[str, Any]:
     """Business-model detection thresholds + per-model check playbooks (ADR-0017)."""
     return load_yaml("forensic_playbooks.yaml")

@@ -55,6 +55,77 @@ def _pages_from_text_layer(pdf_bytes: bytes) -> list[str]:  # pragma: no cover -
     return [(page.extract_text() or "") for page in reader.pages]
 
 
+#: Two fragments are on the same visual line if their baselines are within this many PDF units. Concall
+#: transcripts set the speaker label and the first line of speech on exactly the same baseline, but
+#: sub/superscripts and font changes shift it by a point or two, so an exact match is too strict.
+_LINE_TOLERANCE = 2.5
+
+
+def _pages_from_layout(pdf_bytes: bytes) -> list[str]:  # pragma: no cover - thin pypdf wrapper
+    """Page text with the COLUMNS PRESERVED, reconstructed from glyph positions.
+
+    WHY THIS EXISTS
+    `extract_text()` returns a document in stream order, which for a two-column layout means the whole
+    left column and then the whole right column. Concall transcripts are exactly that shape — speaker
+    names down the left, speech down the right — so the default extraction produces
+
+        Moderator:
+        Nilesh Ghuge:
+        Yogesh Kothari:
+        <every paragraph, unattributed>
+
+    and every turn loses its speaker. On Alkyl Amines' 14 transcripts that cost 11 of them: the parser
+    saw 3-10 turns on a 19-page call and could pair no questions with answers at all.
+
+    pypdf's `extraction_mode="layout"` returns an empty string on these files, so the fix is the visitor
+    API: collect each fragment's baseline `(y, x)` from the text matrix, group fragments by baseline, and
+    emit them left-to-right, top-to-bottom. That restores `Moderator: Ladies and gentlemen, ...` as one
+    line, which is what the transcript grammar expects and what a human sees on the page.
+    """
+    import io
+
+    from pypdf import PdfReader
+
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    pages: list[str] = []
+    for page in reader.pages:
+        fragments: list[tuple[float, float, str]] = []
+
+        def visit(text: str, cm: object, tm: list[float], font: object, size: object) -> None:
+            if text.strip():
+                fragments.append((tm[5], tm[4], text.strip()))
+
+        page.extract_text(visitor_text=visit)
+        if not fragments:
+            pages.append("")
+            continue
+
+        lines: list[str] = []
+        current_y: float | None = None
+        row: list[tuple[float, str]] = []
+        for y, x, text in sorted(fragments, key=lambda f: (-f[0], f[1])):
+            if current_y is None or abs(y - current_y) > _LINE_TOLERANCE:
+                if row:
+                    lines.append(" ".join(t for _, t in sorted(row)))
+                current_y, row = y, [(x, text)]
+            else:
+                row.append((x, text))
+        if row:
+            lines.append(" ".join(t for _, t in sorted(row)))
+        pages.append("\n".join(lines))
+    return pages
+
+
+def extract_layout(pdf_bytes: bytes, **kwargs: object) -> ExtractionResult:
+    """`extract_document` with column-preserving extraction — for documents whose LAYOUT carries meaning.
+
+    Use it where position is part of the content (a transcript's speaker column, a two-column filing) and
+    the plain reader where it is not. Everything else — the OCR fallback, the `complete=False` signal — is
+    unchanged, because an unreadable document is a signal whichever reader was asked to read it.
+    """
+    return extract_document(pdf_bytes, text_layer_fn=_pages_from_layout, **kwargs)  # type: ignore[arg-type]
+
+
 def extract_document(
     pdf_bytes: bytes,
     *,

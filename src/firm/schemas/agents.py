@@ -41,8 +41,11 @@ class BusinessAnalystOutput(AgentOutputBase):
 
 class UnitEconomicsOutput(AgentOutputBase):
     unit_definition: str
-    units_today: int
-    units_plausible_in_7y: int
+    # Optional, not required. As required ints these two fields ORDERED the agent to produce a number the
+    # compute layer cannot derive and no filing discloses in that form — a schema that mandates a Law-1
+    # violation. The unit count is a disclosure gap to be reported, not a blank to be filled (ADR-0036).
+    units_today: int | None = None
+    units_plausible_in_7y: int | None = None
     contribution_margin_per_unit: float | None = None
     payback_years: float | None = None
 
