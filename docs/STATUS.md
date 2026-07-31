@@ -2,11 +2,11 @@
 
 > **Read this first if you are new to this repo** (new session, new agent, new platform, or the owner
 > after a break). It is the single authoritative answer to *"what is built, what is not, and what
-> should happen next."* Last updated **2026-07-30**.
+> should happen next."* Last updated **2026-07-31**.
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0021). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0038). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -24,12 +24,12 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 0 — skeleton + contracts | ✅ complete |
 | 1 — compute layer | ✅ complete (100% coverage enforced by `make cov`) |
 | **2 — three agents, deep** | ✅ **complete — acceptance test passes; first report published (§6a)** |
-| 3 — full roster + orchestrator | ⚠️ DAG/gates/budget code exists; the other 11 agents are not wired |
+| 3 — full roster + orchestrator | ⚠️ 8 of 14 agents staffed and reaching a published report; sector_analyst + the Phase-4 tier remain |
 | 4 — judgment tier | ⚠️ agent prompts exist as markdown; no validated outputs flowing |
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 563 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 649 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -353,6 +353,39 @@ From `VALIDATION_TIER0.md`, using figures read directly from the companies' own 
 The check library was also back-tested against the exact figures in the two Hindenburg reports
 (Carvana gain-on-sale 2.2× NI; Sezzle provisions +130% on a +6% book; Carvana GPU +209% vs Manheim
 −20.3%) — all fire as expected.
+
+## 6b. The published Alkyl Amines report (2026-07-31)
+
+`reports/ALKYLAMINE/2026-07-23-0c32a293299a/` — **`QUALITY_WRONG_PRICE`**, confidence 0.55, eight agents,
+408 lines. The first report the firm has published on primary sources end to end, and the first with a
+verdict that is a judgment about the business rather than about our own reading of it.
+
+What changed under it, in one line each (ADR-0036/0037/0038):
+
+| before | after |
+|---|---|
+| 4 metrics read from the annual reports | **36**, FY16-FY26, essentially all grade A |
+| every derived ratio grade B | ROIC, OPM, cash conversion, working capital, cost structure all grade A |
+| 11 of ~63 notes enumerated, 9% substantive | **45 enumerated, 100% dispositioned, 64% substantive** |
+| 32% of line-by-line questions answered | **56%** |
+| `INSUFFICIENT_DISCLOSURE` — the opacity was ours | `QUALITY_WRONG_PRICE` — the finding is the company's |
+
+The finding itself: forensically clean on six of seven applicable checks, including the one that matters
+most — the reported cash and bank balances yield **7.78%** on the average balance, which is a real term-
+deposit rate and not what a fabricated balance earns. Profit converts to cash (ΣCFO/ΣPAT **1.27**),
+receivable days moved **1.2** days, the related-party note discloses remuneration and nothing else, and
+the promoter stake is flat at **72.05%** and unpledged across twelve quarters. Against that: return on
+capital **10.3%** and rolling three-year incremental return **−23%**, on capex that ran at **3.44×** the
+depreciation charge — expansion, not replacement, so the poor return cannot be explained away as the cost
+of standing still. The margin question is answered rather than asserted for the first time: the material
+cost ratio moved **+1.7pp** against +0.5pp for employees and +0.7pp for other expenses, so the margin went
+to feedstock, which is the one line management does not set.
+
+**What the report still cannot do, printed in it rather than hidden:** no tonnage or realisation, so the
+volume-versus-price question that a spread business turns on is unanswered; no transcript parsing, so the
+promise-vs-delivery scorecard is empty across thirteen ingested calls; no institutional split or volume
+history, so smart-money and days-to-exit are null; no valuation tier. The `disclosure_backlog` in the
+report is the live worklist — 31 entries, led by the production-and-sales table and the segment note.
 
 ## 6a. Phase 2 evidence: what the pipeline actually produced
 

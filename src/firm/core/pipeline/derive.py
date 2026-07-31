@@ -74,12 +74,62 @@ EXPENSES = "pnl:Expenses"
 DIVIDEND_PAYOUT_PCT = "pnl:Dividend Payout %"
 CFI = "cashflow:Cash from Investing Activity"
 
+#: Rows that exist only once an AUDITED ANNUAL REPORT has been walked (`core/pipeline/filing.py`). The
+#: screener snapshot carries none of them: it collapses the P&L expense breakup into one `Expenses` row
+#: and omits payables, the cash-flow detail and the balance-sheet cash split entirely. Every question in
+#: `config/line_items.yaml` that was UNANSWERED for want of "the P&L expense breakup" or "trade payables
+#: per year" is unanswered for want of exactly these.
+TOTAL_INCOME = "pnl:Total Income"
+MATERIALS = "pnl:Cost of Materials Consumed"
+INVENTORY_CHANGE = "pnl:Changes in Inventories"
+EMPLOYEE_COST = "pnl:Employee Benefits"
+OTHER_EXPENSES = "pnl:Other Expenses"
+TOTAL_EXPENSES = "pnl:Total Expenses"
+TOTAL_TAX = "pnl:Total Tax"
+OTHER_BANK = "balance_sheet:Other Bank Balances"
+PAYABLES = "balance_sheet:Trade Payables"
+CFF = "cashflow:Cash from Financing Activity"
+CAPEX = "cashflow:Purchase of PPE"
+DIVIDEND_PAID = "cashflow:Dividend Paid"
+INTEREST_PAID = "cashflow:Interest Paid"
+INTEREST_INCOME = "cashflow:Interest Income"
+
+#: The remainder of the balance sheet. No derivation reads these and none is expected to: they exist so
+#: that every note to the accounts has a face figure to reconcile against (`filing.reconcile_notes`), which
+#: is what turns "the notes were enumerated" into "the notes were read". They are still stored as
+#: grade-A facts with locators, so an agent may cite any of them.
+ROU_ASSETS = "balance_sheet:Right of Use Assets"
+INTANGIBLES = "balance_sheet:Intangible Assets"
+NONCURRENT_LOANS = "balance_sheet:Non-Current Loans"
+CURRENT_LOANS = "balance_sheet:Current Loans"
+OTHER_NONCURRENT_FIN_ASSETS = "balance_sheet:Other Non-Current Financial Assets"
+OTHER_CURRENT_FIN_ASSETS = "balance_sheet:Other Current Financial Assets"
+OTHER_NONCURRENT_ASSETS = "balance_sheet:Other Non-Current Assets"
+OTHER_CURRENT_ASSETS = "balance_sheet:Other Current Assets"
+NONCURRENT_PROVISIONS = "balance_sheet:Long Term Provisions"
+CURRENT_PROVISIONS = "balance_sheet:Short Term Provisions"
+DEFERRED_TAX = "balance_sheet:Deferred Tax Liabilities"
+OTHER_FIN_LIABILITIES = "balance_sheet:Other Financial Liabilities"
+OTHER_CURRENT_LIABILITIES = "balance_sheet:Other Current Liabilities"
+
+BALANCE_SHEET_REMAINDER: tuple[str, ...] = (
+    ROU_ASSETS, INTANGIBLES, NONCURRENT_LOANS, CURRENT_LOANS, OTHER_NONCURRENT_FIN_ASSETS,
+    OTHER_CURRENT_FIN_ASSETS, OTHER_NONCURRENT_ASSETS, OTHER_CURRENT_ASSETS, NONCURRENT_PROVISIONS,
+    CURRENT_PROVISIONS, DEFERRED_TAX, OTHER_FIN_LIABILITIES, OTHER_CURRENT_LIABILITIES,
+)
+
 READ_METRICS: tuple[str, ...] = (
     SALES, PAT, OPERATING_PROFIT, DEPRECIATION, INTEREST, TAX_PCT, OTHER_INCOME, PBT,
     CFO, FCF, BORROWINGS, EQUITY_CAPITAL, RESERVES, CWIP, FIXED_ASSETS, TOTAL_ASSETS,
     CASH, RECEIVABLES, INVENTORY,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
+    TOTAL_INCOME, MATERIALS, INVENTORY_CHANGE, EMPLOYEE_COST, OTHER_EXPENSES, TOTAL_EXPENSES,
+    TOTAL_TAX, OTHER_BANK, PAYABLES, CFF, CAPEX, DIVIDEND_PAID, INTEREST_PAID, INTEREST_INCOME,
+    *BALANCE_SHEET_REMAINDER,
 )
+
+#: Days in the year used for every turnover ratio. Not a policy threshold — a calendar fact.
+DAYS_IN_YEAR = 365.0
 
 
 #: Metrics filed quarterly rather than annually. Read against quarter labels (`Q2FY25`), never mixed into an
@@ -496,6 +546,88 @@ def derive_metrics(facts: CompanyFacts) -> DerivedSet:
     else:
         b.missing.setdefault("dividend_cum_window", (f"{DIVIDEND_PAYOUT_PCT} (no period with PAT)",))
 
+    # ---- working capital: the bridge between reported profit and cash (ADR-0037) ----------------
+    # These three were named in `config/line_items.yaml` from the day it was written and had no
+    # derivation behind them, because receivables, inventory and payables are not in a screener snapshot.
+    # They are on the audited balance sheet, and the whole working-capital section of the report was
+    # UNANSWERED for want of a filing walk rather than for want of disclosure.
+    _working_capital_days(b, facts, with_core)
+
+    # ---- WHICH cost line moved -------------------------------------------------------------------
+    # "Margins fell" is not an analysis. An Ind AS P&L prints the expense breakup — materials, employee
+    # benefits, other — and the ratio of each to revenue, differenced across the window, says which one
+    # actually moved and by how much. The screener collapses all three into one `Expenses` row, which is
+    # why this question could only ever be asked, never answered, before the filings were read.
+    for metric, source, label in (("material_cost_ratio", MATERIALS, "Cost of Materials Consumed"),
+                                  ("employee_cost_ratio", EMPLOYEE_COST, "Employee Benefits"),
+                                  ("other_expense_ratio", OTHER_EXPENSES, "Other Expenses")):
+        if (got := b.need(metric, (source, fN), (SALES, fN))) is not None:
+            b.add(metric, got[0].value / got[1].value if got[1].value else None,
+                  f"{label} {fN} / {SALES} {fN}", got)
+        # The window is the one this LINE covers, not the one the headline CAGRs cover. Sales and profit
+        # reach back to FY15 through the screener; the expense breakup starts wherever the oldest annual
+        # report walked does. Anchoring the delta to the headline window would report the breakup as
+        # unavailable for the whole decade because one year at the far end is missing.
+        span = [p for p in with_core
+                if facts.fact(source, p) is not None and facts.fact(SALES, p) is not None]
+        if len(span) >= 2:
+            got = [facts.fact(m, p) for p in (span[0], span[-1]) for m in (source, SALES)]
+            c0, s0, cN, sN = (f.value for f in got)
+            b.add(f"{metric}_delta", (cN / sN) - (c0 / s0) if s0 and sN else None,
+                  f"{label}/Sales {span[-1]} - {label}/Sales {span[0]}", got)
+        else:
+            b.missing.setdefault(f"{metric}_delta", (f"{source} in two or more years",))
+
+    # ---- capex against the maintenance floor -----------------------------------------------------
+    # Depreciation is the accountant's estimate of what it costs to stand still, so capex measured
+    # against it separates a company replacing its assets from one building new capacity. Without the
+    # split, a negative incremental return cannot be told apart from ordinary replacement — which is the
+    # difference between value destruction and keeping the lights on.
+    # BOTH SUMS RUN OVER THE SAME YEARS. The capex line comes from the cash-flow statement and so exists
+    # only for the years an annual report was walked; depreciation is also in the screener and reaches
+    # further back. Summing each over "whatever years it has" would divide eleven years of depreciation
+    # into ten of capex and call the answer a ratio.
+    both = [p for p in with_core if facts.fact(CAPEX, p) and facts.fact(DEPRECIATION, p)]
+    capex_sum = _cum(b, facts, "capex_cum_window", CAPEX, with_core, f"Σ |capex|, {f0}-{fN}", sign=-1.0)
+    if both:
+        window = f"{both[0]}-{both[-1]}"
+        inputs = ([facts.fact(CAPEX, p) for p in both] + [facts.fact(DEPRECIATION, p) for p in both])
+        capex_total = abs(sum(facts.value(CAPEX, p) for p in both))
+        depreciation_total = sum(facts.value(DEPRECIATION, p) for p in both)
+        b.add("capex_to_depreciation",
+              capex_total / depreciation_total if depreciation_total > 0 else None,
+              f"Σ |capex| / Σ Depreciation, {window} (1.0x = replacement only; above = expansion)",
+              inputs)
+    else:
+        b.missing.setdefault("capex_to_depreciation", (
+            f"{CAPEX} and {DEPRECIATION} in the same year (the cash-flow capex line comes from the "
+            f"filing, not the screener)",))
+
+    # ---- is the cash real? -----------------------------------------------------------------------
+    # The sharpest test in the forensic library, and it needs two rows a screener does not carry. Cash
+    # that exists earns interest at a rate you can compute; cash that does not exist earns nothing. The
+    # denominator is the average balance, because interest accrues across the year.
+    prior = with_core[-2] if len(with_core) >= 2 else fN
+    if (got := b.need("cash_yield_latest", (INTEREST_INCOME, fN), (CASH, fN), (OTHER_BANK, fN),
+                      (CASH, prior), (OTHER_BANK, prior))) is not None:
+        income = abs(got[0].value)
+        average = (got[1].value + got[2].value + got[3].value + got[4].value) / 2.0
+        b.add("cash_yield_latest", income / average if average > 0 else None,
+              f"|Interest Income {fN}| / average (Cash + Other Bank Balances), {prior}-{fN}", got)
+    if (got := b.need("net_cash_position", (CASH, fN), (OTHER_BANK, fN), (BORROWINGS, fN))) is not None:
+        b.add("net_cash_position", got[0].value + got[1].value - got[2].value,
+              f"Cash + Other Bank Balances - Borrowings, {fN}", got)
+
+    # Cost of debt on the AVERAGE balance rather than the closing one. `cost_of_debt_latest` divides a
+    # full year of interest by a year-end snapshot, so a company that repaid before 31 March produces a
+    # rate of several hundred percent — the reason `config/line_items.yaml` declares that ratio
+    # implausible outside 2-30% and refuses to narrate it.
+    if (got := b.need("cost_of_debt_average", (INTEREST, fN), (BORROWINGS, fN),
+                      (BORROWINGS, prior))) is not None:
+        average_debt = (got[1].value + got[2].value) / 2.0
+        b.add("cost_of_debt_average", got[0].value / average_debt if average_debt > 0 else None,
+              f"Interest {fN} / average Borrowings, {prior}-{fN}", got)
+
     incremental = _incremental_roic(facts, with_core)
     if incremental is None:
         b.missing["incremental_roic_3y"] = ((
@@ -507,6 +639,92 @@ def derive_metrics(facts: CompanyFacts) -> DerivedSet:
         b.add("incremental_roic_3y", value, f"ΔNOPAT / ΔInvested capital, {window}", inputs)
 
     return DerivedSet(facts.ticker, facts.as_of, b.values, b.missing, f0, fN)
+
+
+def _working_capital_days(b: _Builder, facts: CompanyFacts, periods: Sequence[str]) -> None:
+    """Receivable / inventory / payable days and the cash-conversion cycle, plus the year-on-year move.
+
+    Cost of goods sold, not revenue, is the denominator for inventory and payables: both are carried at
+    cost, and dividing them by revenue silently embeds the gross margin in what is supposed to be a
+    turnover measure. Ind AS prints COGS as two rows — materials consumed plus the change in finished
+    goods and work-in-progress — so it is composed here rather than assumed.
+
+    The DELTA is the finding, not the level. A processor's absolute receivable days say little without a
+    peer; receivables that lengthened while revenue fell is the classic signature of sales booked to hit
+    a number, and it is arithmetic rather than judgment.
+    """
+    latest = periods[-1]
+    prior = periods[-2] if len(periods) >= 2 else None
+
+    def cogs(period: str) -> tuple[float, tuple[Fact, ...]] | None:
+        materials, change = facts.fact(MATERIALS, period), facts.fact(INVENTORY_CHANGE, period)
+        if materials is None:
+            return None
+        # The change in FG/WIP is a real expense line but a small one; a filing that omits it (or whose
+        # row could not be read) still supports a defensible cost base from materials alone.
+        total = materials.value + (change.value if change is not None else 0.0)
+        inputs = (materials,) if change is None else (materials, change)
+        return (total, inputs) if total > 0 else None
+
+    def days(metric: str, balance_metric: str, period: str, use_cogs: bool) -> Derivation | None:
+        balance = facts.fact(balance_metric, period)
+        if balance is None:
+            b.missing.setdefault(metric, (f"{balance_metric} {period}",))
+            return None
+        if use_cogs:
+            base = cogs(period)
+            if base is None:
+                b.missing.setdefault(metric, (f"{MATERIALS} {period} (cost base for a turnover ratio)",))
+                return None
+            denominator, extra = base
+            formula = f"{balance_metric} {period} / (Materials + Δ FG/WIP) {period} x 365"
+        else:
+            sales = facts.fact(SALES, period)
+            if sales is None or sales.value <= 0:
+                b.missing.setdefault(metric, (f"{SALES} {period}",))
+                return None
+            denominator, extra, formula = sales.value, (sales,), (
+                f"{balance_metric} {period} / {SALES} {period} x 365")
+        b.add(metric, balance.value / denominator * DAYS_IN_YEAR, formula, (balance,) + extra)
+        return b.values.get(metric)
+
+    receivable = days("receivable_days", RECEIVABLES, latest, use_cogs=False)
+    inventory = days("inventory_days", INVENTORY, latest, use_cogs=True)
+    payable = days("payable_days", PAYABLES, latest, use_cogs=True)
+
+    # Computed into a throwaway builder so the prior year's LEVEL never reaches the report as if it were
+    # the current one; only the difference is published.
+    before = (_days_at(_Builder(facts), facts, RECEIVABLES, prior, use_cogs=False)
+              if receivable is not None and prior is not None else None)
+    if receivable is not None and before is not None:
+        b.add("receivable_days_delta", receivable.value - before.value,
+              f"Receivable days {latest} - {prior} (positive = collection is slowing)",
+              tuple(receivable.inputs) + tuple(before.inputs))
+    else:
+        b.missing.setdefault("receivable_days_delta", (
+            f"{RECEIVABLES} and {SALES} in two consecutive years",))
+
+    if receivable is not None and inventory is not None and payable is not None:
+        b.add("cash_conversion_cycle",
+              receivable.value + inventory.value - payable.value,
+              f"Receivable days + Inventory days - Payable days, {latest} (days of cash tied up)",
+              tuple(receivable.inputs) + tuple(inventory.inputs) + tuple(payable.inputs))
+    else:
+        b.missing.setdefault("cash_conversion_cycle", tuple(
+            m for m, d in ((RECEIVABLES, receivable), (INVENTORY, inventory), (PAYABLES, payable))
+            if d is None))
+
+
+def _days_at(
+    b: _Builder, facts: CompanyFacts, balance_metric: str, period: str, *, use_cogs: bool
+) -> Derivation | None:
+    """One year's turnover-days figure, for differencing. Same arithmetic, no report entry."""
+    balance = facts.fact(balance_metric, period)
+    sales = facts.fact(SALES, period)
+    if balance is None or sales is None or sales.value <= 0 or use_cogs:
+        return None
+    b.add("_days", balance.value / sales.value * DAYS_IN_YEAR, "", (balance, sales))
+    return b.values.get("_days")
 
 
 def _incremental_roic(

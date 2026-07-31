@@ -29,24 +29,73 @@ FILING_PUBLISHED = date(2026, 6, 15)
 #: and a sentence in the auditor's report. A fixture whose figures live on a notes page does not exercise
 #: the path the pipeline actually takes. Note-reference columns ("Trade Receivables 9 118.0") are included
 #: so the note-column stripping is exercised too.
-def _statement_pages(receivables, inventory, cash, revenue, pbt) -> tuple[str, str]:
+def _statement_pages(
+    receivables, inventory, cash, revenue, pbt,
+    *, payables=("150.00", "140.00"), materials=("620.00", "600.00"),
+    employee=("90.00", "84.00"), other_expenses=("120.00", "116.00"),
+    interest_income=("4.20", "3.60"), capex=("(110.00)", "(100.00)"),
+) -> tuple[str, str, str]:
+    """A three-statement audited block: balance sheet, P&L, cash flows.
+
+    Deliberately shaped like the real thing rather than like the minimum the checks need. The pipeline
+    reads the WHOLE of each statement (ADR-0037) — the expense breakup answers "which cost line moved",
+    payables and inventory answer the working-capital cycle, and the cash-flow statement supplies capex
+    against depreciation and the interest the cash earned. A fixture carrying only the four rows the
+    forensic screen consumes would leave every one of those questions unanswerable and would therefore
+    stop testing the path the pipeline actually takes.
+    """
     balance_sheet = (
         "Balance Sheet as at March 31, 2026\n"
         "(` in crore)\n"
-        f"(a) Inventories 10  {inventory[0]}  {inventory[1]}\n"
-        f"(b) (i) Trade Receivables 9  {receivables[0]}  {receivables[1]}\n"
-        f"(c) (iii) Cash and Cash Equivalents 11  {cash[0]}  {cash[1]}\n"
+        "(a) Property, Plant and Equipment 3  700.00  650.00\n"
+        "(b) Capital Work-In-Progress 3  22.00  20.00\n"
+        f"(c) Inventories 10  {inventory[0]}  {inventory[1]}\n"
+        f"(d) (i) Trade Receivables 9  {receivables[0]}  {receivables[1]}\n"
+        f"(e) (iii) Cash and Cash Equivalents 11  {cash[0]}  {cash[1]}\n"
+        "(f) (iv) Other Bank Balances 11a  32.00  30.00\n"
         "Total Assets  900.00  800.00\n"
+        # Equity share capital and other equity are DELIBERATELY absent. A grade-A filing row outranks the
+        # seeded series, so printing them here would pin the invested-capital base and silently defeat
+        # `clean_series(roic_boost=...)` — the one knob a test has for asking "the same business at a
+        # higher return on capital", which is what the §6.3 feasibility gate keys off.
+        "(i) Short Term Borrowings 22  40.00  50.00\n"
+        f"Total outstanding dues of Micro & Small Enterprises 23  {payables[0]}  {payables[1]}\n"
         "Total Equity and Liabilities  900.00  800.00\n"
     )
     profit_and_loss = (
         "Statement of Profit and Loss for the year ended March 31, 2026\n"
         "(` in crore)\n"
-        f"Revenue from operations  {revenue[0]}  {revenue[1]}\n"
-        f"Total Income  {revenue[0]}  {revenue[1]}\n"
-        f"Profit before tax  {pbt[0]}  {pbt[1]}\n"
+        f"I Revenue from operations 28  {revenue[0]}  {revenue[1]}\n"
+        "II Other Income 29  12.00  10.00\n"
+        f"III Total Income (I + II)  {revenue[0]}  {revenue[1]}\n"
+        f"(a) Cost of Materials Consumed 30  {materials[0]}  {materials[1]}\n"
+        "(b) Changes in Inventories of Finished Goods and Work-In-Progress 31  (6.00)  (4.00)\n"
+        f"(c) Employee Benefits Expenses 32  {employee[0]}  {employee[1]}\n"
+        "(d) Finance Costs 33  4.00  5.00\n"
+        "(e) Depreciation and Amortisation Expenses 34  30.00  28.00\n"
+        f"(f) Other Expenses 35  {other_expenses[0]}  {other_expenses[1]}\n"
+        "Total Expenses (IV)  858.00  829.00\n"
+        f"VII Profit before tax  {pbt[0]}  {pbt[1]}\n"
+        "Total Tax Expenses (VIII)  43.00  39.00\n"
+        "IX Profit After Tax (VII-VIII)  130.00  118.00\n"
+        "Basic (`)  13.00  11.80\n"
     )
-    return balance_sheet, profit_and_loss
+    cash_flows = (
+        "Statement of Cash Flows for the year ended March 31, 2026\n"
+        "(` in crore)\n"
+        "Cash Flows from Operating Activities\n"
+        "Depreciation and amortization  30.00  28.00\n"
+        f"Interest Income  ({interest_income[0]})  ({interest_income[1]})\n"
+        "Net Cash Flow from Operating Activities  145.00  130.00\n"
+        "Cash Flows from Investing Activities\n"
+        f"Purchase of property, plant and equipment  {capex[0]}  {capex[1]}\n"
+        "Net Cash Flow from Investing Activities  (110.00)  (100.00)\n"
+        "Cash Flows from Financing Activities\n"
+        "Interest paid  (4.00)  (5.00)\n"
+        "Dividend Paid  (26.00)  (23.60)\n"
+        "Net Cash Flow from Financing Activities  (40.00)  (38.00)\n"
+    )
+    return balance_sheet, profit_and_loss, cash_flows
 
 
 CLEAN_AR_PAGES: tuple[str, ...] = (
@@ -92,11 +141,14 @@ CLEAN_AR_PAGES: tuple[str, ...] = (
 )
 
 #: The same filing shape for a company whose receivables are running away from revenue (+110% vs +5%) —
-#: the channel-stuffing / fictitious-sales signature the universal SPEC §5 check exists to catch.
+#: the channel-stuffing / fictitious-sales signature the universal SPEC §5 check exists to catch. The
+#: cash balance also earns almost nothing (₹0.30cr on a ~₹60cr average, under 0.6%), which is the second
+#: half of the same story: a balance that is not there cannot earn a deposit rate.
 FRAUD_AR_PAGES: tuple[str, ...] = (
     *_statement_pages(
         ("210.00", "100.00"), ("140.00", "90.00"), ("30.00", "28.00"),
         ("1,050.00", "1,000.00"), ("186.00", "166.00"),
+        interest_income=("0.30", "0.28"), capex=("(200.00)", "(170.00)"),
     ),
     (
         "Notes to the Financial Statements (₹ in crore)\n"

@@ -24,7 +24,7 @@ QUESTIONS = [
     for item in REGISTRY["line_items"]
     for q in item["questions"]
 ]
-VALID_UNITS = {"pct", "pp", "ratio", "inr_cr", "x"}
+VALID_UNITS = {"pct", "pp", "ratio", "inr_cr", "x", "days"}
 VALID_SEVERITIES = {"high", "medium", "low"}
 VALID_MODELS = {m.value for m in BusinessModel}
 
@@ -89,9 +89,13 @@ def test_every_referenced_metric_is_one_the_pipeline_could_actually_produce(stor
 
     # Metrics the registry asks for on purpose that no derivation exists for YET. Each one is a real
     # capability gap with a named owner in STATUS.md §3; shrinking this set is the work.
-    known_capability_gaps = {
-        "receivable_days", "receivable_days_delta", "inventory_days",
-    }
+    #
+    # Emptied 2026-07-31 (ADR-0037). The three working-capital metrics that lived here —
+    # `receivable_days`, `receivable_days_delta`, `inventory_days` — needed receivables, inventory and a
+    # cost base that a screener snapshot does not carry. They come off the audited balance sheet and P&L
+    # now that the filing walk reads the whole of both. Adding an entry back is a deliberate act, not a
+    # convenience: it means a published report will print a question it cannot answer.
+    known_capability_gaps: set[str] = set()
     referenced = {q["metric"] for _, q in QUESTIONS if "metric" in q}
     unknown = referenced - derivable - known_capability_gaps
     assert not unknown, (

@@ -953,3 +953,118 @@ human-readable label couples two things that have no reason to agree.
 primary-source governance claim: *"Promoter holding at the latest quarter read is 72.05%
 [fact:SHP-Q4FY26-…:promoter_holding:Q4FY26]"* — grade A, and the pledge question answered no in every
 quarter that answers it. The verdict is unchanged; a positive governance finding did not buy a better one.
+
+---
+
+## ADR-0036 — The filings check each other, and a contradiction quarantines both figures
+
+**Date** 2026-07-31 · **Status** accepted
+
+**Context.** Ten annual reports overlap by one year each: filing *N*'s comparative column restates filing
+*N−1*'s reported figure. `crosscheck_overlaps` could already classify a disagreement as `rounding`,
+`restated` or `extraction_error`, and its docstring said an extraction error "must be quarantined, never
+published" — but nothing called it. The function had no caller anywhere in `src/`. So the FY18 report's
+trade payables of ₹67.18cr and the FY19 report's comparative of ₹0.67cr — a 90% gap that no company
+restates — both sat in the store at grade A, out-ranking the very screener figure that would have
+contradicted them.
+
+**Decision.** `quarantine_extraction_errors` runs after every manifest ingest and **deletes both sides**
+of an `extraction_error` overlap. Not the larger, not the smaller, not the newer: which document was
+misread is precisely what the disagreement does not say, and any tie-break would be a guess dressed as a
+rule. A metric-year the sources cannot agree on becomes UNAVAILABLE, the disagreement is printed, and the
+grade-B screener fills the hole if it has one. `restated` overlaps are untouched — a real restatement is a
+finding about the company, and the resolver already prefers the later filing within a grade.
+
+**Consequence.** Ten quarantines on Alkyl Amines, and the interesting ones are honest: FY18/FY19 trade
+payables (a genuine misread — the FY19 layout splits the row and we caught only one half), FY21 EPS
+(₹144.68 against ₹57.90, a real restatement for a face-value split that the 25% band cannot distinguish
+from a misread), and FY17 operating profit (the excise-duty presentation change at the GST transition).
+The cost is real: a legitimate restatement wider than 25% loses its grade-A fact. That is the correct
+direction of failure for a fraud detector, and the threshold is in `config/thresholds.yaml`, provisional
+until Phase 6.
+
+---
+
+## ADR-0037 — Read the whole filing, not the four rows the checks needed
+
+**Date** 2026-07-31 · **Status** accepted · **Supersedes the scope of** ADR-0024
+
+**Context.** `FILING_ROWS` mapped four metrics: revenue, receivables, inventory, cash. Everything else in
+every published report — profit, operating profit, borrowings, total assets, cash flow, the entire expense
+structure — still resolved to the grade-B screener snapshot, *while ten audited annual reports sat in the
+store*. The first report's numbers table carried thirty-odd rows and almost every one said "grade B".
+Owner directive 1 was satisfied in architecture and defeated in practice.
+
+**Decision.** Four changes, each of which was load-bearing:
+
+1. **Layout-mode extraction** (`extract.py`). pypdf's default reading order *splits table rows*: on the
+   FY21 balance sheet "Property, Plant and Equipment" arrives as three lines and `Inventories 7` ends up
+   with its figures on the next one — which is how FY21 inventories entered the store as ₹0.07cr against
+   a true ₹121.90cr, at grade A. Layout mode reconstructs the row on all ten filings. A page whose
+   laid-out text is materially shorter than the plain read falls back, because layout mode silently drops
+   rotated text.
+2. **Forty-plus rows across three statements**, including a `cashflow` locator that spans the page break
+   (the financing section, and with it borrowings movement and dividends, is on the continuation page).
+   Rows that are a total the filing never prints — trade payables, borrowings — are summed from their
+   parts, each part named in the locator.
+3. **Composed metrics.** No Ind AS P&L prints operating profit or an effective tax rate; it stops at
+   "Total Expenses", which bundles the finance costs and depreciation an operating margin must exclude.
+   Five metrics are therefore composed by one subtraction or division over figures on a single audited
+   page, with the formula and every contributing line in the locator. These are not estimates and they
+   are not LLM output; they are arithmetic the reader can redo from the page.
+4. **The balance sheet must balance** (`reconcile_to_identity`). Layout reflow can hand a subtotal's
+   figures to the next section's heading: on FY22, "TOTAL ASSETS 53,757.00" is the *current-assets*
+   subtotal and the real total sits on the "EQUITY AND LIABILITIES" line below it. Nothing about that row
+   is malformed — statement scoping, the note-column guard and the unit check all pass it. The
+   liabilities-side total is an independent statement of the same figure, so a candidate that disagrees
+   with it is either repaired from the row that satisfies the identity, or not stored at all.
+
+**Consequence.** From 4 metrics to 36, FY16-FY26, essentially all grade A. Working-capital days, the cost
+breakup and its movement, capex against depreciation, net cash and the yield on it are all derivable for
+the first time; `tests/test_line_item_registry.py`'s `known_capability_gaps` allowlist is now empty.
+
+**The cost, stated plainly.** Reading more rows means more ways to read one wrongly. Three defences are
+what make this safe rather than reckless: the balance-sheet identity, the cross-filing quarantine
+(ADR-0036), and the note reconciliation (ADR-0038) — each of which checks a figure against something the
+same document says elsewhere, rather than against our confidence in the parser.
+
+---
+
+## ADR-0038 — A note is "read" when it reconciles to the face of the statements
+
+**Date** 2026-07-31 · **Status** accepted · **Extends** ADR-0017
+
+**Context.** `substantive_share` — the share of notes a deterministic check actually looked at — was 9%
+against a 50% floor, and it was the sole reason Alkyl Amines returned INSUFFICIENT_DISCLOSURE. Two causes.
+The heading pattern was `$`-anchored, and a real note heading is followed by the table's unit declaration
+("3. Property, Plant and Equipment  ` In Lakhs"), so it found 11 of 63 notes. And the only way a note
+could earn a substantive disposition was a forensic check on its taxonomy category, which covers a dozen
+categories out of forty-five notes.
+
+**Decision.** Two mechanisms, neither of which lowers the bar:
+
+*Enumeration.* The heading pattern ends the title at a column gap rather than at end-of-line, and the
+enumerated notes are then filtered to the **longest ascending run** of note numbers in document order.
+Notes are numbered in sequence and printed in that sequence, so a "note 5" appearing between 39 and 40 —
+which is what an actuarial-assumptions table inside the employee-benefits note looks like — is not a note.
+Any text-shape rule loose enough to catch the real headings catches some of these; the filing's own
+ordering is a check that costs nothing and typography cannot fool.
+
+*Disposition.* A note exists to break one figure on the face of the statements into its parts, so that
+figure must appear somewhere in its body. `reconcile_notes` looks for it. A note that ties has been read
+in the only sense that matters, and this is a stronger claim than "a check touched its category", not a
+weaker one — it is the note's own arithmetic, tested. A note that does NOT tie is reported `unknown` with
+the figure that was sought, never `flag`: a non-tie is far more likely to be a continuation table this
+reader missed than a company misstating its own subtotal, and charging that to the company is the
+capability-versus-disclosure confusion ADR-0022 exists to prevent.
+
+**Consequence.** 45 notes enumerated, 64% substantive, verdict `QUALITY_WRONG_PRICE`. The sixteen notes
+still `unknown` are honest ones — accounting policies, critical judgements, actuarial tables, segment,
+tax, leases, derivatives — none of which details a single face figure.
+
+**Found on the way, and worse than the thing it was blocking.** The Schedule III scan reported six
+mandated disclosures "absent" and fired a MEDIUM `disclosure_gap` — *unexplained opacity* — at a company
+that had disclosed all six. It was matching the name of the rule rather than what a company writes:
+Alkyl Amines heads its ageing tables "Outstanding for following periods from due date of payment" and
+answers the promoter-lending row as "advances in the nature of loans". A false forensic flag on a real
+listed company, produced entirely by our own pattern list.
