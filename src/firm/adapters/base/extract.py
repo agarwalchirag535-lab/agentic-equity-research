@@ -91,9 +91,12 @@ def _pages_from_layout(pdf_bytes: bytes) -> list[str]:  # pragma: no cover - thi
     for page in reader.pages:
         fragments: list[tuple[float, float, str]] = []
 
-        def visit(text: str, cm: object, tm: list[float], font: object, size: object) -> None:
+        def visit(text: str, cm: object, tm: list[float], font: object, size: object,
+                  into: list[tuple[float, float, str]] = fragments) -> None:
+            # `into` is bound as a default rather than closed over: the visitor is redefined every
+            # iteration and a late-binding closure would append every page's glyphs to the last page's list.
             if text.strip():
-                fragments.append((tm[5], tm[4], text.strip()))
+                into.append((tm[5], tm[4], text.strip()))
 
         page.extract_text(visitor_text=visit)
         if not fragments:

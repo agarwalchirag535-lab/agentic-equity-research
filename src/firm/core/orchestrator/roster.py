@@ -42,11 +42,27 @@ class RosterEntry:
     gate: Gate
     phase: int
     requires: tuple[str, ...]
+    #: Inputs this agent READS but is not BLOCKED on. The distinction matters in both directions
+    #: (ADR-0038): `management_analyst` is gated on the concall guidance its scorecard is built from, but
+    #: it should also see the promoter-stake series — and gating it on shareholding too would silence the
+    #: whole governance section over a secondary input. Conversely, listing an input nowhere means the
+    #: agent never receives it, which is how five agents came to run on evidence belonging to other
+    #: agents' mandates.
+    uses: tuple[str, ...] = ()
 
     def missing(self, available: Sequence[str]) -> tuple[str, ...]:
-        """Prerequisites this agent needs that the run does not have."""
+        """Prerequisites this agent needs that the run does not have. `uses` never blocks."""
         have = set(available)
         return tuple(r for r in self.requires if r not in have)
+
+    @property
+    def evidence(self) -> tuple[str, ...]:
+        """Everything that belongs in this agent's brief, blocking or not, in declaration order."""
+        seen: list[str] = []
+        for name in (*self.requires, *self.uses):
+            if name not in seen:
+                seen.append(name)
+        return tuple(seen)
 
 
 @dataclass(frozen=True)
@@ -96,6 +112,7 @@ def load_roster(path: str | Path | None = None) -> tuple[RosterEntry, ...]:
         RosterEntry(
             name=str(a["name"]), stage=Stage[str(a["stage"])], gate=Gate[str(a["gate"])],
             phase=int(a["phase"]), requires=tuple(a.get("requires") or ()),
+            uses=tuple(a.get("uses") or ()),
         )
         for a in raw["agents"]
     ]

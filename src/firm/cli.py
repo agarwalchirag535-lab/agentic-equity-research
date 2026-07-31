@@ -342,13 +342,26 @@ def deep_dive(
         # the governance documents in the documents manifest; reading only one made a phase-2 run plan zero
         # agents because `financials` looked unsatisfied while ten annual reports sat in the store.
         satisfied: set[str] = set()
+        ingested_documents = None
         if documents:
-            import json as _json
-            from pathlib import Path as _Path
-
+            from firm.core.ingest.documents import ingest_documents, load_documents_manifest
             from firm.core.orchestrator.roster import available_inputs_from
 
-            satisfied |= set(available_inputs_from(_json.loads(_Path(documents).read_text())))
+            manifest = load_documents_manifest(documents)
+            satisfied |= set(available_inputs_from(manifest))
+            # ACTUALLY READ THEM (ADR-0038). Until now the manifest only decided which agents were
+            # *planned*: availability was derived from the file list and the documents themselves were
+            # never opened, so `management_analyst` and `ownership_flows_analyst` were staffed on the
+            # strength of PDFs nobody had parsed. Reading them here is what turns a staffed agent into a
+            # working one.
+            ingested_documents = ingest_documents(
+                store, manifest, bronze=f"{bronze}/{ticker}", as_of=run_date)
+            typer.echo(
+                f"  documents: {len(ingested_documents.shareholding_series)} shareholding quarters as "
+                f"grade-A facts, {len(ingested_documents.usable_transcripts)} concalls read"
+                + (f", {len(ingested_documents.refusals)} unreadable"
+                   if ingested_documents.refusals else "")
+            )
         if latest_filing is not None:
             satisfied |= {"financials", "filing", "segments"}
         available: tuple[str, ...] = tuple(sorted(satisfied))
@@ -360,7 +373,7 @@ def deep_dive(
 
         result = run_deep_dive(
             store, ticker, run_date, provider=llm, answers=prepared, filing=latest_filing,
-            agents=roster_agents, coverage_gaps=coverage_gaps,
+            agents=roster_agents, coverage_gaps=coverage_gaps, documents=ingested_documents,
             company_name=company or ticker, model=model, reports_root=reports_root,
             write=not force,
         )
@@ -405,7 +418,11 @@ def packets(
         2, "--phase",
         help="build phase; selects the roster from config/roster.yaml (ADR-0030). Packets are written for "
              "every agent the roster plans, so a phase-3 run can actually be staffed."),
-    documents: str = typer.Option("", "--documents", help="documents manifest, for roster availability"),
+    documents: str = typer.Option(
+        "", "--documents",
+        help="documents manifest. Its shareholding patterns and concall transcripts are PARSED and "
+             "distributed to the agents whose mandates need them (ADR-0038), not merely counted."),
+    bronze: str = typer.Option("data/bronze", "--bronze", help="where the manifest's PDFs live"),
 ) -> None:
     """Write the planned agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
 
@@ -435,6 +452,15 @@ def packets(
 
     run_date = date.fromisoformat(as_of) if as_of else date.today()
     store = FactStore(db)
+    ingested_documents = None
+    if documents:
+        from firm.core.ingest.documents import ingest_documents, load_documents_manifest
+
+        ingested_documents = ingest_documents(
+            store, load_documents_manifest(documents), bronze=f"{bronze}/{ticker}", as_of=run_date)
+        typer.echo(
+            f"  documents: {len(ingested_documents.shareholding_series)} shareholding quarters, "
+            f"{len(ingested_documents.usable_transcripts)} concalls read")
     facts = D.load_company_facts(store, ticker, run_date)
     store.close()
     derived = D.derive_metrics(facts)
@@ -465,8 +491,21 @@ def packets(
         satisfied |= set(available_inputs_from(_json.loads(_Path(documents).read_text())))
     roster_agents, _gaps = plan_agents(phase=phase, available_inputs=tuple(sorted(satisfied)))
 
+    # THE PACKET IS WHERE THE EVIDENCE HAS TO ARRIVE. On the Claude-in-the-loop path (ADR-0010) the
+    # packet file IS the agent's whole world, so a brief that only reached `run_deep_dive` would leave
+    # exactly the agents this work is about answering from nothing.
+    from firm.core.pipeline.briefs import EvidenceBundle, build_briefs
+    from firm.core.pipeline.deep_dive import agent_requirements
+
+    bundle = EvidenceBundle(
+        ticker=ticker, as_of=run_date, derived=derived, evaluation=evaluation, screen=screen,
+        feasibility=feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
+        models=models, notes=NotesReview(), documents=ingested_documents,
+    )
+    briefs = build_briefs(agent_requirements(roster_agents), bundle)
+
     out_dir = out or f"runs/{ticker}-{run_date.isoformat()}/packets"
-    written = write_packets(payload, out_dir, agents=roster_agents)
+    written = write_packets(payload, out_dir, agents=roster_agents, briefs=briefs)
     for path in written:
         typer.echo(f"wrote {path}")
     typer.echo(f"answer each as {out_dir}/<agent>.json, then: "

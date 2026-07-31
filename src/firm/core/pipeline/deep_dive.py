@@ -75,10 +75,12 @@ from firm.core.config import (
     universal_forensic_thresholds,
 )
 from firm.core.facts.store import FactStore
+from firm.core.ingest.documents import DocumentIngest
 from firm.core.llm.cache import make_key
 from firm.core.llm.provider import Provider, StaticProvider
 from firm.core.monitoring.predictions import Prediction, log_report_predictions
 from firm.core.pipeline import derive as D
+from firm.core.pipeline.briefs import EvidenceBundle, build_briefs
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs, evaluate_checks
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
 from firm.core.pipeline.filing import FilingSource, FilingWalk, disposition_notes, walk_filing
@@ -442,24 +444,53 @@ def _run_one_agent(
     raise AgentDisciplineError(spec.name, last)
 
 
+#: Appended to an agent's rules whenever it receives a brief. The UNAVAILABLE instruction is the load-
+#: bearing half: an absent input the agent is not told to leave null is an absent input the agent fills.
+_BRIEF_RULE = (
+    "`your_evidence` holds the primary sources for YOUR mandate. A block marked UNAVAILABLE means the "
+    "firm did not supply it: follow its `instruction`, return null for the dependent field, and never "
+    "substitute background knowledge for a source you were not given."
+)
+
+
+def agent_requirements(
+    agents: Sequence[str], roster_path: str | Path | None = None
+) -> dict[str, tuple[str, ...]]:
+    """`{agent: its declared prerequisites}` from `config/roster.yaml` — the source of every brief."""
+    from firm.core.orchestrator.roster import load_roster
+
+    declared = {entry.name: entry.evidence for entry in load_roster(roster_path)}
+    return {name: declared.get(name, ()) for name in agents}
+
+
 def build_packets(
     payload: Mapping[str, Any],
     *,
     agents_dir: Path,
     repo_root: Path,
     agents: Sequence[str] = PHASE2_AGENTS,
+    briefs: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, tuple[AgentSpec, str, str]]:
     """{agent: (spec, system, user)} — the exact prompts a provider will see.
 
     Exposed separately so `firm packets` can write them to disk for the Claude-in-the-loop path
     (ADR-0010): no API key, subscription only, and the answer comes back through `StaticProvider`.
+
+    `briefs` carries the per-agent evidence (ADR-0038). Passing none reproduces the old behaviour of one
+    shared payload, which is right for a caller that has no documents to distribute and wrong as a
+    default once the roster grows past the three agents that genuinely share their inputs.
     """
     house = load_house_style(repo_root)
     out: dict[str, tuple[AgentSpec, str, str]] = {}
     for name in agents:
         spec = load_agent(agents_dir / f"{name}.md")
         schema = AGENT_OUTPUTS[name]
-        system, user = build_packet(spec, dict(payload), schema.model_json_schema(), house)
+        facts = dict(payload)
+        brief = (briefs or {}).get(name)
+        if brief:
+            facts["your_evidence"] = dict(brief)
+            facts["rules"] = [*facts.get("rules", ()), _BRIEF_RULE]
+        system, user = build_packet(spec, facts, schema.model_json_schema(), house)
         out[name] = (spec, system, user)
     return out
 
@@ -569,6 +600,11 @@ def run_deep_dive(
     answers: Mapping[str, str] | None = None,
     company_name: str | None = None,
     filing: FilingSource | None = None,
+    #: Governance documents already ingested for this run (ADR-0038): shareholding patterns and concall
+    #: transcripts. Distributed to the agents whose roster prerequisites name them, and to no others.
+    documents: DocumentIngest | None = None,
+    #: Peer companies whose own filings were walked, for `sector_analyst` (ADR-0039).
+    peers: Any = None,
     model: str = "analysis",
     reports_root: str | Path = "reports",
     memory_root: str | Path | None = None,
@@ -630,9 +666,16 @@ def run_deep_dive(
         if walk is not None else (NotesReview(), ())
     )
 
-    # ---- 4. the agents: narration only -----------------------------------------------------------
+    # ---- 4. the agents: narration only, each on ITS OWN evidence (ADR-0038) ------------------------
     payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes)
-    packets = build_packets(payload, agents_dir=agents_path, repo_root=repo, agents=agents)
+    bundle = EvidenceBundle(
+        ticker=ticker, as_of=as_of, derived=derived, evaluation=evaluation, screen=screen,
+        feasibility=feasibility, models=models, notes=notes, documents=documents, walk=walk,
+        peers=peers,
+    )
+    briefs = build_briefs(agent_requirements(agents), bundle)
+    packets = build_packets(
+        payload, agents_dir=agents_path, repo_root=repo, agents=agents, briefs=briefs)
     known_fact_ids = set(facts.all_fact_ids()) | {f"derived:{n}" for n in derived.values}
     # {fact_id: value} so a number cited to a real fact must state that fact's figure (Law 1): the most
     # plausible way an LLM corrupts a number is to keep the citation and change the digits.
@@ -754,11 +797,13 @@ def run_deep_dive(
 def write_packets(
     payload: Mapping[str, Any], out_dir: str | Path, *, agents_dir: str | Path | None = None,
     repo_root: str | Path | None = None, agents: Sequence[str] = PHASE2_AGENTS,
+    briefs: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> list[Path]:
     """Write each agent's packet to disk for the Claude-in-the-loop path (ADR-0010). Returns the paths."""
     repo = Path(repo_root or REPO_ROOT)
     packets = build_packets(
-        payload, agents_dir=Path(agents_dir or repo / "agents"), repo_root=repo, agents=agents)
+        payload, agents_dir=Path(agents_dir or repo / "agents"), repo_root=repo, agents=agents,
+        briefs=briefs)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []

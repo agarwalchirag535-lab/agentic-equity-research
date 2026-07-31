@@ -10,9 +10,20 @@
 #           kill: nothing downstream of it should burn tokens on a company that already hard-failed.
 #   phase   the build phase that introduces the agent (SPEC §11). The runner refuses agents above the
 #           phase it was asked for, so the build order is enforced by code and not by memory.
-#   requires  data prerequisites. An agent whose inputs do not exist is SKIPPED WITH A REASON and that
-#           reason reaches the report — never silently omitted. An absent agent and a clean agent must
-#           never look alike (the same rule as ADR-0027's false-clean problem).
+#   requires  data prerequisites that GATE the agent. An agent whose inputs do not exist is SKIPPED WITH A
+#           REASON and that reason reaches the report — never silently omitted. An absent agent and a clean
+#           agent must never look alike (the same rule as ADR-0027's false-clean problem).
+#   uses      inputs the agent READS but is not blocked on (ADR-0038). Both lists build the agent's
+#           evidence brief; only `requires` can skip it. The separation exists because the two questions
+#           are genuinely different: `management_analyst` cannot score promises without the concall
+#           guidance, but it should still see the promoter-stake series — and gating it on shareholding
+#           would silence the entire governance section over a secondary input.
+#
+#           THE BRIEF IS BUILT FROM THESE LISTS. `core/pipeline/briefs.py` has one evidence builder per
+#           name below, so an input listed here is an input the agent actually receives, and an input
+#           NOT listed is one it never sees. That is not bookkeeping: until ADR-0038 every agent received
+#           an identical payload of financial ratios, so `transcript_analyst` was asked to trace guidance
+#           drift across twelve quarters of concalls it had not been given.
 #
 # Prerequisite vocabulary, and what currently satisfies it:
 #   financials      screener snapshot or an ingested annual report          — available
@@ -59,6 +70,10 @@ agents:
     gate: B
     phase: 3
     requires: [financials, segments]
+    # `guidance`, not `transcripts`: management names the capacity — tonnes, plants, commissioning dates —
+    # in its forward statements, and that is what a unit definition is built from. The full Q&A would add
+    # 70KB of context to answer a question the promise ledger already answers.
+    uses: [guidance]
 
   # ---- Stage 5: management and ownership -------------------------------------------------------
   # All three are blocked on ingestion that does not exist. They are listed anyway: a roster that hides
@@ -67,7 +82,12 @@ agents:
     stage: MANAGEMENT_OWNERSHIP
     gate: C
     phase: 3
-    requires: [financials, guidance, transcripts]
+    # The promise ledger (`guidance`) is the distilled form of the transcripts and is what the scorecard
+    # is built from; handing this agent the raw call structure as well duplicated ~70KB of the same
+    # evidence in a different shape. Promoter stake and pledge are `uses`: the agent card lists `pledges`
+    # among its inputs, and a governance read that cannot see promoter selling is not a governance read.
+    requires: [financials, guidance]
+    uses: [shareholding, pledge]
   - name: transcript_analyst
     stage: MANAGEMENT_OWNERSHIP
     gate: C
@@ -78,6 +98,9 @@ agents:
     gate: C
     phase: 3
     requires: [shareholding, pledge]
+    # Listed so the agent is TOLD it has no price history, rather than left to notice. Its mandate forbids
+    # a concentration claim without a days-to-exit number, and an unstated absence is the one a model fills.
+    uses: [prices]
 
   # ---- Stage 6-8: judgment tier (Phase 4 — listed so the roster is the whole firm) --------------
   - name: valuation_modeler

@@ -110,6 +110,12 @@ _DEFLECTION_CUES: tuple[str, ...] = (
     "not something we disclose", "cannot quantify", "can't quantify", "no specific guidance",
 )
 
+#: Sentence boundary, guarding the abbreviations Indian transcripts are full of. Splitting naively on
+#: `.` turns "Rs. 120 crores" into two sentences and cuts the figure away from the commitment it belongs
+#: to, which is precisely the pair a promise ledger exists to keep together.
+_SENTENCE_SPLIT = re.compile(
+    r"(?<!\bRs)(?<!\bMr)(?<!\bMs)(?<!\bDr)(?<!\bNo)(?<!\bMrs)(?<=[.!?])\s+")
+
 _MODERATOR_NAMES = ("moderator", "operator")
 #: Cover-page labels that look exactly like a turn (`MANAGEMENT: MR. KIRAT PATEL — ...`) and are not one.
 #: Without this the roster block enrols "Management" as an analyst and the first real speaker's words are
@@ -392,15 +398,24 @@ def parse_transcript(pages: tuple[str, ...], *, source: str = "") -> TranscriptR
         elif turn.side == "moderator":
             pending = None
 
+    # THE SENTENCE IS THE PROMISE, NOT THE TURN. Quoting the whole turn produced quotes averaging 1,387
+    # characters and running to 5,900 — a management answer that wandered across four subjects, of which
+    # one sentence was the commitment. That is worse evidence as well as more of it: a promise ledger
+    # wants "commissioning in the first quarter of 2026-27, capex about Rs. 120 crores" as its own dated
+    # entry, and a turn carrying three separate commitments should yield three, not one blob.
     quotes: list[Quote] = []
     for turn in turns:
         if turn.side != "management" or len(turn.text) < _MIN_QUOTE_CHARS:
             continue
-        low = turn.text.lower()
-        if any(cue in low for cue in _FORWARD_CUES):
-            quotes.append(Quote(turn.speaker, turn.text, turn.page, "guidance"))
-        if any(cue in low for cue in _DEFLECTION_CUES):
-            quotes.append(Quote(turn.speaker, turn.text, turn.page, "deflection"))
+        for sentence in _SENTENCE_SPLIT.split(turn.text):
+            trimmed = sentence.strip()
+            if len(trimmed) < _MIN_QUOTE_CHARS:
+                continue
+            low = trimmed.lower()
+            if any(cue in low for cue in _FORWARD_CUES):
+                quotes.append(Quote(turn.speaker, trimmed, turn.page, "guidance"))
+            if any(cue in low for cue in _DEFLECTION_CUES):
+                quotes.append(Quote(turn.speaker, trimmed, turn.page, "deflection"))
 
     return TranscriptRead(
         source=source, held_on=held_on, period=period,
