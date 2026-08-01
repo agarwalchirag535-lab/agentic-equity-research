@@ -1,4 +1,4 @@
-"""Registering transcript guidance as citable facts (ADR-0036 — the ADR-0035 step for transcripts)."""
+"""Registering transcript guidance as citable facts (ADR-0040 — the ADR-0035 step for transcripts)."""
 
 from __future__ import annotations
 

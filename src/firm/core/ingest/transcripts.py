@@ -1,7 +1,7 @@
-"""Register parsed transcript guidance as citable facts (Phase 3, ADR-0036).
+"""Register parsed transcript guidance as citable facts (Phase 3, ADR-0040).
 
 WHY THIS EXISTS
-ADR-0036 parsed the transcripts; this is the ADR-0035 step for them — a parsed quote nothing can cite is
+ADR-0039 parsed the transcripts; this is the ADR-0035 step for them — a parsed quote nothing can cite is
 not evidence. Registered here, "we expect double digit growth around 10% to 15%" becomes two facts an
 agent can quote by id, each carrying the verbatim sentence and its page in the locator, so the citation
 gate can hold the agent to exactly what management said and where.

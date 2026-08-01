@@ -189,6 +189,10 @@ def _format(value: float, unit: str) -> str:
         return f"₹{value:,.0f} crore" if value >= 0 else f"-₹{abs(value):,.0f} crore"
     if unit == "x":
         return f"{value:.2f}x"
+    # A turnover measure is denominated in DAYS. Rendering it as a multiple ("54.78x") reads as a
+    # ratio-of-something and is wrong in a section whose whole subject is how long cash is tied up.
+    if unit == "days":
+        return f"{value:+.1f} days" if abs(value) < 15.0 else f"{value:,.1f} days"
     return f"{value:,.2f}"
 
 
@@ -294,7 +298,11 @@ def _answer(
     against_txt = ""
     if (against := spec.get("against")) is not None:
         other = derived.get(str(against))
-        against_txt = _format(other.value, unit) if other is not None else "unavailable"
+        # The companion metric may be measured in something else entirely — "capex ran at 3.44x of
+        # depreciation, on ₹1,388 crore of gross spend" needs two units in one sentence, and forcing the
+        # second into the first printed the rupee total as "1388.14x".
+        against_unit = str(spec.get("against_unit", unit))
+        against_txt = _format(other.value, against_unit) if other is not None else "unavailable"
     template = str(spec.get("template", "{v}"))
     finding = template.replace("{v}", rendered).replace("{a}", against_txt).replace("{window}", window)
     if clause := _band_clause(derivation.value, spec.get("bands") or ()):

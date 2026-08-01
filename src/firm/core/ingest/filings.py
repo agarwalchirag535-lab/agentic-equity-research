@@ -141,7 +141,7 @@ def ingest_manifest(
         if as_of is not None and published > as_of:
             continue
         filing = filing_from_manifest(entry, bronze)
-        rows, fact_ids, unresolved = register_filing_facts(store, ticker, filing)
+        rows, fact_ids, unresolved, _values = register_filing_facts(store, ticker, filing)
         out.append(FilingIngestResult(
             file=str(entry["file"]), period=filing.period, pages=len(filing.pages),
             method=filing.extractor_version.split("+")[-1],
@@ -155,6 +155,42 @@ def ingest_manifest(
             unresolved=dict(unresolved),
         ))
     return out
+
+
+def quarantine_extraction_errors(
+    store: FactStore,
+    ticker: str,
+    results: Sequence[FilingIngestResult],
+    metrics: Sequence[str],
+    policy: Mapping[str, float],
+) -> list[Overlap]:
+    """Delete every figure two filings contradict each other about beyond any restatement. Returns them.
+
+    This is what turns the overlapping filings from a *report* into a *control*. `crosscheck_overlaps`
+    has always been able to tell that the FY18 report says trade payables were ₹67.18cr and the FY19
+    report's comparative column says ₹6.65cr — a 90% gap, which no company restates — but nothing acted
+    on it, so the misread figure stayed in the store at grade A and would out-rank the screener.
+
+    BOTH sides are removed, not the one that looks wrong. Which document was misread is exactly what the
+    disagreement does not say, and picking the larger, the smaller or the newer would be a guess dressed
+    as a rule. A metric-year the sources cannot agree on is UNAVAILABLE, with the disagreement published
+    (owner directive 2: missing data is a signal, never a blank).
+
+    `restated` overlaps are left alone: a real restatement is a finding about the company, and the
+    resolver already prefers the later filing within a grade.
+    """
+    removed: list[Overlap] = []
+    for overlap in crosscheck_overlaps(store, ticker, results, metrics):
+        if overlap.classify(policy) != "extraction_error":
+            continue
+        doomed = [
+            fact.fact_id
+            for fact in store.facts_for(ticker, overlap.metric, overlap.period)
+            if fact.doc_id.endswith(overlap.from_filing) or fact.doc_id.endswith(overlap.against_filing)
+        ]
+        if store.remove_facts(doomed):
+            removed.append(overlap)
+    return removed
 
 
 def crosscheck_overlaps(

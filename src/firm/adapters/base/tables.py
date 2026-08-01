@@ -62,6 +62,20 @@ _LOOKS_FORMATTED = re.compile(r"[,.]")
 #: A bare integer: no comma, no decimal, no parentheses, no sign.
 _BARE_INTEGER = re.compile(r"^\d{1,3}$")
 
+#: A nil marker standing alone in a column — a dash, or the word NIL, which the pre-Ind AS filings print
+#: instead ("Dividend Paid (Including Dividend Distribution Tax)  NIL  (3,436.91)").
+_NIL_CELL = re.compile(r"(?:(?<=\s\s)|^)(?:[-–—]|NIL)(?=\s\s|\s*$)")
+#: Everything that may follow a nil marker and still leave it unambiguously part of the figure columns:
+#: whitespace, further nil markers, and printed figures. A letter anywhere after it (other than another
+#: NIL) means the dash was a bullet or a hyphen in a label ("- Secured Borrowings 13A 2,159.24"), and it
+#: is left alone.
+_NUMERIC_TAIL = re.compile(r"^(?:\s|[-–—]|NIL|\(?[-+]?\d[\d,]*(?:\.\d+)?\)?)*$")
+#: What a nil dash is rewritten to. "0.0" rather than "0" deliberately: `_strip_note_column` requires
+#: every figure column to LOOK like a printed figure (comma or decimal), and a bare "0" would fail that
+#: test and leave the note-reference column in place — turning `Short Term Borrowings 23 - 360.45` into
+#: borrowings of Rs 23 lakh, which is the note number.
+_NIL_FILL = "0.0"
+
 
 def to_canonical_crore(value: float, unit: str) -> float | None:
     """``value`` expressed in ₹ crore, or None when the unit is unknown or not an INR scale.
@@ -106,14 +120,38 @@ def parse_number(token: str) -> float | None:
     return -value if negative else value
 
 
+def _fill_nil_columns(line: str) -> str:
+    """Rewrite a **nil dash** standing in a figure column as an explicit zero.
+
+    "-" in an Indian statement column means nil, and reading it as *absent* is not a conservative choice —
+    it silently shortens the row. `Short Term Borrowings 23 - 360.45` then parses as two values, the
+    note-reference guard (which needs three) never fires, and borrowings for the year read as **23**: the
+    note number, stored as money, at grade A. Alkyl Amines FY26 is exactly that line.
+
+    A dash is only rewritten when everything after it on the line is itself a figure, a nil, or space. A
+    dash followed by any letter is a bullet or a hyphenated label — `- Secured Borrowings 13A 2,159.24`
+    in the FY21 filing — and is left untouched.
+    """
+    # Right to left, so an earlier match's offsets stay valid after a later one has been rewritten.
+    out = line
+    for match in reversed(list(_NIL_CELL.finditer(line))):
+        if _NUMERIC_TAIL.match(out[match.end():]):
+            out = out[:match.start()] + _NIL_FILL + out[match.end():]
+    return out
+
+
 def _mask_non_figures(line: str) -> str:
-    """Blank out tokens that look numeric but are not figures (period tokens, leading note refs),
-    preserving character offsets so callers can still slice the original line."""
+    """Blank out tokens that look numeric but are not figures (period tokens, leading note refs), and
+    make nil dashes explicit.
+
+    Offsets are preserved to the LEFT of the first figure — which is all `_label_of` slices — but not to
+    its right, because `_fill_nil_columns` widens a one-character dash into "0.0".
+    """
     masked = _PERIOD.sub(lambda m: " " * len(m.group(0)), line)
     prefix = _LEADING_NOTE.match(masked)
     if prefix:
         masked = " " * len(prefix.group(0)) + masked[prefix.end():]
-    return masked
+    return _fill_nil_columns(masked)
 
 
 def _strip_note_column(tokens: Sequence[str], values: Sequence[float]) -> tuple[float, ...]:
@@ -203,9 +241,14 @@ def extract_labeled_rows(pages: Sequence[str]) -> list[ExtractedValue]:
 #: Markers that identify a page as the primary statement itself rather than a note, an audit opinion or a
 #: cash-flow movement line. Verified against ten Alkyl Amines annual reports (FY17-FY26).
 _STATEMENT_MARKERS: dict[str, tuple[tuple[str, ...], ...]] = {
-    # A real balance sheet totals both sides.
+    # A real balance sheet announces itself and totals both sides. The bare "total" alternative exists
+    # for the pre-Ind AS Schedule III layout (Alkyl Amines FY17), which puts equity and liabilities
+    # first and closes each side with an unadorned "TOTAL"; without it that filing has no balance sheet
+    # at all, and `audited_statement_pages` then falls through to the LAST P&L in the document — which
+    # is the CONSOLIDATED one, silently mixing two reporting bases into one series.
     "balance_sheet": (
-        ("total assets",),
+        ("balance sheet as at", "balance sheet as of"),
+        ("total assets", "total"),
         ("total equity and liabilities", "total equity & liabilities", "equity and liabilities"),
     ),
     # A real P&L reaches a profit line.
@@ -213,7 +256,22 @@ _STATEMENT_MARKERS: dict[str, tuple[tuple[str, ...], ...]] = {
         ("revenue from operations", "total income"),
         ("profit before tax", "profit for the year", "total expenses"),
     ),
+    # A cash-flow page names the statement and at least one of the three activity sections. Deliberately
+    # looser than the other two, because the statement RUNS OVER A PAGE BREAK: the continuation page
+    # carries only the financing section, and demanding all three would drop the half of the statement
+    # that holds capex funding, borrowings movement and dividends. `audited_statement_pages` supplies the
+    # discipline the loose marker gives up, by keeping only pages inside the audited block.
+    "cashflow": (
+        ("cash flow", "cash flows"),
+        ("operating activities", "investing activities", "financing activities"),
+    ),
 }
+
+#: How far past the balance sheet the cash-flow statement may start. The audited block is printed as
+#: Balance Sheet → Statement of Profit and Loss → Statement of Changes in Equity → Cash Flows, and the
+#: SOCIE runs to two or three pages in these filings, so the cash flow lands within a handful of pages.
+#: Anything further away is the auditor's report, a note, or the consolidated set.
+_CASHFLOW_WINDOW = 8
 
 
 def statement_pages(pages: Sequence[str], statement: str) -> tuple[int, ...]:
@@ -271,14 +329,19 @@ def audited_statement_pages(pages: Sequence[str]) -> dict[str, tuple[int, ...]]:
     """
     bs = statement_pages(pages, "balance_sheet")
     pnl = statement_pages(pages, "pnl")
+    cashflow = statement_pages(pages, "cashflow")
     if not bs:
         # No anchor: fall back to the last qualifying P&L page, which is still after the highlights.
-        return {"balance_sheet": (), "pnl": (pnl[-1],) if pnl else ()}
+        return {"balance_sheet": (), "pnl": (pnl[-1],) if pnl else (), "cashflow": ()}
     anchor = bs[0]
     nearest = min(pnl, key=lambda i: abs(i - anchor)) if pnl else None
     return {
         "balance_sheet": (anchor,),
         "pnl": () if nearest is None else (nearest,),
+        # EVERY page of the cash flow, not the first: the statement is read for `Net Cash Flows from
+        # Financing Activities`, `Repayment of Borrowings` and `Dividend Paid` as much as for CFO, and
+        # those sit on the continuation page.
+        "cashflow": tuple(i for i in cashflow if anchor < i <= anchor + _CASHFLOW_WINDOW),
     }
 
 
@@ -299,15 +362,107 @@ def find_statement_row(
     Page numbers in the returned locator stay absolute (1-based in the whole document), so provenance still
     points at the real page.
     """
-    indices = audited_statement_pages(pages).get(statement, ())
-    if not indices:
-        return None
-    for index in indices:
-        row = find_row([pages[index]], label_keywords, exclude=exclude)
-        if row is not None:
-            # `find_row` saw a one-page document, so re-anchor the page number to the real document.
-            return ExtractedValue(
-                label=row.label, values=row.values, page=index + 1, line=row.line,
-                unit_hint=row.unit_hint, raw_line=row.raw_line,
+    found = find_statement_rows(pages, statement, label_keywords, exclude=exclude)
+    return found[0] if found else None
+
+
+def rows_matching_first_value(
+    pages: Sequence[str], statement: str, expected: float, *, tolerance: float = 0.01
+) -> tuple[ExtractedValue, ...]:
+    """Every row on the statement's pages whose FIRST figure is ``expected``.
+
+    Used to repair a label/figure misalignment against an accounting identity — see
+    `reconcile_to_identity`. Matching on the figure rather than the label is the point: the label is
+    exactly what went wrong.
+    """
+    out: list[ExtractedValue] = []
+    for index in audited_statement_pages(pages).get(statement, ()):
+        for row in extract_labeled_rows([pages[index]]):
+            if row.values and abs(row.values[0] - expected) <= tolerance:
+                out.append(ExtractedValue(
+                    label=row.label, values=row.values, page=index + 1, line=row.line,
+                    unit_hint=row.unit_hint, raw_line=row.raw_line,
+                ))
+    return tuple(out)
+
+
+def reconcile_to_identity(
+    pages: Sequence[str],
+    statement: str,
+    candidate: ExtractedValue | None,
+    anchor: ExtractedValue | None,
+    *,
+    tolerance: float = 0.01,
+) -> tuple[ExtractedValue | None, str]:
+    """Check ``candidate`` against an accounting identity it must satisfy, repairing or refusing it.
+
+    THE FAILURE THIS EXISTS FOR. Layout extraction reconstructs a table row by horizontal position, and
+    where a filing's subtotal sits on the same baseline as the next section's heading the label and the
+    figures come apart. On the Alkyl Amines FY22 balance sheet the result is:
+
+        TOTAL ASSETS               53,757.00   52,792.12     <- the CURRENT-ASSETS subtotal
+        EQUITY AND LIABILITIES    137,132.67  114,533.46     <- the real total assets
+
+    Every earlier defence in this module — statement scoping, the note-column guard, the unit check —
+    passes that line, because nothing about "TOTAL ASSETS 53,757.00" is malformed. It is simply the
+    wrong number, and it would enter the fact store at grade A with a correct-looking locator.
+
+    A balance sheet balances, so the liabilities-side total is an independent statement of the same
+    figure. When the two disagree, the candidate is not trusted:
+
+    * a row on the same statement whose first figure DOES equal the anchor is taken instead, with its
+      own locator (the FY22 case: the misplaced figures are recovered from the line they landed on);
+    * failing that, nothing is returned and the caller reports the gap, because a total that does not
+      balance is not a fact about the company.
+
+    Returns ``(row_or_None, note)`` where ``note`` is empty when the candidate verified as printed.
+    """
+    if anchor is None or not anchor.values:
+        return candidate, ""
+    if candidate is not None and candidate.values and abs(
+            candidate.values[0] - anchor.values[0]) <= tolerance:
+        return candidate, ""
+    printed = "absent" if candidate is None or not candidate.values else f"{candidate.values[0]:,.2f}"
+    for repair in rows_matching_first_value(pages, statement, anchor.values[0], tolerance=tolerance):
+        if repair.locator != (candidate.locator if candidate else None):
+            return repair, (
+                f"the row labelled for this metric read {printed} against {anchor.values[0]:,.2f} on the "
+                f"balancing line at {anchor.locator}; the figures were recovered from {repair.locator} "
+                f"({repair.label!r}), which satisfies the identity"
             )
-    return None
+    return None, (
+        f"the row labelled for this metric read {printed} against {anchor.values[0]:,.2f} on the "
+        f"balancing line at {anchor.locator}, and no row on the statement satisfies the identity — "
+        f"not stored, because a total that does not balance is not a fact about the company"
+    )
+
+
+def find_statement_rows(
+    pages: Sequence[str],
+    statement: str,
+    label_keywords: Iterable[str],
+    *,
+    exclude: Iterable[str] = (),
+) -> tuple[ExtractedValue, ...]:
+    """EVERY matching row on the named statement's pages, in print order, page-anchored.
+
+    Some Schedule III lines are a total split across rows that no single line states. Trade payables is
+    the standing example: the balance sheet prints "Total outstanding dues of Micro & Small Enterprises"
+    and "…of creditors other than Micro Enterprises and Small Enterprises" as two rows and never their
+    sum, so a caller that reads the first match reports a payables balance an order of magnitude too
+    small. Borrowings is the same shape (secured / unsecured, long-term / short-term). The caller sums;
+    this returns the parts, each with its own locator, so the sum can be audited back to the page.
+    """
+    keys = [k.lower() for k in label_keywords]
+    blocked = [x.lower() for x in exclude]
+    out: list[ExtractedValue] = []
+    for index in audited_statement_pages(pages).get(statement, ()):
+        for row in extract_labeled_rows([pages[index]]):
+            low = row.label.lower()
+            if any(k in low for k in keys) and not any(b in low for b in blocked):
+                # `extract_labeled_rows` saw a one-page document; re-anchor to the real page number.
+                out.append(ExtractedValue(
+                    label=row.label, values=row.values, page=index + 1, line=row.line,
+                    unit_hint=row.unit_hint, raw_line=row.raw_line,
+                ))
+    return tuple(out)

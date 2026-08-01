@@ -15,6 +15,7 @@ Everything is injectable so the logic is 100% testable offline with zero PDF/OCR
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Callable, Protocol, runtime_checkable
 
@@ -46,13 +47,62 @@ def _mean_chars(pages: list[str]) -> float:
     return (sum(len(p.strip()) for p in pages) / len(pages)) if pages else 0.0
 
 
+#: Runs of whitespace inside a layout-extracted line. Collapsed to exactly two spaces, which keeps the
+#: *column boundary* visible (`tables.py` needs it to tell a note-reference column from a figure column)
+#: while keeping the line short enough to read in a locator audit.
+_COLUMN_GAP = re.compile(r"[ \t]{2,}")
+
+#: How much of the plain read a laid-out page must retain to be preferred. Layout mode silently drops
+#: rotated text, so a page that comes back much shorter has lost content, not whitespace.
+_LAYOUT_COMPLETENESS = 0.9
+
+
+def _normalise_layout(text: str) -> str:
+    """Collapse a layout-extracted page's whitespace padding without losing the column structure."""
+    return "\n".join(_COLUMN_GAP.sub("  ", line).rstrip() for line in text.splitlines())
+
+
 def _pages_from_text_layer(pdf_bytes: bytes) -> list[str]:  # pragma: no cover - thin pypdf wrapper
+    """Page text in LAYOUT mode, falling back to reading order where layout yields nothing.
+
+    Why layout rather than pypdf's default reading order: in the default mode a filing's text layer
+    reorders and *splits* a table row, and the split is invisible downstream. On the FY21 Alkyl Amines
+    balance sheet the default mode emits
+
+        (a)
+         P
+        roperty, Plant and Equipment 3  42,764.60  39,224.45
+
+    — so a search for "Property, Plant and Equipment" misses, "Cash and Cash Equivalents" arrives as the
+    orphan line "and Cash Equivalents 10  9,614.41", and worst of all `Inventories 7` ends up on its own
+    line with its two figures on the NEXT one. That last case is not a miss but a *wrong answer*: FY21
+    inventories entered the fact store as Rs 0.07cr against a true Rs 121.90cr, carrying a grade-A stamp,
+    and was caught only because the FY22 report's comparative column contradicted it (`Overlap.classify`
+    → `extraction_error`).
+
+    Layout mode reconstructs the row — label, note reference and both figures on one line — for every one
+    of the ten Alkyl Amines filings. It is slower, which is the whole of its cost, and the ingest is
+    cached in bronze anyway.
+    """
     import io
 
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(pdf_bytes))
-    return [(page.extract_text() or "") for page in reader.pages]
+    pages: list[str] = []
+    for page in reader.pages:
+        plain = page.extract_text() or ""
+        try:
+            laid_out = _normalise_layout(page.extract_text(extraction_mode="layout") or "")
+        except Exception:  # noqa: BLE001 - a page pypdf cannot lay out is still worth reading plainly
+            laid_out = ""
+        # pypdf warns "Rotated text discovered. Output will be incomplete." and DROPS the rotated block
+        # rather than failing, so a sideways-printed table (these filings set the Schedule III ageing
+        # tables that way) comes back short. Losing content is worse than losing column alignment, so the
+        # plain read wins whenever the laid-out one is materially thinner.
+        keep_layout = len(laid_out.strip()) >= _LAYOUT_COMPLETENESS * len(plain.strip())
+        pages.append(laid_out if laid_out.strip() and keep_layout else plain)
+    return pages
 
 
 def extract_document(

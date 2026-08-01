@@ -323,15 +323,33 @@ def deep_dive(
         # related-party checks read. Without a manifest the run is screener-only and says so.
         latest_filing = None
         if filings:
+            from firm.core.config import load_thresholds
             from firm.core.ingest.filings import (
                 filing_from_manifest,
                 ingest_manifest,
                 load_manifest,
+                quarantine_extraction_errors,
             )
+            from firm.core.pipeline.filing import COMPOSED_ROWS, FILING_ROWS
 
             manifest = load_manifest(filings)
             ingested = ingest_manifest(store, manifest, bronze=bronze, as_of=run_date)
             typer.echo(f"  filings: ingested {len(ingested)} annual report(s) as grade-A facts")
+            # THE FILINGS CHECK EACH OTHER. Each report restates the prior year in its comparative
+            # column, so consecutive filings assert the same figure twice from two independent
+            # publications. Where they disagree by more than any restatement explains, neither read is
+            # trusted and both go (ADR-0036) — the alternative is a misread row sitting in the store at
+            # grade A, out-ranking the very screener figure that would have contradicted it.
+            dropped = quarantine_extraction_errors(
+                store, ticker, ingested,
+                tuple(FILING_ROWS) + tuple(COMPOSED_ROWS),
+                load_thresholds()["reconciliation"],
+            )
+            for overlap in dropped:
+                typer.echo(
+                    f"  ⚠ quarantined {overlap.metric} {overlap.period}: "
+                    f"{overlap.against_filing} says {overlap.against_value:,.2f}, "
+                    f"{overlap.from_filing} says {overlap.from_value:,.2f} — neither stored")
             usable = [
                 entry for entry in sorted(manifest["filings"], key=lambda e: str(e["period"]))
                 if date.fromisoformat(str(entry["published_at"])) <= run_date
@@ -365,7 +383,7 @@ def deep_dive(
             if governance:
                 typer.echo(f"  governance: {len(registered)} of {len(governance)} shareholding filings "
                            f"registered as facts")
-            # And the concall transcripts (ADR-0036), so `transcript_analyst` can quote management's own
+            # And the concall transcripts (ADR-0039), so `transcript_analyst` can quote management's own
             # guided figures instead of scoring a drift it was never shown.
             from firm.core.ingest.transcripts import ingest_transcript_manifest
 
@@ -451,11 +469,23 @@ def packets(
         [], "--peer",
         help="peer ticker(s) to compare against; repeatable. Must match the --peer set the run will use, "
              "or the packet an agent answers is not the packet the run validates it against."),
+    filings: str = typer.Option(
+        "", "--filings",
+        help="filings manifest. Pass the SAME one `deep-dive` will get: without it the packet tells the "
+             "agents no annual report was walked, while the run walks one."),
+    bronze: str = typer.Option("data/bronze", "--bronze", help="where the manifest's PDFs live"),
 ) -> None:
     """Write the planned agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
 
     Answer each `{agent}.md` with a single JSON object, save it as `{agent}.json` beside it, then run
     `firm deep-dive --answers <dir>`. This is how agents run on a subscription with no API key (ADR-0010).
+
+    THE PACKET MUST BE THE RUN'S EVIDENCE, NOT A SUBSET OF IT. Before `--filings` existed here, this
+    command built its checklist with no filing at all: the packet handed to every agent said the notes
+    were unenumerated, `promoter_lending` and `disclosure_gap` were UNAVAILABLE, and 0% of the notes had
+    been read — while `deep-dive`, given the same ticker minutes later, walked the annual report and had
+    all of it. The agents were reasoning about a poorer company than the one being published on, and
+    nothing in the pipeline could notice, because both halves were individually correct.
     """
     from firm.core.compute import quality
     from firm.core.compute.models import build_playbook, detect_models
@@ -482,6 +512,19 @@ def packets(
     store = FactStore(db)
     from firm.core.pipeline.peers import load_peer_comparisons
 
+    walk = None
+    if filings:
+        from firm.core.ingest.filings import filing_from_manifest, load_manifest
+        from firm.core.pipeline.filing import walk_filing
+
+        manifest = load_manifest(filings)
+        usable = [
+            entry for entry in sorted(manifest["filings"], key=lambda e: str(e["period"]))
+            if date.fromisoformat(str(entry["published_at"])) <= run_date
+        ]
+        if usable:
+            walk = walk_filing(store, ticker, filing_from_manifest(usable[-1], bronze))
+            typer.echo(f"  walked {usable[-1]['file']}: {len(walk.notes)} notes enumerated")
     facts = D.load_company_facts(store, ticker, run_date)
     guidance = store.query_metric_prefix(ticker, "guidance:", run_date)
     peer_comparisons = load_peer_comparisons(store, ticker, peer, run_date)
@@ -493,15 +536,22 @@ def packets(
     evaluation = evaluate_checks(
         playbook, derived, facts, forensic=thresholds["forensic"],
         universal=universal_forensic_thresholds(), model_specific=model_forensic_thresholds(),
+        **({"external": walk.external} if walk is not None else {}),
     )
     screen = quality.forensic_screen(
         quality.SectorClass.NON_FINANCIAL, evaluation.metrics, forensic_thresholds())
 
     from firm.core.pipeline.deep_dive import feasibility_at_target
+    from firm.core.pipeline.filing import disposition_notes
 
+    notes_review = NotesReview()
+    if walk is not None:
+        notes_review, _ = disposition_notes(
+            walk.notes, evaluation, disclosure_gaps_found=walk.missing_disclosures,
+            reconciliations=walk.reconciliations)
     payload = agent_facts_payload(
         derived, evaluation, screen, feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
-        models, NotesReview(), guidance=guidance, peers=peer_comparisons)
+        models, notes_review, guidance=guidance, peers=peer_comparisons)
     # Packets follow the ROSTER, not a fixed trio (ADR-0034): a phase-3 run that plans eight agents needs
     # eight packets, or it can never be staffed and the phase stalls at "wired, not staffed".
     satisfied: set[str] = {"financials", "filing", "segments"}

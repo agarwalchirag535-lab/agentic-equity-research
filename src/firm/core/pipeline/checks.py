@@ -236,7 +236,20 @@ def evaluate_checks(
             r.unavailable(check, ("Beneish 8-index inputs (COGS, receivables, current assets, PPE, SGA)",))
 
         elif check == "cash_interest_inconsistent":
-            if ext.cash is None or ext.interest_income is None:
+            # PREFER THE DERIVED YIELD. `cash_yield_latest` (ADR-0037) divides the interest income the
+            # cash-flow statement reconciles out by the AVERAGE of the opening and closing cash AND other
+            # bank balances. Both refinements matter: interest accrues across the year rather than on the
+            # closing snapshot, and a company that holds most of its money in term deposits reports them
+            # under "Other Bank Balances", so measuring the yield against cash alone overstates it — here
+            # by more than double (16.7% against a true 7.8%), which is the difference between a check
+            # that would wave through a fabricated balance and one that would not.
+            yield_on_cash = derived.get("cash_yield_latest")
+            if yield_on_cash is not None:
+                floor = forensic["cash_yield_floor_ratio"] * forensic["risk_free_rate"]
+                r.ran(check, yield_on_cash.value < floor,
+                      f"implied yield on cash and bank balances {yield_on_cash.value:.2%} vs floor "
+                      f"{floor:.2%} ({yield_on_cash.formula})", yield_on_cash.fact_ids)
+            elif ext.cash is None or ext.interest_income is None:
                 absent = [name for name, present in (
                     (D.CASH, ext.cash is not None),
                     ("interest income earned on cash (not broken out of other income)",
@@ -253,7 +266,9 @@ def evaluate_checks(
                       f"({ext.locator(check) or 'AR'})", ext.ids(check))
 
         elif check == "cash_debt_paradox":
-            cod = derived.get("cost_of_debt_latest")
+            # The average-balance rate is the better denominator (see `cost_of_debt_average`); the
+            # closing-balance one stays as a fallback for a run with no filing behind it.
+            cod = derived.get("cost_of_debt_average") or derived.get("cost_of_debt_latest")
             assets = facts.fact(D.TOTAL_ASSETS, derived.last_period or "")
             debt = facts.fact(D.BORROWINGS, derived.last_period or "")
             if ext.cash is None or cod is None or assets is None or debt is None:

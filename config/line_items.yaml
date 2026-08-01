@@ -19,7 +19,8 @@
 # CONTRACT
 #   metric:        a key in `DerivedSet` (core/pipeline/derive.py). Its absence -> UNANSWERED.
 #   against:       a second metric rendered alongside, for "X versus Y" questions.
-#   unit:          pct | pp | ratio | inr_cr | x  — controls formatting only.
+#   unit:          pct | pp | ratio | inr_cr | x | days  — controls formatting only.
+#   against_unit:  the unit for `against`, when the companion metric is measured in something else.
 #   template:      the finding sentence. {v} = metric, {a} = `against` metric, {window} = period span.
 #   bands:         POLICY. First band whose `at_least` (or `at_most`) matches appends its `says` clause.
 #                  Every number in this file is a threshold and belongs here, never in Python (SPEC §3).
@@ -91,8 +92,19 @@ line_items:
           Did receivables grow faster than revenue? Sales that turn into a receivable instead of cash are
           the classic signature of channel-stuffing and of revenue booked to hit a number.
         metric: receivable_days_delta
-        unit: pp
-        template: "Receivable days moved {v} across {window}."
+        # DAYS, not percentage points. `pp` renders a fraction as a percentage, so a move of 1.2 days
+        # printed as "+121.8pp" — a stable collection cycle rendered as a collapse, in the one question
+        # whose whole purpose is to catch revenue being pushed into receivables.
+        unit: days
+        template: "Receivable days moved {v} year on year."
+        bands:
+          - at_least: 15.0
+            says: "collection is lengthening materially, which is what revenue booked to hit a number looks like on the balance sheet"
+          - at_least: 5.0
+            says: "some lengthening, worth watching against the revenue trend rather than acting on"
+          - at_least: -5.0
+            says: "essentially unchanged — sales are converting to cash at the same rate they did last year"
+          - says: "collection SHORTENED, which is the opposite of the channel-stuffing signature"
         needs:
           - "balance_sheet:Trade Receivables per year (audited balance sheet — the screener omits it)"
         severity: high
@@ -146,10 +158,39 @@ line_items:
         question: >
           WHICH cost line moved — raw material, power, employee, or other expenses? "Margins fell" is not
           an analysis; "the material cost ratio rose 400bps because the feedstock spread inverted" is.
+        metric: material_cost_ratio_delta
+        against: other_expense_ratio_delta
+        unit: pp
+        template: >
+          The material cost ratio moved {v} across {window} against {a} for other expenses.
+        bands:
+          - at_least: 0.03
+            says: "the raw-material line is where the margin went — for a spread processor that is the input price, not a controllable cost"
+          - at_least: 0.0
+            says: "materials absorbed some margin, but not enough to be the whole story"
+          - at_most: -0.03
+            says: "the material ratio FELL materially, so any margin compression came from somewhere other than feedstock"
+          - says: "the material ratio is broadly unchanged, so the margin story is not a feedstock story"
         needs:
-          - "P&L expense breakup (cost of materials consumed, employee benefits, power & fuel, other)"
-          - "the same breakup for the prior year, as printed in the comparative column"
+          - "power and fuel as a separate line (these filings bury it inside Other Expenses note 35)"
         severity: high
+
+      - id: margin_employee_cost_share
+        question: >
+          What does the workforce cost as a share of revenue, and is that share rising? A processor whose
+          employee ratio climbs while tonnage is flat is losing operating leverage.
+        metric: employee_cost_ratio
+        against: employee_cost_ratio_delta
+        unit: pct
+        template: "Employee benefits are {v} of revenue, having moved {a} across {window}."
+        bands:
+          - at_least: 0.20
+            says: "high enough that this is a people business, not a plant business"
+          - at_least: 0.05
+            says: "a normal manufacturing cost base, where scale rather than headcount drives the margin"
+          - says: "a very light cost base — the economics live entirely in the material spread"
+        severity: medium
+        exclude_models: [LENDER, BANK]
 
       - id: margin_price_mix_or_scale
         question: "If the margin expanded, was it price, mix, or scale? Only scale is durable at a commodity."
@@ -243,22 +284,24 @@ line_items:
 
       - id: debt_cost_sanity
         question: "What is the implied cost of debt, and is it consistent with the company's standing?"
-        metric: cost_of_debt_latest
+        metric: cost_of_debt_average
         unit: pct
-        template: "Implied cost of debt is {v} (interest / borrowings)."
-        # Interest paid is a flow across the year; borrowings is a year-end snapshot. When the company
-        # repaid most of its debt before 31 March the ratio explodes and means nothing — so declare the
-        # window in which it is informative and refuse to narrate outside it.
+        template: "Implied cost of debt is {v} (interest / average borrowings)."
+        # Interest paid is a flow across the year, so the denominator is the AVERAGE of the opening and
+        # closing balance-sheet borrowings rather than the closing snapshot. That fixes the ordinary
+        # repaid-before-year-end distortion but not the degenerate case: when a company has retired
+        # essentially all its debt, the average is a rounding artefact and the rate it implies carries no
+        # information about what anyone would lend to this company at. Declare the window in which the
+        # ratio is informative and refuse to narrate outside it.
         plausible:
           min: 0.02
           max: 0.30
           because: >
-            interest is paid across the year while borrowings is a year-end balance, so a company that
-            repaid its debt before the close produces a meaningless rate — the average balance from the
-            borrowings note is required instead
+            the remaining borrowings are too small for the implied rate to mean anything — the average
+            balance is a rounding artefact of a company that has repaid its debt, so the disclosed rate
+            per facility in the borrowings note is the only honest source
         needs:
-          - "borrowings note — opening and closing balance per tranche, to compute interest on the AVERAGE balance"
-          - "the interest rate stated per facility, which is the disclosed rate rather than an implied one"
+          - "borrowings note — the interest rate stated per facility, which is the disclosed rate rather than an implied one"
         bands:
           - at_least: 0.18
             says: "well above secured bank rates for a company of this size, which needs explaining from the borrowings note"
@@ -381,8 +424,22 @@ line_items:
           How much of the capex was maintenance and how much was growth? Without the split, a negative
           incremental return cannot be distinguished from ordinary asset replacement — and that is the
           difference between a value-destroying expansion and a company simply keeping the lights on.
+        # Depreciation is the accountant's own estimate of what standing still costs, so capex measured
+        # against it is the deterministic half of the split. It does not name the projects, which is why
+        # the MD&A row stays on `needs:`.
+        metric: capex_to_depreciation
+        against: capex_cum_window
+        unit: x
+        against_unit: inr_cr
+        template: "Capex ran at {v} of the depreciation charge across {window}, on {a} of gross spend."
+        bands:
+          - at_least: 2.0
+            says: "overwhelmingly expansion — the incremental return on that spend is therefore the whole question, not an aside"
+          - at_least: 1.2
+            says: "expansion beyond replacement, but at a scale the existing business could absorb"
+          - says: "at or below the maintenance floor — this is a company replacing assets, not building new ones"
         needs:
-          - "PPE note — additions by asset class, and the depreciation charge as the maintenance floor"
+          - "PPE note — additions by asset class, to split the expansion projects from replacement"
           - "MD&A or capex-guidance statement naming the expansion projects and their cost"
         severity: high
 
@@ -392,12 +449,13 @@ line_items:
     why: >
       Working capital is the bridge between reported profit and cash, so it is where an inflated profit
       must eventually show up. Every question here needs three balance-sheet rows the screener does not
-      carry, which is why they are all unanswered today rather than quietly omitted.
+      carry — receivables, inventory and payables — so these are answerable only on a run that walked
+      the audited annual report, and unanswerable on one that did not.
     questions:
       - id: wc_receivable_days
         question: "How long does the company take to collect, and is that lengthening?"
         metric: receivable_days
-        unit: x
+        unit: days
         template: "Receivable days stand at {v}."
         needs:
           - "balance_sheet:Trade Receivables per year (audited balance sheet)"
@@ -408,7 +466,7 @@ line_items:
       - id: wc_inventory_days
         question: "Is inventory building faster than sales, and is any of it obsolete?"
         metric: inventory_days
-        unit: x
+        unit: days
         template: "Inventory days stand at {v}."
         needs:
           - "balance_sheet:Inventories per year, with the raw/WIP/finished split"
@@ -420,10 +478,34 @@ line_items:
         question: >
           Is the company funding itself by paying suppliers late? A stretching payable cycle is a
           liquidity signal that arrives before any ratio breaks.
+        metric: payable_days
+        unit: days
+        template: "Payable days stand at {v}."
+        bands:
+          - at_least: 120.0
+            says: "long enough that suppliers are financing the business, which is a liquidity position rather than a negotiating win"
+          - at_least: 45.0
+            says: "ordinary trade credit for a chemical processor"
+          - says: "short — the company pays quickly, which costs working capital and buys supplier goodwill"
         needs:
-          - "balance_sheet:Trade Payables per year"
           - "MSME payables-ageing disclosure (Schedule III) — overdue amounts to small suppliers"
         severity: medium
+        exclude_models: [LENDER, BANK]
+
+      - id: wc_cash_cycle
+        question: >
+          Net of all three, how many days of cash does the operating cycle tie up — and does the company
+          fund its own working capital or does someone else?
+        metric: cash_conversion_cycle
+        unit: days
+        template: "The cash conversion cycle ties up {v}."
+        bands:
+          - at_least: 120.0
+            says: "a long cycle: growth consumes cash before it produces any, so revenue growth needs funding"
+          - at_least: 0.0
+            says: "positive but short — growth is broadly self-financing at this level of working capital"
+          - says: "negative: suppliers and customers fund the business, which is a structural advantage"
+        severity: high
         exclude_models: [LENDER, BANK]
 
   # ------------------------------------------------------------------------------------------------
@@ -436,15 +518,33 @@ line_items:
     questions:
       - id: cash_earns_interest
         question: "Does the reported cash balance earn a plausible rate of interest?"
+        metric: cash_yield_latest
+        unit: pct
+        template: "The reported cash and bank balances yielded {v} on the average balance."
+        # Below the floor the balance is not earning what a real deposit earns, which is the tell the
+        # whole check exists for; above the ceiling the interest is not coming from these balances.
+        bands:
+          - at_least: 0.10
+            says: "above term-deposit rates, so the income is not coming from these balances alone and the composition needs reading"
+          - at_least: 0.045
+            says: "consistent with Indian term-deposit rates on a balance that is actually there"
+          - at_least: 0.02
+            says: "low for a rupee deposit — either the balance arrived late in the year or much of it sits in current accounts"
+          - says: "materially below any deposit rate, which is the classic signature of a cash balance that is not what it says it is"
         needs:
-          - "balance_sheet:Cash and Cash Equivalents per year (audited balance sheet)"
-          - "interest income broken out of other income, so the implied yield can be computed"
+          - "cash-and-bank note — the split between current accounts, term deposits and margin money"
         severity: high
 
       - id: cash_alongside_costly_debt
         question: "Is the company holding cash while paying materially more to borrow?"
+        metric: net_cash_position
+        unit: inr_cr
+        template: "Net cash after deducting all borrowings is {v}."
+        bands:
+          - at_least: 0.0
+            says: "net cash, so there is no borrow-and-hoard pattern to explain"
+          - says: "net debt, so the interest rate paid must be compared against what the held cash earns"
         needs:
-          - "balance_sheet:Cash and Cash Equivalents"
           - "borrowings note with the interest rate per tranche"
         severity: high
 

@@ -246,12 +246,19 @@ def test_an_uncited_number_in_agent_prose_fails_the_run(store):
 
 
 def test_an_agent_authored_number_fails_the_run(store):
-    """Law 1: an agent filling a numeric field the compute layer did not produce is a build failure."""
-    answers = clean_answers("MADEUP", financial_statement_analyst={"working_capital_days": 62.0})
+    """Law 1: an agent filling a numeric field the compute layer did not produce is a build failure.
+
+    The field under test used to be `working_capital_days`; it stopped being a valid example once the
+    filing walk made the cash-conversion cycle derivable (ADR-0037), because it now has a computed
+    source and an agent quoting it wrongly falls under the *arithmetic* check instead (tested below).
+    `customer_concentration` needs the segment note, which nothing reads, so it is still a field an
+    agent could only fill by inventing.
+    """
+    answers = clean_answers("MADEUP", business_analyst={"customer_concentration": 0.42})
     with pytest.raises(AgentDisciplineError) as err:
         _run(store, "MADEUP", clean_series(roic_boost=1.6), answers=answers,
              filing=filing_for("MADEUP"))
-    assert "working_capital_days" in str(err.value)
+    assert "customer_concentration" in str(err.value)
     assert "Law 1" in str(err.value)
 
 

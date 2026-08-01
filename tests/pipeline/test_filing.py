@@ -50,7 +50,7 @@ def test_filing_figures_are_stored_as_grade_a_facts_bound_to_page_and_line(store
     assert fact.grade == "A"                      # the audited filing outranks the screener snapshot
     # Provenance down to the line (Law 2), plus the scale AS PRINTED on the page — so a reader can
     # re-derive the stored crore figure from the filing without re-guessing the unit (ADR-0024).
-    assert fact.locator == "p.1 l.4 (as printed: INR_cr)"
+    assert fact.locator == "p.1 l.6 (as printed: INR_cr)"
     assert fact.unit == "INR_cr"                  # canonical money scale, whatever the page declared
     assert fact.doc_id == "AR-ARCO-FY26"
 
@@ -89,7 +89,7 @@ def test_a_fired_check_flags_its_note(store):
 
     assert by_number[9].status == "flag"                       # Note 9: Trade Receivables
     assert "receivables_divergent" in by_number[9].rationale
-    assert by_number[9].figure_locators == ["p.3 l.3"]   # the notes page now follows the two audited statement pages
+    assert by_number[9].figure_locators == ["p.4 l.3"]   # the notes page follows the three audited statement pages
 
 
 def test_missing_mandated_disclosures_and_adverse_caro_clauses_surface(store):

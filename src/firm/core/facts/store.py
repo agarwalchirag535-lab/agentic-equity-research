@@ -15,6 +15,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 from datetime import date
+from typing import Sequence
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS documents (
@@ -103,6 +104,21 @@ class FactStore:
             (fact_id, doc_id, ticker, metric, period, value, unit, locator),
         )
         self._conn.commit()
+
+    def remove_facts(self, fact_ids: Sequence[str]) -> int:
+        """Delete facts by id, returning how many rows went. Used only to QUARANTINE a figure two
+        independent documents contradict each other about (`crosscheck_overlaps`).
+
+        Deleting from a fact store is not something to do casually, so the one caller is narrow by
+        design: it removes a figure that cannot be true rather than leaving a wrong number in place with
+        a grade-A stamp on it. The gap that remains is visible; the wrong number would not have been.
+        """
+        if not fact_ids:
+            return 0
+        cursor = self._conn.execute(
+            f"DELETE FROM facts WHERE fact_id IN ({','.join('?' * len(fact_ids))})", tuple(fact_ids))
+        self._conn.commit()
+        return int(cursor.rowcount)
 
     def _row_to_fact(self, row: sqlite3.Row) -> Fact:
         return Fact(

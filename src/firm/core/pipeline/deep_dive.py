@@ -137,7 +137,10 @@ NUMERIC_FIELD_SOURCES: Mapping[str, str | None] = {
     "incremental_roic": "incremental_roic_3y",
     "cfo_to_ebitda": "cfo_to_ebitda_latest",
     "fcf_to_pat": "fcf_to_pat_cum",
-    "working_capital_days": None,
+    # The cash-conversion cycle IS working-capital days: receivable + inventory - payable. It became
+    # derivable when the filing walk started reading the whole balance sheet (ADR-0037); until then the
+    # field could only ever be null, and the schema had a slot no run could fill.
+    "working_capital_days": "cash_conversion_cycle",
     "customer_concentration": None,
     "promise_delivery_score": None,
     "promoter_pledge_pct": None,
@@ -323,7 +326,7 @@ def agent_facts_payload(
         # cover, so `sector_analyst` cannot accidentally compare the subject's newest year against a peer's
         # older one; a measure with no common period arrives as a stated reason, not as an absent row.
         "peer_comparison": peer_payload_rows(peers),
-        # Management's own forward numbers, quoted verbatim from Reg-30 transcripts (ADR-0036). A quarter
+        # Management's own forward numbers, quoted verbatim from Reg-30 transcripts (ADR-0039). A quarter
         # is present only when a transcript was ingested for it; the series reads oldest first so drift is
         # visible as a sequence. House standard applies: these are data about MANAGEMENT, not the business.
         "management_guidance": [
@@ -534,12 +537,35 @@ def _narration(
         "price is asserted — that tier is not built yet, and a valuation narrative without it would be "
         "invented."
     )
-    management = (
-        "No management or governance assessment is made in this report: `management_analyst`, "
-        "`transcript_analyst` and `ownership_flows_analyst` are Phase 3 agents and did not run. "
-        "Promoter-pledge, promise-vs-delivery and board-interlock findings are therefore absent rather "
-        "than clean."
-    )
+    # THE MANAGEMENT SECTION MUST DESCRIBE THE RUN THAT HAPPENED. This was hardcoded to say the three
+    # governance agents "did not run", which was true while the roster was a fixed Phase-2 trio and became
+    # a false statement in a published report the moment Phase 3 staffed them (ADR-0034). A report that
+    # misdescribes its own coverage is worse than one with a gap, because the gap is at least honest.
+    governance_agents = [name for name in
+                         ("management_analyst", "transcript_analyst", "ownership_flows_analyst")
+                         if name in outputs]
+    if governance_agents:
+        management = "\n\n".join(
+            f"**{name}:** {outputs[name].narrative.strip()}"
+            for name in governance_agents if outputs[name].narrative.strip()
+        ) or (
+            "The governance agents ran but returned no narrative, which is a defect in this run rather "
+            "than a finding about the company."
+        )
+        absent = [name for name in
+                  ("management_analyst", "transcript_analyst", "ownership_flows_analyst")
+                  if name not in outputs]
+        if absent:
+            management += (
+                f"\n\nNot staffed on this run: {', '.join(f'`{n}`' for n in absent)} — the findings that "
+                "agent would produce are absent rather than clean."
+            )
+    else:
+        management = (
+            "No management or governance assessment is made in this report: `management_analyst`, "
+            "`transcript_analyst` and `ownership_flows_analyst` did not run. Promoter-pledge, "
+            "promise-vs-delivery and board-interlock findings are therefore absent rather than clean."
+        )
 
     open_questions: list[str] = []
     for out in outputs.values():
@@ -650,14 +676,15 @@ def run_deep_dive(
     feasibility = feasibility_at_target(derived, policy, thresholds["multibagger"])
 
     notes, _dispositions = (
-        disposition_notes(walk.notes, evaluation, disclosure_gaps_found=walk.missing_disclosures)
+        disposition_notes(walk.notes, evaluation, disclosure_gaps_found=walk.missing_disclosures,
+                          reconciliations=walk.reconciliations)
         if walk is not None else (NotesReview(), ())
     )
 
     # ---- 4. the agents: narration only -----------------------------------------------------------
     # Guidance is read through its own point-in-time query, not CompanyFacts: one call quarter carries
     # several guided figures under one metric, and the per-(metric, period) resolution that is right for a
-    # balance-sheet row would silently drop all but one of them (ADR-0036).
+    # balance-sheet row would silently drop all but one of them (ADR-0040).
     guidance = store.query_metric_prefix(ticker, "guidance:", as_of)
     peer_comparisons = load_peer_comparisons(store, ticker, peers, as_of, start_year=start_year)
     peer_values = peer_citable_values(peer_comparisons)

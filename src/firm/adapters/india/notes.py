@@ -29,10 +29,23 @@ from typing import Sequence
 #: The bare form is the loosest, so it is anchored hard: the line must END after the title, which keeps it
 #: off balance-sheet rows ("9 Inventories 12,213.07 16,478.08" carries figures and is rejected). Combined
 #: with `notes_section_start` scoping, it does not reach the numbered paragraphs in the AGM notice or BRSR.
+#: A note heading: a number, then a title, then — crucially — whatever else the typesetter put on that
+#: line. The `$`-anchored version of this pattern found 11 of the 63 notes in the FY26 Alkyl Amines
+#: filing, because a real heading is followed by the table's unit declaration:
+#:
+#:     3. Property, Plant and Equipment  ` In Lakhs
+#:     4.  RIGHT OF USE ASSETS  ` In Lakhs
+#:
+#: and the anchor rejected every one of them. Coverage read 100% with `substantive_share` at 9%: the
+#: pipeline was dispositioning the handful of notes whose headings happened to end cleanly and calling
+#: that a full reading of the accounts. A trailing column gap (two or more spaces) now ends the title.
+#:
+#: Sub-numbered continuations ("3.3a. Ageing of Capital Work in progress", "4.1 -Lease period of land")
+#: are excluded by requiring whitespace after the number's terminator, which a sub-number does not have.
 _NOTE_HEADING = re.compile(
-    r"^\s*(?:NOTE|Note)\s+(\d{1,3})\s*[:.\-–)]\s*(\S.{2,90})$|"
-    r"^\s*(\d{1,3})\s*[.)]\s+([A-Z][A-Za-z &,/()'\-]{3,90})\s*$|"
-    r"^\s*(\d{1,3})\s+([A-Z][A-Za-z &,/()'\-]{4,90})\s*$"
+    r"^\s*(?:NOTE|Note)\s+(\d{1,3})\s*[:.\-–)]\s*(\S.{2,90}?)(?:\s{2,}.*)?$|"
+    r"^\s*(\d{1,3})\s*[.)]\s+([A-Za-z][A-Za-z &,/()'\-]{3,70}?)(?:\s{2,}.*)?$|"
+    r"^\s*(\d{1,3})\s{1,}([A-Z][A-Za-z &,/()'\-]{4,70}?)(?:\s{2,}.*)?$"
 )
 
 # CARO clause markers: (i) ... (xxi), at line starts.
@@ -60,11 +73,16 @@ NOTE_TAXONOMY: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("contingent_liabilities", ("contingent liabilit", "commitments", "contingencies")),
     ("receivables", ("trade receivable", "sundry debtor", "debtors")),
     ("payables", ("trade payable", "sundry creditor", "creditors")),
-    ("ppe_cwip", ("property, plant", "capital work", "fixed asset", "tangible asset")),
+    # Depreciation is the P&L side of the same asset base, and a note titled only "DEPRECIATION &
+    # AMORTIZATION EXPENSES" was landing in `uncategorised` — so the CWIP-ageing check that reads the
+    # asset base could not disposition it.
+    ("ppe_cwip", ("property, plant", "capital work", "fixed asset", "tangible asset",
+                  "depreciation", "amortization", "amortisation")),
     ("intangibles", ("intangible asset", "goodwill")),
     ("inventory", ("inventor", "stock-in-trade")),
     ("cash", ("cash and cash equivalent", "bank balance")),
-    ("borrowings", ("borrowing", "long-term debt", "short-term debt")),
+    # Finance costs are what the borrowings cost, so the same cash-vs-debt checks read both.
+    ("borrowings", ("borrowing", "long-term debt", "short-term debt", "finance cost")),
     ("provisions", ("provision",)),
     ("revenue", ("revenue from operation", "revenue recognition")),
     ("other_income", ("other income",)),
@@ -74,7 +92,12 @@ NOTE_TAXONOMY: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("ecl_impairment", ("expected credit loss", "impairment of financial")),
     ("fair_value", ("fair value", "financial instrument", "risk management")),
     ("investments", ("investment",)),
-    ("loans_advances", ("loans and advance", "loans given")),
+    # An Ind AS balance sheet titles these "Non Current Financial Assets - Loans" / "CURRENT FINANCIAL
+    # ASSETS - LOANS", which the old "loans and advance" spelling never matched — so the notes carrying
+    # money lent out, the single most important governance line after related-party, were uncategorised
+    # and could not reach `promoter_lending`.
+    ("loans_advances", ("loans and advance", "loans given", "financial assets - loan",
+                        "financial assets- loan", "advances")),
     ("equity", ("equity share capital", "other equity", "reserves and surplus")),
     ("leases", ("lease",)),
     ("going_concern", ("going concern",)),
@@ -86,19 +109,31 @@ NOTE_TAXONOMY: tuple[tuple[str, tuple[str, ...]], ...] = (
 # Schedule III (Companies Act, 2021 amendments) mandatory disclosures — a forensic gift because the law
 # forces the company to answer each one. Absence in a filing that must contain them = `disclosure_gap`
 # (ADR-0014), never a silent skip.
+#: MATCH WHAT THE COMPANY WRITES, NOT WHAT THE RULE IS CALLED. Schedule III names each disclosure in its
+#: own heading, and companies caption them in their own words: Alkyl Amines heads its receivables and
+#: payables ageing tables "Outstanding for following periods from due date of payment", its CWIP table
+#: "Ageing of Capital Work in progress", and answers the promoter-lending row as "advances in the nature
+#: of loans". On the FY26 filing the narrower list below missed six disclosures that are all present, and
+#: the pipeline fired a MEDIUM `disclosure_gap` — "unexplained opacity" — at a company that had disclosed
+#: every one of them. That is the firm's extraction charged to the company, which ADR-0022 rules out
+#: explicitly, and it is worse than a miss because it reads as a finding.
 SCHEDULE_III_ROWS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("struck_off_companies", ("struck off", "struck-off")),
     ("benami_property", ("benami",)),
     ("wilful_defaulter", ("wilful defaulter", "willful defaulter")),
-    ("undisclosed_income", ("undisclosed income",)),
+    ("undisclosed_income", ("undisclosed income", "surrendered or disclosed as income")),
     ("crypto_currency", ("crypto currency", "cryptocurrency", "virtual currency")),
-    ("cwip_ageing", ("capital work-in-progress ageing", "cwip ageing", "ageing schedule of capital")),
-    ("receivables_ageing", ("trade receivables ageing", "ageing schedule of trade receivable")),
-    ("payables_ageing", ("trade payables ageing", "ageing schedule of trade payable")),
+    ("cwip_ageing", ("capital work-in-progress ageing", "cwip ageing", "ageing schedule of capital",
+                     "ageing of capital work")),
+    ("receivables_ageing", ("trade receivables ageing", "ageing schedule of trade receivable",
+                            "trade receivable ageing", "undisputed trade receivable")),
+    ("payables_ageing", ("trade payables ageing", "ageing schedule of trade payable",
+                         "trade payable ageing", "micro enterprises and small\nenterprises- undisputed",
+                         "enterprises- undisputed", "others-undisputed")),
     ("loans_to_promoters", ("loans or advances to promoters", "loans and advances to promoters",
-                            "advances to directors")),
+                            "advances to directors", "advances in the nature of loans")),
     ("ratios_disclosure", ("current ratio", "debt-equity ratio", "debt equity ratio")),
-    ("title_deeds", ("title deeds of immovable propert",)),
+    ("title_deeds", ("title deeds of immovable propert", "title deeds")),
 )
 
 
@@ -161,7 +196,7 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
     Page numbers stay absolute so provenance still points at the real page.
     """
     seen: set[int] = set()
-    notes: list[Note] = []
+    candidates: list[Note] = []
     floor = first_page or 1
     for p_idx, page in enumerate(pages, start=1):
         if p_idx < floor:
@@ -175,8 +210,63 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
             if number in seen:
                 continue
             seen.add(number)
-            notes.append(Note(number, title, p_idx, l_idx))
-    return notes
+            candidates.append(Note(number, title, p_idx, l_idx))
+    return _in_filed_order(candidates)
+
+
+def _in_filed_order(candidates: Sequence[Note]) -> list[Note]:
+    """Keep the longest run of candidates whose numbers ASCEND in document order.
+
+    Notes to the accounts are numbered in sequence and printed in that sequence, so a "note 5" appearing
+    between note 39 and note 40 is not a note. On the FY26 Alkyl Amines filing that exact case occurs: an
+    actuarial-assumptions table inside the employee-benefits note opens with
+
+        5  Withdrawal Rate  Indian Assured  Indian Assured
+
+    which is indistinguishable from a heading by shape alone and only distinguishable by position. Any
+    text-shape rule loose enough to catch the real headings will catch some of these; the filing's own
+    ordering is the check that costs nothing and cannot be fooled by typography.
+
+    The longest increasing subsequence rather than a greedy scan, so one spurious high number early in
+    the section cannot suppress every real note after it.
+    """
+    if not candidates:
+        return []
+    best = [1] * len(candidates)
+    previous = [-1] * len(candidates)
+    for i in range(len(candidates)):
+        for j in range(i):
+            if candidates[j].number < candidates[i].number and best[j] + 1 > best[i]:
+                best[i], previous[i] = best[j] + 1, j
+    index = max(range(len(candidates)), key=lambda i: best[i])
+    chain: list[Note] = []
+    while index >= 0:
+        chain.append(candidates[index])
+        index = previous[index]
+    return list(reversed(chain))
+
+
+def note_body(pages: Sequence[str], notes: Sequence[Note], note: Note) -> list[str]:
+    """The lines belonging to ``note``: from its heading to the next note's heading.
+
+    The body may end on the SAME page it started (several of these notes share a page), so the boundary
+    is the next enumerated heading rather than the page break. Getting that wrong sweeps the neighbouring
+    note's figures in — and the neighbour of the related-party note is Earnings Per Share, whose first
+    row is net profit (`notes_content.related_party_summary` learned this the hard way).
+    """
+    later = [n for n in notes if (n.page, n.line) > (note.page, note.line)]
+    end = min(later, key=lambda n: (n.page, n.line)) if later else None
+    out: list[str] = []
+    for page_number in range(note.page, (end.page if end else len(pages)) + 1):
+        if page_number > len(pages):
+            break
+        for line_number, line in enumerate(pages[page_number - 1].splitlines(), start=1):
+            if page_number == note.page and line_number <= note.line:
+                continue
+            if end is not None and page_number == end.page and line_number >= end.line:
+                break
+            out.append(line)
+    return out
 
 
 def coverage(notes: Sequence[Note], dispositions: Sequence[NoteDisposition]) -> tuple[float, list[int]]:
