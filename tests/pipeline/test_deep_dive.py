@@ -154,6 +154,46 @@ def test_an_agent_can_cite_a_peers_figure(store):
     assert run.report is not None
 
 
+def test_every_agent_that_narrates_reaches_a_report_section(store):
+    """An agent that runs, enters `agent_versions` and renders nowhere is indistinguishable from one
+    that never ran. `sector_analyst` did exactly that: its peer comparison reached no page.
+
+    Asserted over every agent the CURRENT build phase can run, so a new phase-3 agent fails this test
+    until it is rendered. The Phase-4 judgment tier has no section either, which is correct while it is
+    unwired — giving it one is part of wiring it, and raising `MAX_PHASE` here is how that gets caught.
+    """
+    MAX_PHASE = 3
+    from firm.core.pipeline.deep_dive import _narration
+    from firm.core.orchestrator.roster import load_roster
+    from firm.schemas.agents import AGENT_OUTPUTS
+
+    _, derived = _derived(store, "ACME")
+    outputs = {}
+    for entry in (e for e in load_roster() if e.phase <= MAX_PHASE):
+        model = AGENT_OUTPUTS[entry.name]
+        fields = {
+            name: ("x" if field.annotation is str else 0.0)
+            for name, field in model.model_fields.items() if field.is_required()
+        }
+        fields.update(agent=entry.name, agent_version="1.0.0", ticker="ACME", as_of=AS_OF,
+                      disconfirming_search="searched", narrative=f"NARRATIVE-{entry.name}")
+        outputs[entry.name] = model(**fields)
+
+    narration = _narration(
+        outputs, ForensicScreenResult(ForensicVerdict.PASS, False, []),
+        CheckEvaluation((), ForensicMetrics(), ()), derived, None)
+    rendered = " ".join((
+        narration.executive_summary, narration.business_model_plain, narration.forensic_narrative,
+        narration.sector_narrative, narration.management_narrative, narration.thesis,
+        narration.anti_thesis))
+
+    unrendered = [name for name in outputs if f"NARRATIVE-{name}" not in rendered]
+    assert not unrendered, (
+        f"these agents narrate but reach no report section: {unrendered}. An agent named in "
+        f"`agent_versions` whose prose is dropped reads to a reader exactly like one that never ran."
+    )
+
+
 def test_the_peer_block_reaches_the_packet_with_its_periods(store):
     _, derived = _derived(store, "ACME")
     seed_store(store, "RIVAL", clean_series(), periods=("FY21", "FY22", "FY23", "FY24", "FY25"),

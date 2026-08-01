@@ -174,6 +174,10 @@ def render_markdown(report: ResearchReport) -> str:
     if r.forensic_narrative:
         out += [r.forensic_narrative, ""]
 
+    # 4b. sector, macro and unit economics — comparative work, printed before the company-only sections
+    if r.sector_narrative:
+        out += ["## Sector and competitive position", "", r.sector_narrative, ""]
+
     # 6-7. management + valuation
     if r.management_narrative:
         out += ["## Management and governance", "", r.management_narrative, ""]

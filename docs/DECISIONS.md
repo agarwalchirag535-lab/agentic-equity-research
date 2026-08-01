@@ -1252,3 +1252,27 @@ hand-enumerated list rots as schemas grow, and the audit that found fabricated f
 **Also fixed while here:** `UnitEconomicsOutput.units_today` / `units_plausible_in_7y` were required
 ints, so 0 meant both "counted, and zero" and "never counted" — the `ForensicMetrics` boolean defect in
 integer form. They are `int | None` now; unknown is None.
+
+### ADR-0044 — An agent that runs and is not rendered reads exactly like one that never ran
+**Context.** The phase-3 acceptance run staffed nine agents and published. `sector_analyst`,
+`macro_strategist` and `unit_economics_analyst` validated, entered `agent_versions` — so the report
+*named them as contributors* — and then had their narratives dropped, because `_narration` read six
+agents by name. The peer comparison the sector agent exists to make reached no page at all.
+
+**Decision.** A `## Sector and competitive position` section, composed from the agents whose work is
+comparative rather than company-only, and a test asserting that **every agent the current build phase can
+run** appears somewhere in the rendered narration. The test walks `config/roster.yaml`, so a new phase-3
+agent fails it until it is rendered rather than being silently dropped. The Phase-4 tier has no section
+either — correct while it is unwired, and raising `MAX_PHASE` in that test is how wiring it gets caught.
+
+**Why this is the ADR-0034 failure inverted.** That ADR fixed a report that *said* three agents had not
+run when they had. This is the same lie told the other way: the masthead credits an agent whose work is
+nowhere in the document, and a reader has no way to tell that from an agent that was never staffed.
+
+**Also found by the same run, and fixed:** layout-mode extraction (the whole-filing work) renders the
+shareholding category row as `A  Promoter &  13  1513278 ...` with the words "Promoter" and "Group"
+pushed onto continuation lines beside the wrapped digits. The pattern from ADR-0041 required the full
+"Promoter & Promoter Group" phrase, so it found the row in reading-order mode and silently lost it in
+layout mode — 26 registered quarters fell to 14 on merge. The conjunction is now the anchor and the rest
+of the label optional; a bare `A\s+promoter` was rejected because it also matches prose like "held by a
+promoter". Both extraction modes are now covered by fixtures.

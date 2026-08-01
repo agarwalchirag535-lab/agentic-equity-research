@@ -197,6 +197,13 @@ class ResearchReport(BaseModel):
     checklist: VerifiedCleanChecklist = Field(default_factory=VerifiedCleanChecklist)
     forensic_narrative: str = ""
 
+    # 4b. sector and business context — the agents whose work is comparative rather than company-only.
+    # Added because `sector_analyst`, `macro_strategist` and `unit_economics_analyst` were validating,
+    # entering `agent_versions` and then having their narratives dropped: the report named them as
+    # contributors and printed nothing they wrote. An agent that runs and is not rendered is the
+    # ADR-0034 failure in the other direction — the reader cannot tell it from one that never ran.
+    sector_narrative: str = ""
+
     # 6-7. management + valuation
     management_narrative: str = ""
     valuation_narrative: str = ""

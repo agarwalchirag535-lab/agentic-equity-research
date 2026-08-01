@@ -114,6 +114,37 @@ def test_table_ii_percentages_never_reach_the_category_row():
     assert s.promoter_pct != 59.8
 
 
+#: The same filing under LAYOUT-mode extraction: the figures land on one line and the label's own words
+#: are pushed onto the continuation lines beside the wrapped digits. Requiring the full "Promoter &
+#: Promoter Group" phrase found this row in reading-order mode and silently lost it here.
+LAYOUT = (
+    "4. Share Holding Pattern as on : 31-Mar-2021\n"
+    "5 Whether any shares held by promoters are pledge or otherwise encumbered? No\n",
+    "  A  Promoter &  13  1513278  0  0  151327  74.13  1513  0  151  74.13  0  0  15132788\n"
+    "  Promoter  8  88  2788  327\n"
+    "  Group  88\n"
+    "  B  Public  59800  5279923  0  0  527992  25.87  5279  0  527  25.87  0  0  4924017\n"
+    "  3  923  992\n"
+    "  C  Non  0  0  0  0  0  0  0  0  0  0  0\n  Promoter-\n  Non Public\n",
+)
+
+
+def test_the_row_is_found_when_layout_extraction_splits_the_label():
+    s = parse_shareholding(LAYOUT)
+    assert s.located
+    assert (s.promoter_pct, s.public_pct) == (74.13, 25.87)
+    assert s.promoter_shareholders == 13
+
+
+def test_ordinary_prose_about_a_promoter_is_not_read_as_the_category_row():
+    """`A\\s+promoter` alone would match "held by a promoter" — the conjunction is what keeps it strict."""
+    prose = (
+        "Any shares held by a promoter are disclosed below at 55.5 per cent of the total.\n"
+        "(B) Public 178995 14336770 28.04\n",
+    )
+    assert parse_shareholding(prose).located is False
+
+
 def test_a_whole_number_percentage_is_read_when_the_filing_rounds():
     """Some quarters print "72" and "28" rather than 72.05/27.95. The decimal discriminator rejects an
     integer by construction, so these two filings were refused until the identity got a second reading."""

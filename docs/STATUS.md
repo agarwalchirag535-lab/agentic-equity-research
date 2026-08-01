@@ -2,11 +2,11 @@
 
 > **Read this first if you are new to this repo** (new session, new agent, new platform, or the owner
 > after a break). It is the single authoritative answer to *"what is built, what is not, and what
-> should happen next."* Last updated **2026-07-31**.
+> should happen next."* Last updated **2026-08-01**.
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0038). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0044). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -24,12 +24,12 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 0 — skeleton + contracts | ✅ complete |
 | 1 — compute layer | ✅ complete (100% coverage enforced by `make cov`) |
 | **2 — three agents, deep** | ✅ **complete — acceptance test passes; first report published (§6a)** |
-| 3 — full roster + orchestrator | 🔶 all 9 phase-3 agents plan and every data prerequisite is satisfiable (ADR-0030–0043); 8 reached a published report on the extraction line before the merge. Acceptance = one phase-3 report with all nine narrating on the MERGED tree — not yet run |
+| 3 — full roster + orchestrator | ✅ **complete — acceptance run published 2026-08-01 (§6b)**: 9 of 9 agents staffed and rendered, every data prerequisite satisfiable (ADR-0030–0044) |
 | 4 — judgment tier | ⚠️ prompts exist as markdown; numeric fields now registered null-only (ADR-0043) so wiring cannot open a Law-1 hole; **needs the owner's explicit go per CLAUDE.md build order** |
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 649 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 663 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -456,13 +456,47 @@ evaluable, 64% of notes substantively dispositioned, grade-A citations throughou
 closed — **no report has been published since**, so the phase-3 re-run is what converts that work into
 output. §7 is written against this state, not the paragraph above.
 
+## 6b. Phase 3 evidence: the acceptance run
+
+`reports/ALKYLAMINE/2026-08-01-66a2eb26d679/` — **9 of 9 phase-3 agents staffed, narrated and rendered**,
+verdict `QUALITY_WRONG_PRICE`, confidence 0.55, 100% note coverage with 64% substantive, 56% of the
+line-by-line questions answered, 31 open items in the disclosure backlog.
+
+Command (the whole chain, no API key — ADR-0010):
+
+```bash
+python -m firm deep-dive --ticker ALKYLAMINE --as-of 2026-08-01 --phase 3 \
+  --documents data/manifests/ALKYLAMINE-documents.json \
+  --filings data/manifests/ALKYLAMINE-filings.json --peer BALAMINES --answers <dir>
+```
+
+Ingest on that run: 10 annual reports as grade-A facts, **26 of 27** shareholding filings, **57 guided
+figures** from 10 of 14 transcripts, 1 peer comparable. All four citation families reach the published
+page — filing (31), peer (6), guidance (2), shareholding (2).
+
+What the new evidence changed, concretely: `transcript_analyst` went from *"there is no conclusion here
+to disconfirm, which is itself the finding"* to a five-year guidance walk-down (mid-teens → GDP-anchored)
+quoted verbatim with call dates; `management_analyst` gained the promise-versus-delivery half it had
+previously reported as missing; `ownership_flows_analyst` reads seven years of quarterly ownership
+instead of three; `sector_analyst` ran for the first time and put a peer on the page. **The verdict did
+not move.** More evidence, same answer, is the separation of powers working.
+
+Three defects the run itself surfaced, all fixed: the branch divergence (below), the layout-mode
+shareholding regression (ADR-0044), and three agents whose prose was dropped from the report they were
+credited in (ADR-0044).
+
+**The divergence worth remembering.** The re-run failed with 19 `unknown_fact_id` violations because the
+report on disk had been produced by a *sibling branch* whose whole-filing extraction this branch lacked;
+`reports/` is gitignored, so the artifact survived a branch switch in the same worktree and looked like
+ours. The citation gate was right and the branch was wrong. Both lines are now merged, and the ADR
+numbering collision that caused (both wrote 0036–0038) is recorded in `DECISIONS.md`.
+
 ## 7. Suggested next step
 
 Updated 2026-08-01, in order:
 
-1. **Re-run ALKYLAMINE at `--phase 3` with `--documents` and `--peer BALAMINES`** — the phase-3
-   acceptance run. All of ADR-0036–0039 (guidance series, 26 ownership quarters, peer block) is latent
-   until a report carries it. Nine agents should narrate, `sector_analyst` for the first time.
+1. ~~Re-run ALKYLAMINE at `--phase 3`~~ **DONE 2026-08-01** — see §6b. Nine agents narrated,
+   `sector_analyst` for the first time; guidance, ownership, peer and filing citations all reach the page.
 2. **Substantive note coverage 9% → 50% (§0b)** — the owner's core directive is line-by-line depth, and
    this is the largest gap between what the docs claim and what the system reads. One note category at a
    time (inventory, receivables, borrowings, contingent liabilities, tax, leases, employee benefits,

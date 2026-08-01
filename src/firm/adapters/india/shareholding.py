@@ -32,7 +32,14 @@ from firm.adapters.base.tables import numbers_on_line
 #: line start: in the pre-2023 layout the label itself wraps ("A Promoter &\nPromoter\nGroup") and so does
 #: the row's data, so no single physical line ever holds a whole row. A line-anchored pattern located 13 of
 #: Alkyl Amines' 27 filings and silently refused the other 14 — seven years of the promoter series.
-_PROMOTER_ROW = re.compile(r"(?:^|\s)\(?A\)?\s+promoter\s*&?\s*promoter\s*group\b", re.I)
+#: The conjunction is the anchor, and the rest of the label is optional. Layout-mode extraction (the
+#: whole-filing work) emits the row as "A  Promoter &  13  1513278 ..." with the words "Promoter" and
+#: "Group" pushed onto later lines beside the wrapped digits — so requiring the full phrase found the row
+#: in reading-order mode and lost it in layout mode. Requiring `A <conjunction>` keeps it strict: a bare
+#: `A\s+promoter` would also match ordinary prose like "held by a promoter".
+_PROMOTER_ROW = re.compile(
+    r"(?:^|\s)\(?A\)?\s+promoter\s*(?:&|and)\s*(?:promoter\s*group)?", re.I
+)
 _PUBLIC_ROW = re.compile(r"(?:^|\s)\(?B\)?\s+public\b", re.I)
 _NON_PROMOTER_ROW = re.compile(r"(?:^|\s)\(?C\d?\)?\s+non[\s-]*promoter[\s-]*non[\s-]*public\b", re.I)
 #: Where a category row's figures must stop. Without a terminator the public row would run on into Table II

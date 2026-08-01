@@ -312,6 +312,7 @@ class Narration:
     executive_summary: str = ""
     business_model_plain: str = ""
     forensic_narrative: str = ""
+    sector_narrative: str = ""
     management_narrative: str = ""
     valuation_narrative: str = ""
     thesis: str = ""
@@ -371,6 +372,7 @@ def assemble_report(
         disclosure_backlog=list(interrogation.needs_index()) if interrogation else [],
         checklist=checklist,
         forensic_narrative=narration.forensic_narrative,
+        sector_narrative=narration.sector_narrative,
         management_narrative=narration.management_narrative,
         valuation_narrative=narration.valuation_narrative,
         thesis=narration.thesis,

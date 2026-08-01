@@ -537,6 +537,19 @@ def _narration(
         "price is asserted — that tier is not built yet, and a valuation narrative without it would be "
         "invented."
     )
+    # EVERY AGENT THAT RAN MUST BE READABLE SOMEWHERE. `sector_analyst`, `macro_strategist` and
+    # `unit_economics_analyst` were validating, entering `agent_versions` — so the report named them as
+    # contributors — and then having their narratives dropped, because `_narration` only read six agents
+    # by name. The peer comparison the sector agent exists to make reached no page at all. Listing the
+    # section's authors, rather than naming three more agents here, means a tenth agent renders the day
+    # it is added instead of the day someone remembers to edit this function.
+    sector_agents = [name for name in ("sector_analyst", "macro_strategist", "unit_economics_analyst")
+                     if name in outputs]
+    sector = "\n\n".join(
+        f"**{name}:** {outputs[name].narrative.strip()}"
+        for name in sector_agents if outputs[name].narrative.strip()
+    )
+
     # THE MANAGEMENT SECTION MUST DESCRIBE THE RUN THAT HAPPENED. This was hardcoded to say the three
     # governance agents "did not run", which was true while the roster was a fixed Phase-2 trio and became
     # a false statement in a published report the moment Phase 3 staffed them (ADR-0034). A report that
@@ -592,6 +605,7 @@ def _narration(
         executive_summary=(fsa.narrative if fsa is not None else ""),
         business_model_plain=business,
         forensic_narrative=(fa.narrative if fa is not None else ""),
+        sector_narrative=sector,
         management_narrative=management,
         valuation_narrative=valuation,
         thesis=(ba.narrative if ba is not None else ""),
