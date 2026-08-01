@@ -134,12 +134,12 @@ sections that discovery had never opened. Remaining in this phase:
 1. ~~wire `deep_dive` to the roster~~ DONE (ADR-0033) — `--phase`/`--documents`; coverage gaps reach the
    report but never the verdict; pre-flight names unstaffed agents. DONE (ADR-0034): 8 agents now appear in a published report's
    `agent_versions`. Shareholding is now registered as grade-A quarterly facts and CITED in the report (ADR-0035).
-   The transcript parser is built and verified against all 13 real Alkyl Amines transcripts (ADR-0036,
-   `adapters/india/transcripts.py`): dated verbatim guidance quotes, statement/question separation,
-   unit-anchored values only. Remaining: register transcript guidance as citable facts + wire it into the
-   agent packet (the ADR-0035 step for transcripts), the older shareholding layout (14 quarters that fail
-   at location), and peer ingest for `sector_analyst`.
-2. ~~parser for transcripts (guidance extraction)~~ DONE (ADR-0036); registration + packet wiring remaining
+   The transcript chain is complete (ADR-0036/0037): `adapters/india/transcripts.py` parses dated verbatim
+   guidance quotes (statement/question separation, unit-anchored values only), `core/ingest/transcripts.py`
+   registers them grade-A, and `run_deep_dive` feeds the series to the packet as `management_guidance` with
+   citable ids — 57 guided figures across 13 real quarters FY20-FY26. Remaining: the older shareholding
+   layout (14 quarters that fail at location), and peer ingest for `sector_analyst`.
+2. ~~parser + registration for transcripts (guidance extraction)~~ DONE (ADR-0036/0037)
 3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
 
 

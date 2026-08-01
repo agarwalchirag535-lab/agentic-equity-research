@@ -989,3 +989,30 @@ submission dates strictly after them, 12 of 13 quarters stated (one inferred and
 `derived-from-call-date`), 77 guidance statements with 57 unit-anchored values across FY20-FY26. The
 announcement is refused with its reason. Registration as citable facts is the next step — this ADR ends
 where ADR-0035 began.
+
+### ADR-0037 — Guidance registered: a promise is a fact about management, dated when it became public
+**Context.** ADR-0036 parsed the transcripts and ended where ADR-0035 began: a parsed quote nothing can cite
+is not evidence. `transcript_analyst` still could not write "management guided 15%" because no fact carried
+that value.
+
+**Decision.** `core/ingest/transcripts.py` registers each guided figure as a grade-A fact — grade A because
+the transcript is the company's own Reg-30 filing: the provenance of the *statement* is primary even though
+the statement itself is a promise, and the house standard already frames it as data about management, not
+the business. The verbatim sentence and its page travel in the locator, so the citation gate holds an agent
+to exactly what was said and where. Only parser-classified `statement` sentences register; an analyst's
+question never does. `published_at` is the Reg-30 letter's own date, falling back to the five-working-day
+deadline taken as seven calendar days — the same never-earlier-than-public direction as Reg. 31 in
+ADR-0035.
+
+**The resolver would have eaten the series.** One call quarter carries several guided figures under one
+topic ("10% to 15%" is two facts), and `query_fact`'s per-(metric, period) resolution — right for a
+balance-sheet row — would return one and silently drop the rest. `FactStore.query_metric_prefix` reads the
+whole series point-in-time, oldest call first, and `run_deep_dive` feeds it to the packet as
+`management_guidance` (quote, value, `cite_as`), extends the known-citation set with it, and keys the run
+id on the guidance ids (Law 5: different transcript inputs are a different run).
+
+**Result.** On the real manifest: 57 guided figures registered across 13 quarters FY20-FY26; the May-2022
+announcement refused with its reason; the one transcript without a letter date dated by deadline. A
+scripted agent citing "15% [fact:TRN-Q4FY25-…:guidance_volume_growth:…]" passes the citation gate — the
+test the whole chain exists to satisfy. Known cosmetic debt: a running header occasionally joins a quote
+("Alkyl Amines Chemicals Limited May 06, 2026 And given…"); values and pages are unaffected.

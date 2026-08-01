@@ -73,7 +73,7 @@ from firm.core.config import (
     report_policy,
     universal_forensic_thresholds,
 )
-from firm.core.facts.store import FactStore
+from firm.core.facts.store import Fact, FactStore
 from firm.core.llm.cache import make_key
 from firm.core.llm.provider import Provider, StaticProvider
 from firm.core.monitoring.predictions import Prediction, log_report_predictions
@@ -233,7 +233,7 @@ def feasibility_at_target(derived: DerivedSet, policy: Mapping[str, Any],
 def agent_facts_payload(
     derived: DerivedSet, evaluation: CheckEvaluation, screen: quality.ForensicScreenResult,
     feasibility: multibagger.FeasibilityResult | None, models: Sequence[BusinessModel],
-    notes: NotesReview,
+    notes: NotesReview, guidance: Sequence[Fact] = (),
 ) -> dict[str, Any]:
     """What the agents are shown: computed numbers WITH their fact ids, and nothing they must compute.
 
@@ -273,6 +273,21 @@ def agent_facts_payload(
             "substantive_share": notes.substantive_share,
             "disclosure_gaps": list(notes.disclosure_gaps),
         },
+        # Management's own forward numbers, quoted verbatim from Reg-30 transcripts (ADR-0036). A quarter
+        # is present only when a transcript was ingested for it; the series reads oldest first so drift is
+        # visible as a sequence. House standard applies: these are data about MANAGEMENT, not the business.
+        "management_guidance": [
+            {
+                "period": f.period,
+                "topic": f.metric.removeprefix("guidance:"),
+                "value": f.value,
+                "unit": f.unit,
+                "quoted": f.locator,
+                "cite_as": f"[fact:{f.fact_id}]",
+                "grade": f.grade,
+            }
+            for f in guidance
+        ],
         "feasibility_gate": None if feasibility is None else {
             "target": "config report.target_return_multiple over report.target_years",
             "g_required": feasibility.g_required,
@@ -587,15 +602,22 @@ def run_deep_dive(
     )
 
     # ---- 4. the agents: narration only -----------------------------------------------------------
-    payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes)
+    # Guidance is read through its own point-in-time query, not CompanyFacts: one call quarter carries
+    # several guided figures under one metric, and the per-(metric, period) resolution that is right for a
+    # balance-sheet row would silently drop all but one of them (ADR-0036).
+    guidance = store.query_metric_prefix(ticker, "guidance:", as_of)
+    payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes,
+                                  guidance=guidance)
     packets = build_packets(payload, agents_dir=agents_path, repo_root=repo, agents=agents)
-    known_fact_ids = set(facts.all_fact_ids()) | {f"derived:{n}" for n in derived.values}
+    known_fact_ids = (set(facts.all_fact_ids()) | {f"derived:{n}" for n in derived.values}
+                      | {f.fact_id for f in guidance})
     # {fact_id: value} so a number cited to a real fact must state that fact's figure (Law 1): the most
     # plausible way an LLM corrupts a number is to keep the citation and change the digits.
     known_values: dict[str, float] = {
         f.fact_id: f.value for metric in facts.series for f in facts.series[metric].values()
     }
     known_values.update({f"derived:{n}": d.value for n, d in derived.values.items()})
+    known_values.update({f.fact_id: f.value for f in guidance})
 
     # PRE-FLIGHT (ADR-0033). On the Claude-in-the-loop path (`--answers`) an agent with no answer file used
     # to fall through to whatever provider was configured — by default the local stub, whose output fails
@@ -615,7 +637,9 @@ def run_deep_dive(
 
     run = _AgentRun()
     specs = [spec for spec, _, _ in packets.values()]
-    run_id = compute_run_id(ticker, as_of, specs, facts.all_fact_ids())
+    # Guidance ids join the key: two runs seeing different transcript inputs are different runs (Law 5).
+    run_id = compute_run_id(
+        ticker, as_of, specs, tuple(facts.all_fact_ids()) + tuple(f.fact_id for f in guidance))
 
     for name, (spec, system, user) in packets.items():
         agent_provider = provider

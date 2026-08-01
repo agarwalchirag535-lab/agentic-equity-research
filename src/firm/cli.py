@@ -360,6 +360,16 @@ def deep_dive(
             if governance:
                 typer.echo(f"  governance: {len(registered)} of {len(governance)} shareholding filings "
                            f"registered as facts")
+            # And the concall transcripts (ADR-0036), so `transcript_analyst` can quote management's own
+            # guided figures instead of scoring a drift it was never shown.
+            from firm.core.ingest.transcripts import ingest_transcript_manifest
+
+            calls = ingest_transcript_manifest(
+                store, manifest_json, bronze=f"{bronze}/{ticker}", as_of=run_date)
+            quoted = [c for c in calls if c.fact_ids]
+            if calls:
+                typer.echo(f"  guidance: {sum(len(c.fact_ids) for c in quoted)} guided figures from "
+                           f"{len(quoted)} of {len(calls)} transcripts registered as facts")
         if latest_filing is not None:
             satisfied |= {"financials", "filing", "segments"}
         available: tuple[str, ...] = tuple(sorted(satisfied))
@@ -447,6 +457,7 @@ def packets(
     run_date = date.fromisoformat(as_of) if as_of else date.today()
     store = FactStore(db)
     facts = D.load_company_facts(store, ticker, run_date)
+    guidance = store.query_metric_prefix(ticker, "guidance:", run_date)
     store.close()
     derived = D.derive_metrics(facts)
     models = detect_models(statement_shape(facts, derived), model_detection_thresholds())
@@ -463,7 +474,7 @@ def packets(
 
     payload = agent_facts_payload(
         derived, evaluation, screen, feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
-        models, NotesReview())
+        models, NotesReview(), guidance=guidance)
     # Packets follow the ROSTER, not a fixed trio (ADR-0034): a phase-3 run that plans eight agents needs
     # eight packets, or it can never be staffed and the phase stalls at "wired, not staffed".
     satisfied: set[str] = {"financials", "filing", "segments"}

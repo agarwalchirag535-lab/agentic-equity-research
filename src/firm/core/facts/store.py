@@ -164,3 +164,24 @@ class FactStore:
             (ticker, metric, period),
         ).fetchall()
         return [self._row_to_fact(row) for row in rows]
+
+    def query_metric_prefix(self, ticker: str, prefix: str, as_of: date) -> list[Fact]:
+        """Point-in-time read (Law 3) of EVERY fact whose metric starts with ``prefix``.
+
+        `query_fact` resolves (metric, period) to a single best fact, which is right for a balance-sheet
+        row and wrong for guidance: one call quarter carries several guided figures ("Rs. 150 crores
+        capex", "10% to 15% growth"), each its own fact under the same metric label. This returns them
+        all, oldest quarter first, so a reader sees guidance as the time series it is. The
+        `published_at <= as_of` filter is identical to `query_fact`'s — Law 3 lives here, never at the
+        agent layer.
+        """
+        rows = self._conn.execute(
+            """
+            SELECT f.*, d.published_at, d.grade, d.extractor_version
+            FROM facts f JOIN documents d ON f.doc_id = d.doc_id
+            WHERE f.ticker = ? AND f.metric LIKE ? || '%' AND d.published_at <= ?
+            ORDER BY d.published_at ASC, f.rowid ASC
+            """,
+            (ticker, prefix, as_of.isoformat()),
+        ).fetchall()
+        return [self._row_to_fact(row) for row in rows]

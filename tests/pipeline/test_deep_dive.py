@@ -96,6 +96,51 @@ def test_packet_payload_names_every_unavailable_metric(store):
     assert payload["business_models_detected"] == ["none matched — universal checks only"]
 
 
+def _register_guidance(store, ticker):
+    """One transcript with a guided range, dated well before AS_OF, ids deterministic."""
+    from firm.adapters.india.transcripts import GuidanceStatement, GuidanceValue, TranscriptSummary
+    from firm.core.ingest.transcripts import register_transcript
+
+    return register_transcript(store, ticker, "call.pdf", TranscriptSummary(
+        located=True, call_date="2025-05-12", cover_date="2025-05-16",
+        period="Q4FY25", period_basis="stated",
+        guidance=(GuidanceStatement(
+            page=16, quote="So, we expect double digit growth in next year around 10% to 15%.",
+            kind="statement", topic="volume_growth",
+            values=(GuidanceValue(10.0, "pct"), GuidanceValue(15.0, "pct")),
+        ),),
+    ))
+
+
+def test_payload_carries_guidance_as_quotes_with_citable_ids(store):
+    _, derived = _derived(store, "ACME")
+    _register_guidance(store, "ACME")
+    guidance = store.query_metric_prefix("ACME", "guidance:", AS_OF)
+    payload = agent_facts_payload(
+        derived, CheckEvaluation((), ForensicMetrics(), ()),
+        ForensicScreenResult(ForensicVerdict.PASS, False, []), None, [], NotesReview(),
+        guidance=guidance)
+
+    rows = payload["management_guidance"]
+    assert [r["value"] for r in rows] == [10.0, 15.0]
+    assert all(r["topic"] == "volume_growth" and "double digit" in r["quoted"] for r in rows)
+    assert rows[1]["cite_as"].startswith("[fact:TRN-Q4FY25-call.pdf:guidance_volume_growth:")
+
+
+def test_an_agent_can_cite_managements_guided_figure(store):
+    """The whole point of registration (ADR-0035/0036): a quoted guidance number passes the citation
+    gate because the fact is real and the value matches — an agent received its own evidence."""
+    seed_store(store, "ACME", clean_series())
+    result = _register_guidance(store, "ACME")
+    answers = clean_answers("ACME", business_analyst={
+        "narrative": "Management has guided volume growth toward 15% "
+                     f"[fact:{result.fact_ids[1]}] on the Q4FY25 call; this note weighs that "
+                     "promise as data about management, not the business.",
+    })
+    run = run_deep_dive(store, "ACME", AS_OF, answers=answers, write=False)
+    assert run.report is not None  # the citation survived the gate; a fake id or value would have raised
+
+
 def test_write_packets_then_read_answers_round_trips(store, tmp_path):
     """The no-API-key path: packets to disk, answered by hand, read back as provider output."""
     _, derived = _derived(store, "ACME")
