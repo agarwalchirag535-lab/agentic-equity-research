@@ -24,8 +24,8 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 0 — skeleton + contracts | ✅ complete |
 | 1 — compute layer | ✅ complete (100% coverage enforced by `make cov`) |
 | **2 — three agents, deep** | ✅ **complete — acceptance test passes; first report published (§6a)** |
-| 3 — full roster + orchestrator | ⚠️ DAG/gates/budget code exists; the other 11 agents are not wired |
-| 4 — judgment tier | ⚠️ agent prompts exist as markdown; no validated outputs flowing |
+| 3 — full roster + orchestrator | 🔶 9 agents run; every data prerequisite satisfiable (ADR-0030–0039); acceptance = a phase-3 report published with all nine narrating, which has not been run yet |
+| 4 — judgment tier | ⚠️ prompts exist as markdown; numeric fields now registered null-only (ADR-0040) so wiring cannot open a Law-1 hole; **needs the owner's explicit go per CLAUDE.md build order** |
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
@@ -416,17 +416,33 @@ no AR walked). Verdict **`INSUFFICIENT_DISCLOSURE`**: 4 of 7 applicable checks h
 That verdict is the system working, not failing: on a grade-B snapshot with the notes unread, a thesis
 would have been the dishonest answer. It is also a concrete work list — see §3A.
 
+**Current report** — `reports/ALKYLAMINE/2026-07-23-0c32a293299a/`, and it superseded the paragraph
+above: verdict **`QUALITY_WRONG_PRICE`**, 8 agents narrating, confidence 0.55, 86% of the playbook
+evaluable, 64% of notes substantively dispositioned, grade-A citations throughout. Its own stated limits
+(no transcript corpus, ownership visible only from Q2FY23, no peer) are exactly what ADR-0036–0039 then
+closed — **no report has been published since**, so the phase-3 re-run is what converts that work into
+output. §7 is written against this state, not the paragraph above.
+
 ## 7. Suggested next step
 
-**§3A, close the data gap the ALKYLAMINE run exposed** — specifically the cash balance and the
-receivables/inventory rows out of the audited AR, plus exposing `backfill_filings()` on the CLI so a run
-can fetch and walk the filing itself. That single push moves real companies from
-`INSUFFICIENT_DISCLOSURE` to a verdict with a thesis behind it, and it is the prerequisite for the golden
-set having anything to score.
+Updated 2026-08-01, in order:
 
-Then §3C (logging the now-deterministic, dated `Criterion` objects as predictions — a small wire-up), then
-Phase 3, then the golden set.
+1. **Re-run ALKYLAMINE at `--phase 3` with `--documents` and `--peer BALAMINES`** — the phase-3
+   acceptance run. All of ADR-0036–0039 (guidance series, 26 ownership quarters, peer block) is latent
+   until a report carries it. Nine agents should narrate, `sector_analyst` for the first time.
+2. **Substantive note coverage 9% → 50% (§0b)** — the owner's core directive is line-by-line depth, and
+   this is the largest gap between what the docs claim and what the system reads. One note category at a
+   time (inventory, receivables, borrowings, contingent liabilities, tax, leases, employee benefits,
+   segment), on the `related_party_summary` pattern.
+3. **Phase 4, the judgment tier — blocked on the owner's explicit go (CLAUDE.md build order).** The firm
+   currently rejects far better than it affirms, and affirming is half the mandate. The Law-1 hole its
+   numeric fields would have opened is closed pre-emptively (ADR-0040): every field is registered
+   null-only until wiring gives it a compute source.
+4. **The golden set.** The old argument for deferring it — "wait until the pipeline can produce a
+   substantive verdict" — expired when `QUALITY_WRONG_PRICE` published. It is the honest measure and
+   every threshold is provisional until it runs.
 
-Deliberate recommendation *against* doing the golden set first, despite it being the honest measure: it is
-the single biggest lift in the project, and it is far more useful once the pipeline can produce a
-substantive verdict on a company rather than an opacity finding.
+Also on the board, from the owner's 2026-08-01 goal statement: a **sector sweep** (`firm sweep`-style
+orchestration: sector → company list → one report each — a thin loop over the existing engine, and the
+golden set is itself a 30-company sweep), and a **questions-for-management artifact** assembled from the
+open_questions + disclosure_backlog the reports already emit.

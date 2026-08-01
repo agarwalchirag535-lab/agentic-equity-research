@@ -126,6 +126,13 @@ def plan_agents(
 
 #: Agent numeric field -> the derived metric it must equal. `None` = the compute layer cannot produce it
 #: in this pipeline, so the agent MUST return null (Law 1: no LLM-authored numbers).
+#:
+#: EVERY top-level numeric field of every agent schema must appear here — `_numeric_discipline` checks
+#: only what is registered, so an unregistered field is a number nobody validates. That hole was real:
+#: the entire judgment tier's numeric fields (`base_case_value_per_share`, `position_size_pct`, ...) were
+#: absent, latent only because Phase 4 had not run yet. `tests/schemas/test_numeric_registry.py` now
+#: fails the build when a schema gains a numeric field that is neither registered here nor explicitly
+#: classified as a judgment score below — coverage is structural, not remembered (the ADR-0021 lesson).
 NUMERIC_FIELD_SOURCES: Mapping[str, str | None] = {
     "incremental_roic": "incremental_roic_3y",
     "cfo_to_ebitda": "cfo_to_ebitda_latest",
@@ -134,7 +141,41 @@ NUMERIC_FIELD_SOURCES: Mapping[str, str | None] = {
     "customer_concentration": None,
     "promise_delivery_score": None,
     "promoter_pledge_pct": None,
+    # unit_economics_analyst — facts about the business; must trace to filings/compute or stay null.
+    "units_today": None,
+    "units_plausible_in_7y": None,
+    "contribution_margin_per_unit": None,
+    "payback_years": None,
+    # ownership_flows_analyst — ADR-0007 wants smart money QUALITY-WEIGHTED, i.e. computed; until that
+    # computation exists the score stays null and the judgment lives in prose, where it is validated.
+    "smart_money_score": None,
+    "days_to_exit_at_20pct_adv": None,
+    # Phase-4 judgment tier — none of these may carry an LLM-authored number. When Phase 4 is wired,
+    # each moves to a real compute source (`reverse_dcf`, `scenarios`) as part of that wiring, not before.
+    "reverse_dcf_implied_growth": None,
+    "base_case_value_per_share": None,
+    "base_rate_of_failure": None,
+    "position_size_pct": None,
+    "expectancy": None,
+    # Phase-5 post_mortem — produced by core/monitoring (resolver, Brier), never by the agent.
+    "resolved_predictions": None,
+    "brier": None,
 }
+
+#: Nested-model numeric fields an agent IS permitted to author, as `ClassName.field`. These are bounded
+#: judgment scores, not financial facts — Law 1 governs financial numbers, and the house style *requires*
+#: agents to state numeric confidence. Anything numeric and nested that is not listed here fails the
+#: registry test, so adding a nested number forces this classification decision.
+JUDGMENT_NUMERIC_FIELDS: frozenset[str] = frozenset({
+    "Confidence.value",            # house style §5: numeric confidence, justified
+    "Confidence.evidence_count",   # a count of the citations backing the claim
+    "SectorScore.tailwind_score",  # bounded [-1, 1] sector judgment by design
+    "SectorScore.horizon_years",   # the judgment's stated horizon
+    # Phase-4 scenario lines: probability is judgment; return_multiple must be re-visited when the
+    # valuation wiring lands — it should tie to core/compute/scenarios.py, and this entry removed then.
+    "ScenarioLine.probability",
+    "ScenarioLine.return_multiple",
+})
 
 _ARITHMETIC_REL_TOL = 0.01   # 1%: an agent restating a computed ratio may round it, not change it
 

@@ -41,8 +41,10 @@ class BusinessAnalystOutput(AgentOutputBase):
 
 class UnitEconomicsOutput(AgentOutputBase):
     unit_definition: str
-    units_today: int
-    units_plausible_in_7y: int
+    # Optional, not int-with-0: "0 units" meaning unknown is the ForensicMetrics boolean defect in
+    # integer form — a reader cannot tell "counted, and zero" from "never counted". Unknown is None.
+    units_today: int | None = None
+    units_plausible_in_7y: int | None = None
     contribution_margin_per_unit: float | None = None
     payback_years: float | None = None
 

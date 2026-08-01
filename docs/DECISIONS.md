@@ -1101,3 +1101,30 @@ net margin: Alkyl Amines is the larger business (₹1,571.8cr vs ₹1,273.6cr), 
 rupee of sales (11.83% vs 12.27%), collects markedly faster (53.6 days vs 70.4), and grew sales at 6.1%
 CAGR against the peer's 0.9% over FY21-FY25. Both sides of every row are citable, and a scripted agent
 quoting the peer's figure passes the citation gate.
+
+### ADR-0040 — Every numeric agent field is classified, or the build fails
+**Context.** `_numeric_discipline` validates only the fields present in `NUMERIC_FIELD_SOURCES`, and the
+citation validator walks only strings. A numeric schema field in neither place is therefore a number
+nobody checks. Thirteen sat in that gap — including every numeric field of the Phase-4 judgment tier
+(`base_case_value_per_share`, `reverse_dcf_implied_growth`, `position_size_pct`, `expectancy`) — latent
+only because Phase 4 has not run. This is the ADR-0021 defect class again: coverage that lives in a
+hand-enumerated list rots as schemas grow, and the audit that found fabricated figures walking through
+`what_it_does` proved where that ends.
+
+**Decision.** Three parts, the third being the one that matters:
+1. Every top-level numeric field is registered. The judgment tier's are `None` — null-only — until
+   Phase-4 wiring gives each a real compute source (`reverse_dcf`, `scenarios`); relaxing an entry is
+   part of that wiring, never a default.
+2. Nested numeric fields get an explicit classification: `JUDGMENT_NUMERIC_FIELDS` names the bounded
+   scores an agent is *permitted* to author (`Confidence.value`, `SectorScore.tailwind_score`, scenario
+   probabilities) — Law 1 governs financial numbers, and the house style requires numeric confidence.
+   `ScenarioLine.return_multiple` is flagged in place: it must move to a compute source when valuation
+   wires.
+3. `tests/schemas/test_numeric_registry.py` walks every agent schema recursively and fails when a
+   numeric field is neither registered nor classified — and fails on ghost entries too, since a registry
+   row naming a renamed field silently validates nothing. Adding a number now forces a decision at
+   build time instead of a hole at publish time.
+
+**Also fixed while here:** `UnitEconomicsOutput.units_today` / `units_plausible_in_7y` were required
+ints, so 0 meant both "counted, and zero" and "never counted" — the `ForensicMetrics` boolean defect in
+integer form. They are `int | None` now; unknown is None.
