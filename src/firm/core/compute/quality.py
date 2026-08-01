@@ -166,6 +166,52 @@ def disputed_balance_share(
     return share, share > limit
 
 
+def finished_goods_buildup(
+    finished_goods: float, gross_inventory: float,
+    prior_finished_goods: float, prior_gross_inventory: float, limit: float,
+) -> tuple[float, bool]:
+    """Change in the finished-goods SHARE of inventory, in share points — goods the channel did not take.
+
+    The share, not the level: a company that grows 30% and holds its mix constant is building stock to
+    sell, while one whose mix tilts toward finished goods is producing into a market that is not clearing.
+    The total inventory line moves identically in both cases, which is why the stock-flow check
+    (`inventory_divergent`) cannot tell them apart and this one can.
+    """
+    if gross_inventory <= 0 or prior_gross_inventory <= 0:
+        raise ValueError("gross inventory must be positive in both periods")
+    shift = finished_goods / gross_inventory - prior_finished_goods / prior_gross_inventory
+    return shift, shift > limit
+
+
+def inventory_provision_absent(
+    provision: float, gross_inventory: float, floor: float
+) -> tuple[float, bool]:
+    """Write-down carried against inventory, as a share of the gross book.
+
+    A material book with no provision at all is the finding. Every real inventory contains something that
+    will not sell at cost — spares for retired plant, a discontinued grade, a returned batch — so a company
+    reporting exactly zero is either newly built or not looking. It is a MEDIUM signal precisely because
+    the innocent explanations are common.
+    """
+    if gross_inventory <= 0:
+        raise ValueError("gross_inventory must be positive")
+    share = provision / gross_inventory
+    return share, share < floor
+
+
+def contingent_to_net_worth(contingent: float, net_worth: float, limit: float) -> tuple[float, bool]:
+    """Claims not acknowledged as debt, against net worth — what a bad day in court would cost.
+
+    These are disclosed precisely because the company does not expect to pay them. That is a judgement,
+    and sizing it against net worth is how a reader decides whether to accept it: a claim worth 3% of
+    equity is a footnote, and one worth 60% is the thesis.
+    """
+    if net_worth <= 0:
+        raise ValueError("net_worth must be positive")
+    ratio = contingent / net_worth
+    return ratio, ratio > limit
+
+
 def ageing_reconciliation_gap(schedule_total: float, statement_total: float) -> float:
     """|ageing schedule total − the statement line it ages| as a share of the statement line.
 
@@ -540,9 +586,13 @@ class ForensicMetrics:
     receivables_ageing_tail: bool = False
     receivables_disputed: bool = False
     payables_ageing_tail: bool = False
+    #: Read from the notes rather than the face of the statements (ADR-0040).
+    finished_goods_buildup: bool = False
+    inventory_provision_absent: bool = False
     # Model-specific signals (ADAPTIVE_FORENSICS §2) — fired only when the playbook selects them
     contract_asset_divergent: bool = False
     guarantees_heavy: bool = False
+    contingent_liabilities_heavy: bool = False
     capitalised_cost_heavy: bool = False
     adjusted_ebitda_gap: bool = False
     promoter_lending: bool = False
@@ -613,6 +663,15 @@ def forensic_screen(
             flags.append(Flag("payables_ageing_tail", Severity.MEDIUM,
                               "outsized share of trade payables overdue past a year — the company is "
                               "funding itself on its suppliers"))
+        # Inventory composition (ADR-0040) — meaningless for a lender, like every other stock signal here.
+        if metrics.finished_goods_buildup:
+            flags.append(Flag("finished_goods_buildup", Severity.MEDIUM,
+                              "inventory mix tilting toward finished goods — production the channel is "
+                              "not clearing, which the total inventory line cannot show"))
+        if metrics.inventory_provision_absent:
+            flags.append(Flag("inventory_provision_absent", Severity.MEDIUM,
+                              "a material inventory book carried with no write-down at all — every real "
+                              "inventory contains something that will not sell at cost"))
     else:  # FINANCIAL — Beneish/Piotroski/accruals suppressed (ADR-0002)
         if metrics.gnpa_drift:
             flags.append(Flag("gnpa_drift", Severity.HIGH, "GNPA ratio rising beyond threshold"))
@@ -657,6 +716,10 @@ def forensic_screen(
     if metrics.guarantees_heavy:
         flags.append(Flag("guarantees_heavy", Severity.HIGH,
                           "off-balance-sheet guarantees large versus net worth"))
+    if metrics.contingent_liabilities_heavy:
+        flags.append(Flag("contingent_liabilities_heavy", Severity.MEDIUM,
+                          "claims not acknowledged as debt are large against net worth — the company's "
+                          "judgement that it will not pay them is load-bearing"))
     if metrics.contract_asset_divergent:
         flags.append(Flag("contract_asset_divergent", Severity.HIGH,
                           "unbilled revenue outrunning billed revenue — profit is an estimate"))

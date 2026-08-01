@@ -1,6 +1,7 @@
 """Tests for forensic/earnings-quality metrics. Aims for full coverage of firm.core.compute.quality."""
 
 import pytest
+from pytest import approx
 
 from firm.core.compute.quality import (
     BeneishYear,
@@ -13,6 +14,9 @@ from firm.core.compute.quality import (
     ageing_cwip_flag,
     ageing_reconciliation_gap,
     ageing_tail_share,
+    contingent_to_net_worth,
+    finished_goods_buildup,
+    inventory_provision_absent,
     disputed_balance_share,
     suspended_capex_share,
     beneish_m_score,
@@ -122,6 +126,45 @@ def test_disputed_balance_share_sums_both_admissions():
     assert disputed_balance_share(1.0, 5.0, 210.0, 0.02)[1] is True     # neither alone would fire
     with pytest.raises(ValueError):
         disputed_balance_share(1.0, 1.0, 0.0, 0.02)
+
+
+# ---- read from inside the notes (ADR-0040) -----------------------------------------------------
+
+
+def test_finished_goods_buildup_measures_the_MIX_not_the_level():
+    """The whole point: total inventory moves identically whether the build-up is inputs or output."""
+    # Fraud fixture: 27/90 -> 70/140, i.e. 30% -> 50% of the book is goods nobody bought.
+    shift, flagged = finished_goods_buildup(70.0, 140.0, 27.0, 90.0, 0.08)
+    assert shift == approx(0.20) and flagged is True
+    # The same 55% growth in the total, with the mix held at 30% — a company building stock to sell.
+    # The level check cannot tell this from the case above; that is exactly why this one exists.
+    steady, ok = finished_goods_buildup(42.0, 140.0, 27.0, 90.0, 0.08)
+    assert steady == approx(0.0, abs=1e-9) and ok is False
+    # A mix moving the other way is a finding too, and must not fire this check.
+    assert finished_goods_buildup(38.0, 97.0, 36.0, 91.0, 0.08)[1] is False
+    with pytest.raises(ValueError):
+        finished_goods_buildup(70.0, 0.0, 27.0, 90.0, 0.08)
+    with pytest.raises(ValueError):
+        finished_goods_buildup(70.0, 140.0, 27.0, 0.0, 0.08)
+
+
+def test_inventory_provision_absent_fires_on_zero_and_not_on_a_small_real_one():
+    """Balaji Amines FY25: ₹250.58cr of inventory, not one rupee written down against it."""
+    share, flagged = inventory_provision_absent(0.0, 250.5751, 0.001)
+    assert share == 0.0 and flagged is True
+    # Alkyl Amines carries ₹0.67cr against ₹122.81cr — small, but somebody looked.
+    share, ok = inventory_provision_absent(0.6749, 122.8056, 0.001)
+    assert share == approx(0.0055, abs=1e-4) and ok is False
+    with pytest.raises(ValueError):
+        inventory_provision_absent(1.0, 0.0, 0.001)
+
+
+def test_contingent_to_net_worth_sizes_a_judgement_the_company_has_made():
+    ratio, flagged = contingent_to_net_worth(170.0, 710.0, 0.15)
+    assert ratio == approx(0.2394, abs=1e-4) and flagged is True
+    assert contingent_to_net_worth(36.8429, 660.0, 0.15)[1] is False
+    with pytest.raises(ValueError):
+        contingent_to_net_worth(170.0, 0.0, 0.15)
 
 
 def test_ageing_reconciliation_gap_is_a_measurement_not_a_verdict():

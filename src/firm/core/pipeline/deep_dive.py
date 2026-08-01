@@ -274,7 +274,10 @@ def quarterly_series(facts: CompanyFacts | None) -> dict[str, list[dict[str, Any
 
 
 def ageing_series(facts: CompanyFacts | None) -> dict[str, dict[str, Any]]:
-    """The Schedule III ageing figures, rendered so an agent can cite them (ADR-0039).
+    """The Schedule III ageing figures and the note-body figures, so an agent can cite them.
+
+    ADR-0039 for the ageing schedules, ADR-0040 for the inventory composition, contingent liabilities and
+    borrowings read out of the note bodies.
 
     The same "wired, not working" trap ADR-0036 caught for shareholding: the parser can read every bucket
     of every table and the *agent* still has nothing, because the packet is the agent's entire world. A
@@ -287,7 +290,7 @@ def ageing_series(facts: CompanyFacts | None) -> dict[str, dict[str, Any]]:
     if facts is None:
         return {}
     out: dict[str, dict[str, Any]] = {}
-    for metric in D.AGEING_METRICS:
+    for metric in (*D.AGEING_METRICS, *D.NOTES_METRICS):
         periods = facts.series.get(metric) or {}
         for period, fact in sorted(periods.items()):
             out[f"{metric} {period}"] = {

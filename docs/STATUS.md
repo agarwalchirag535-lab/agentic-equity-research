@@ -6,7 +6,7 @@
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0039). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0040). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -29,7 +29,7 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 663 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 693 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -55,7 +55,8 @@ Phase-2 work. Not merged to `main`.
 
 **2a. Forensic checks in `quality.py`** — cash-reality (ADR-0006: cash-vs-interest, cash+debt paradox,
 cumulative CFO/PAT, ageing CWIP) · Schedule III ageing schedules (ADR-0039: suspended capex, receivable and
-payable tails, disputed/credit-impaired balances, schedule-vs-statement reconciliation) ·
+payable tails, disputed/credit-impaired balances, schedule-vs-statement reconciliation) · note bodies
+(ADR-0040: inventory mix, inventory write-down, contingent liabilities and guarantees vs net worth) ·
 sector-branched lender checks (ADR-0002) · originate-to-sell
 (ADR-0012: gain-on-sale reliance, provision-vs-book divergence, reserve suppression, held-for-sale
 zero-reserve) · universal SPEC §5 (receivables/inventory stock-flow divergence, other-income share,
@@ -177,10 +178,33 @@ depends on, so it needs its own tests: a restatement must still be invisible bef
 a grade-A filing must not resurrect a figure the company later corrected.
 </details>
 
-### 0b. Substantive note coverage is 22% of 45 notes against a 50% floor
-Not a defect — the floor is right and the coverage is not there yet. Needs note-content readers for inventory,
-borrowings, contingent liabilities, tax, leases, employee benefits and segment, on the pattern of
-`notes_content.related_party_summary`. Several sessions of work, one note category at a time.
+### 0b. Substantive note coverage is 26% of 57 notes against a 50% floor
+Not a defect — the floor is right and the coverage is not there yet. Still needs note-content readers for
+tax, leases, employee benefits, segment and PPE, on the pattern of `notes_content.inventory_summary`.
+Several sessions of work, one note category at a time.
+
+**Read the denominator before reading the ratio.** It went 45 → 57 notes in ADR-0040 because the
+enumerator could not see a **lettered sub-note**: "36a Contingent Liabilities and Commitments" and "36b
+Commitments" matched no heading form, so ten headings on the FY26 filing were invisible and could never
+be dispositioned. Coverage was reporting 100% of a denominator that silently excluded the two most
+forensically important disclosures in an Indian annual report. So 22%-of-45 → 26%-of-57 is 10 notes read
+becoming 15, against a denominator that is now honest.
+
+**Three note bodies are READ and WIRED (ADR-0040)** — inventories, borrowings and contingent liabilities,
+on the rails ADR-0039 built. Four new checks, of which `guarantees_heavy` had existed since ADR-0020 with
+**no data behind it**. Verified on **two** real filings, deliberately, because every parser in this repo
+that was tested against one filing broke on the next:
+- **ALKYLAMINE FY26** — inventory ₹122.81cr gross reconciled, finished goods 44.3% (down from 49.1%),
+  ₹0.67cr written down, contingent claims ₹36.84cr = 5.6% of net worth, and **no guarantees given at
+  all**. All four checks PASS, each printing its figure and its limit.
+- **BALAMINES FY25** — **`inventory_provision_absent` FLAGS: ₹250.58cr of inventory with not one rupee
+  written down against it.** `guarantees_heavy` correctly reports a corporate guarantee extended to a
+  subsidiary that the filing does not size — UNAVAILABLE, with the reason carrying the finding.
+
+The `guarantees_heavy` treatment is the tri-state discipline at its sharpest, and worth copying: a
+located note disclosing no guarantee is a **PASS** ("we looked and there are none" is a governance
+finding); a guarantee disclosed without an amount is **UNAVAILABLE** with the exposure named in the
+reason. Only a run that never opened the note reports a bare absence.
 
 **The ageing schedules are READ and WIRED (ADR-0038 parsed them, ADR-0039 connected them).** A figure in an
 ageing table now travels fact → derivation → check → note disposition → agent packet → published page.
@@ -436,6 +460,30 @@ blank — see the ALKYLAMINE note.
   ">3 years" bucket is not a three-year-old asset, and without the floor every table with a non-empty tail
   column dates the whole block at the maximum — turning a real measurement back into the assumption it
   was supposed to replace.
+- **The ₹ glyph is sometimes a capital H.** Several Indian filings set ₹ in a custom-encoded font and text
+  extraction renders every one as "H" — Balaji Amines declares "(All amounts are in H lakh)". The
+  declaration matched no rupee pattern, `page_unit_hint` returned '', and because ADR-0024 makes an
+  unresolvable scale a *refusal*, **not one figure in that filing could be read**. Silent and total. If a
+  whole company comes back empty, check the unit declaration before anything else.
+- **Two patterns for one concept means the second one is stale.** `notes_content.py` carried its own
+  note-heading regex beside `notes.py`'s. It matched the related-party note by luck and nothing else in a
+  real filing, and nobody noticed because the one caller that existed happened to work.
+- **A note body must be bounded by the NEXT heading and by a page cap.** Enumeration is sparse wherever a
+  heading style defeats the matcher, so "the next note" can be four pages on. An unbounded body swallowed
+  the auditor's report and read "Loans or advances to promoters: NIL" as a related-party `loans_given`
+  category — firing `promoter_lending`, a SEVERE flag and automatic hard fail, on a filing that says the
+  opposite. Under-reading a note loses a figure; over-reading one invents an accusation.
+- **A note table ends at its printed Total.** Footnote prose after it carries amounts ("* Includes ₹21.07
+  lakhs deposited with CESTAT") that read as rows, which is both a phantom balance and a guaranteed
+  components-vs-total reconciliation failure — reported as a finding against the company, caused entirely
+  by reading past the end of the table.
+- **Bucket order is a judgement about what a row IS.** A claim reading "GST on know-how and corporate
+  guarantee extended on behalf of the subsidiary" is a tax demand. With `guarantees` ahead of the tax
+  heads, that whole ₹14.05cr landed in guarantees and was sized against net worth as an off-balance-sheet
+  exposure.
+- **Every Ind AS filing says "financial guarantee contracts … at fair value".** It is accounting policy,
+  present in all of them, and matching it reports an off-balance-sheet exposure against every company ever
+  read. A guarantee must be named as a kind (corporate/bank/performance) or be *given* by a verb.
 
 ## 6. Live calibration evidence (what has actually been tested on real data)
 
@@ -497,12 +545,16 @@ would have been the dishonest answer. It is also a concrete work list — see §
 
 ## 7. Suggested next step
 
-**§0b, the next note-content readers** — inventory (raw/WIP/finished split and any write-down),
-borrowings (rate per tranche, security, covenants) and contingent liabilities (guarantees, claims not
-acknowledged as debt), on the pattern of `notes_content.related_party_summary` and
-`adapters/india/ageing.py`. `substantive_share` is at 22% against a 50% floor, and those three categories
-are the largest remaining blocks of enumerated-but-unread notes. Borrowings additionally closes the
-mixed-provenance hole in `cash_debt_paradox` that ADR-0028 named and ADR-0039 only closed for CWIP.
+**§0b, the remaining note-content readers** — tax, leases, employee benefits, segment and PPE, on the
+pattern of `notes_content.inventory_summary`. `substantive_share` is at 26% against a 50% floor and those
+are the largest remaining blocks of enumerated-but-unread notes.
+
+**A levered company in the corpus** is the other near-term need, and it blocks real work. Both test
+companies are debt-free, so neither carries a standalone borrowings note: the reader is written and
+verified against real note text, but `secured_borrowings_share` and the disclosed interest rate are
+parsed and stored **without being consulted** by `cash_debt_paradox`, which still divides Interest by
+Borrowings. That is the mixed-provenance hole ADR-0028 named and ADR-0039 closed only for CWIP, and it
+cannot be closed on a company with no debt.
 
 Only after that, the broader ratio set — and ranked by materiality rather than dumped. Two hundred
 undifferentiated rows is the same shallowness the line-by-line work was meant to fix, wearing a

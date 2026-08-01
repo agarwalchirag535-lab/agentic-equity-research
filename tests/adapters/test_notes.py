@@ -69,7 +69,8 @@ def test_coverage_full_and_partial():
         NoteDisposition(29, "flag", "contingents rose vs net worth", ["p.2 l.2"]),
     ]
     pct, missing = coverage(notes, disp)
-    assert pct == pytest.approx(3 / 4) and missing == [30]    # note 30 unread -> cannot publish
+    # Labels, not integers: '36' and '36a' are different notes with different subjects (ADR-0040).
+    assert pct == pytest.approx(3 / 4) and missing == ["30"]   # note 30 unread -> cannot publish
     pct, missing = coverage(notes, disp + [NoteDisposition(30, "unknown", "RPT schedule unreadable")])
     assert pct == 1.0 and missing == []
 

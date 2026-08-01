@@ -59,7 +59,7 @@ class NotesReview:
     """
 
     coverage: float = 0.0
-    undispositioned: tuple[int, ...] = ()
+    undispositioned: tuple[str, ...] = ()
     substantive_share: float = 0.0
     notes_total: int = 0
     disclosure_gaps: tuple[str, ...] = ()

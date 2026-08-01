@@ -29,10 +29,17 @@ from typing import Sequence
 #: The bare form is the loosest, so it is anchored hard: the line must END after the title, which keeps it
 #: off balance-sheet rows ("9 Inventories 12,213.07 16,478.08" carries figures and is rejected). Combined
 #: with `notes_section_start` scoping, it does not reach the numbered paragraphs in the AGM notice or BRSR.
+#: LETTERED SUB-NOTES ARE NOTES (ADR-0040). Indian filings split a note into "36a Contingent Liabilities
+#: and Commitments" and "36b Commitments", and the earlier pattern — which required a bare integer —
+#: matched neither. On the FY26 Alkyl Amines filing that hid **ten** headings, among them the contingent
+#: liabilities and commitments notes: two of the most forensically important disclosures in an Indian
+#: annual report, invisible to the enumerator and therefore impossible to disposition. Coverage read 100%
+#: of a denominator that silently excluded them, which is the same species of untruth ADR-0037 fixed one
+#: layer up. A sub-note has its own heading, its own table and its own subject, so it is its own note.
 _NOTE_HEADING = re.compile(
-    r"^\s*(?:NOTE|Note)\s+(\d{1,3})\s*[:.\-–)]\s*(\S.{2,90})$|"
-    r"^\s*(\d{1,3})\s*[.)]\s+([A-Z][A-Za-z &,/()'\-]{3,90})\s*$|"
-    r"^\s*(\d{1,3})\s+([A-Z][A-Za-z &,/()'\-]{4,90})\s*$"
+    r"^\s*(?:NOTE|Note)\s+(\d{1,3})([a-z]?)\s*[:.\-–)]\s*(\S.{2,90})$|"
+    r"^\s*(\d{1,3})([a-z]?)\s*[.)]\s+([A-Z][A-Za-z &,/()'\-]{3,90})\s*$|"
+    r"^\s*(\d{1,3})([a-z]?)\s+([A-Z][A-Za-z &,/()'\-]{4,90})\s*$"
 )
 
 #: The currency-unit marker Indian filings print on the SAME line as the note heading:
@@ -180,6 +187,12 @@ class Note:
     title: str
     page: int    # 1-based
     line: int    # 1-based
+    suffix: str = ""   # 'a' in "36a Contingent Liabilities"; '' for a plain numbered note
+
+    @property
+    def label(self) -> str:
+        """How the filing itself names this note — '36a', not '36'. The identity used everywhere."""
+        return f"{self.number}{self.suffix}"
 
     @property
     def category(self) -> str:
@@ -200,6 +213,11 @@ class NoteDisposition:
     status: str                      # 'clean' | 'flag' | 'unknown'
     rationale: str
     figure_locators: list[str] = field(default_factory=list)
+    note_suffix: str = ""            # matches `Note.suffix`; together they identify the note
+
+    @property
+    def note_label(self) -> str:
+        return f"{self.note_number}{self.note_suffix}"
 
     def __post_init__(self) -> None:
         if self.status not in {"clean", "flag", "unknown"}:
@@ -241,7 +259,7 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
       ("5. Withdrawal Rate Indian Assured"), enumerated as a note and dispositioned `unknown`. A phantom
       note inflates the denominator of `substantive_share`, which is the number the verdict reads.
     """
-    seen: set[int] = set()
+    seen: set[tuple[int, str]] = set()
     notes: list[Note] = []
     highest = 0
     floor = first_page or 1
@@ -252,24 +270,31 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
             m = _NOTE_HEADING.match(_strip_unit_tail(line))
             if not m:
                 continue
-            number = int(m.group(1) or m.group(3) or m.group(5))
-            title = (m.group(2) or m.group(4) or m.group(6) or "").strip(" .:-–")
-            if number in seen or number <= highest:
+            groups = [g for g in m.groups() if g is not None]
+            number, suffix, title = int(groups[0]), groups[1], groups[2].strip(" .:-–")
+            # The ascending rule, with sub-notes admitted. "36a" legitimately follows note 36 at the same
+            # number, so a suffixed heading may match the current highest — but never go BACKWARDS, which
+            # is what kept "5. Withdrawal Rate Indian Assured" (a row inside the actuarial table, appearing
+            # after note 38) from being enumerated as a phantom note that inflates the denominator.
+            if (number, suffix) in seen or number < highest or (number == highest and not suffix):
                 continue
-            seen.add(number)
+            seen.add((number, suffix))
             highest = number
-            notes.append(Note(number, title, p_idx, l_idx))
+            notes.append(Note(number, title, p_idx, l_idx, suffix))
     return notes
 
 
-def coverage(notes: Sequence[Note], dispositions: Sequence[NoteDisposition]) -> tuple[float, list[int]]:
-    """(fraction of notes dispositioned, note numbers still missing). Publish gate requires (1.0, []).
+def coverage(notes: Sequence[Note], dispositions: Sequence[NoteDisposition]) -> tuple[float, list[str]]:
+    """(fraction of notes dispositioned, note labels still missing). Publish gate requires (1.0, []).
 
     A disposition for a note that was never enumerated raises — you cannot claim to have read a note
     that does not exist (that is how fake coverage would sneak in).
+
+    Identity is the note's LABEL ('36a'), not its number: 36 and 36a are different notes with different
+    subjects, and keying on the integer would let a disposition for one satisfy the gate for the other.
     """
-    have = {n.number for n in notes}
-    got = {d.note_number for d in dispositions}
+    have = {n.label for n in notes}
+    got = {d.note_label for d in dispositions}
     phantom = sorted(got - have)
     if phantom:
         raise ValueError(f"dispositions reference non-existent notes: {phantom}")

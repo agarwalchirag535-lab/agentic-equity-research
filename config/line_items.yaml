@@ -520,6 +520,46 @@ line_items:
         severity: high
         exclude_models: [LENDER, BANK]
 
+      # Read from inside the inventories note (ADR-0040). Days-of-inventory says how much stock there is;
+      # only the note says whether it is inputs the company chose to buy or output the market refused.
+      - id: wc_inventory_mix
+        question: >
+          Is the stock inputs or unsold output? A rising finished-goods share is production the channel
+          did not clear, and the total inventory line moves identically whether the build-up is raw
+          material bought ahead or finished goods nobody wanted.
+        metric: finished_goods_share
+        unit: pct
+        template: "{v} of the inventory book is finished goods rather than inputs or work in progress."
+        bands:
+          - at_least: 0.60
+            says: "most of the book is output waiting for a buyer — check it against the order book, not against last year"
+          - at_least: 0.35
+            says: "a normal finished-goods weighting for a manufacturer"
+          - says: "the book is mostly inputs and work in progress — this company is buying ahead, not failing to sell"
+        needs:
+          - "inventories note — the raw material / WIP / finished goods / stores split"
+        severity: medium
+        exclude_models: [LENDER, BANK, SERVICES_IT]
+
+      - id: wc_inventory_writedown
+        question: >
+          Has anything ever been written down? Every real inventory contains something that will not sell
+          at cost — spares for retired plant, a discontinued grade, a returned batch — so a material book
+          carrying exactly zero provision means nobody looked.
+        metric: inventory_provision_share
+        unit: pct
+        template: "{v} of the gross inventory book is carried as a write-down."
+        bands:
+          - at_least: 0.05
+            says: "a large write-down: find out what went obsolete and whether it was a one-off"
+          - at_least: 0.001
+            says: "a real provision is carried — somebody reviewed the book for what will not sell"
+          - says: "no write-down at all against a material book, which is a statement about the review, not the stock"
+        needs:
+          - "inventories note — the 'less: provision for inventories' line"
+        severity: medium
+        exclude_models: [LENDER, BANK, SERVICES_IT]
+
       - id: wc_payable_overdue
         question: >
           Is the company funding itself on suppliers it has simply not paid? Payable *days* can rise from

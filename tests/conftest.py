@@ -49,6 +49,32 @@ def _statement_pages(receivables, inventory, cash, revenue, pbt) -> tuple[str, s
     return balance_sheet, profit_and_loss
 
 
+def _notes_page(inventory_rows: str, contingent_rows: str, borrowings_rows: str = "") -> str:
+    """The inventories, borrowings and contingent-liabilities notes (ADR-0040).
+
+    Numbered and formatted the way the real filings number and format them, including the lettered
+    sub-note ("36a") that the enumerator could not see until ADR-0040 and the trailing unit marker on
+    every heading. A fixture that used a tidier layout than the documents would test a parser we do not
+    have.
+    """
+    # NB: the nil-borrowings default is built outside the f-string. A backslash inside an f-string
+    # expression is Python 3.12+ syntax and this project targets 3.11, where it does not parse at all.
+    nil_borrowings = "Total  -    -\n"
+    return (
+        "31 INVENTORIES ` In Crore\n"
+        "Particulars As at March 31, 2026 As at March 31, 2025\n"
+        f"{inventory_rows}"
+        "33 SHORT TERM BORROWINGS (At Amortised Cost) ` In Crore\n"
+        "Particulars As at March 31, 2026 As at March 31, 2025\n"
+        f"{borrowings_rows or nil_borrowings}"
+        "36a CONTINGENT LIABILITIES AND COMMITMENTS ` In Crore\n"
+        "Particulars As at March 31, 2026 As at March 31, 2025\n"
+        "Claims against the Company not acknowledged as debt\n"
+        f"{contingent_rows}"
+        "38 EARNINGS PER SHARE ` In Crore\n"
+    )
+
+
 def _ageing_pages(receivables_rows: str, payables_rows: str, cwip_rows: str) -> str:
     """The three Schedule III ageing schedules on one page, in the layout Indian filings actually use.
 
@@ -98,6 +124,44 @@ CLEAN_AR_PAGES: tuple[str, ...] = (
         "Note 29: CONTINGENT LIABILITIES AND COMMITMENTS\n"
         "Note 30: RELATED PARTY DISCLOSURES\n"
     ),
+    # Clean tables: a short receivable tail, nothing disputed, no suspended capex. Both totals tie to the
+    # balance sheet (receivables 118.00, CWIP 22.00), so `ageing_reconciliation` passes on real agreement
+    # rather than on an absence.
+    _ageing_pages(
+        receivables_rows=(
+            "i) Undisputed Trade receivables - considered good  112.00  4.00  1.50  0.50  -    118.00\n"
+            "ii) Disputed Trade Receivables - considered good  -    -    -    -    -    -\n"
+            "Total  112.00  4.00  1.50  0.50  -    118.00\n"
+        ),
+        payables_rows=(
+            "i) Undisputed dues of micro and small enterprises  8.00  -    -    -    8.00\n"
+            "ii) Undisputed dues of creditors other than micro and small  60.00  2.00  -    -    62.00\n"
+            "Total  68.00  2.00  -    -    70.00\n"
+        ),
+        cwip_rows=(
+            "Projects in progress  19.00  3.00  -    -    22.00\n"
+            "Projects temporarily suspended  -    -    -    -    -\n"
+            "Total  19.00  3.00  -    -    22.00\n"
+        ),
+    ),
+    # Inventory mix steady, a real write-down carried, contingent claims small against net worth, and no
+    # guarantees given — the composition of a business selling what it makes.
+    _notes_page(
+        inventory_rows=(
+            "(a) Raw Materials  40.00  38.00\n"
+            "(b) Work-in-Progress  12.00  11.00\n"
+            "(c) Finished Goods  38.00  36.00\n"
+            "(d) Stores and Spares  7.00  6.00\n"
+            "Sub- Total  97.00  91.00\n"
+            "Less: Provisions for Inventories  (1.00)  (1.00)\n"
+            "Total  96.00  90.00\n"
+        ),
+        contingent_rows=(
+            "i. Disputed liabilities in respect of Income tax demand  9.00  8.00\n"
+            "ii. Disputed liabilities in respect of Excise duty  4.00  4.00\n"
+            "Total  13.00  12.00\n"
+        ),
+    ),
     (
         "INDEPENDENT AUDITOR'S REPORT\n"
         "Opinion: the financial statements give a true and fair view.\n"
@@ -120,26 +184,6 @@ CLEAN_AR_PAGES: tuple[str, ...] = (
         "Title deeds of immovable properties are held in the name of the Company.\n"
         "Current Ratio 1.85 1.72\n"
     ),
-    # Clean tables: a short receivable tail, nothing disputed, no suspended capex. Both totals tie to the
-    # balance sheet (receivables 118.00, CWIP 22.00), so `ageing_reconciliation` passes on real agreement
-    # rather than on an absence.
-    _ageing_pages(
-        receivables_rows=(
-            "i) Undisputed Trade receivables - considered good  112.00  4.00  1.50  0.50  -    118.00\n"
-            "ii) Disputed Trade Receivables - considered good  -    -    -    -    -    -\n"
-            "Total  112.00  4.00  1.50  0.50  -    118.00\n"
-        ),
-        payables_rows=(
-            "i) Undisputed dues of micro and small enterprises  8.00  -    -    -    8.00\n"
-            "ii) Undisputed dues of creditors other than micro and small  60.00  2.00  -    -    62.00\n"
-            "Total  68.00  2.00  -    -    70.00\n"
-        ),
-        cwip_rows=(
-            "Projects in progress  19.00  3.00  -    -    22.00\n"
-            "Projects temporarily suspended  -    -    -    -    -\n"
-            "Total  19.00  3.00  -    -    22.00\n"
-        ),
-    ),
 )
 
 #: The same filing shape for a company whose receivables are running away from revenue (+110% vs +5%) —
@@ -158,17 +202,6 @@ FRAUD_AR_PAGES: tuple[str, ...] = (
         "Revenue from operations 1,050.0 1,000.0\n"
         "Note 21: Other Income 40.0 12.0\n"
         "Note 30: RELATED PARTY DISCLOSURES\n"
-    ),
-    (
-        "INDEPENDENT AUDITOR'S REPORT\n"
-        "Key Audit Matters: revenue recognition and recoverability of trade receivables.\n"
-        "Related party: certain transactions with promoter-controlled entities.\n"
-        "Contingent Liabilities: corporate guarantees given on behalf of related parties.\n"
-        "Annexure A — CARO 2020\n"
-        "(ix) The Company has made default in repayment of loans from banks during the year.\n"
-        "(xi) No fraud has been noticed or reported.\n"
-        "Trade Receivables ageing schedule as at 31 March 2026\n"
-        "Current Ratio 0.92 1.10\n"
     ),
     # The same fraud pattern, seen in the ageing table rather than in the stock-flow ratio: a quarter of
     # the book is past a year and the company has itself disputed ₹8cr of it. Capital work in progress is
@@ -189,6 +222,33 @@ FRAUD_AR_PAGES: tuple[str, ...] = (
             "Projects temporarily suspended  -    -    -    -    -\n"
             "Total  200.00  60.00  -    -    260.00\n"
         ),
+    ),
+    # The same story one note further in: goods the channel did not take (finished-goods share 30% -> 50%),
+    # not one rupee written down against them, and a corporate guarantee to a promoter-controlled entity
+    # worth more than a fifth of net worth.
+    _notes_page(
+        inventory_rows=(
+            "(a) Raw Materials  40.00  45.00\n"
+            "(b) Work-in-Progress  30.00  18.00\n"
+            "(c) Finished Goods  70.00  27.00\n"
+            "Total  140.00  90.00\n"
+        ),
+        contingent_rows=(
+            "i. Disputed liabilities in respect of Income tax demand  20.00  18.00\n"
+            "ii. Corporate guarantee given on behalf of a promoter-controlled entity  150.00  120.00\n"
+            "Total  170.00  138.00\n"
+        ),
+    ),
+    (
+        "INDEPENDENT AUDITOR'S REPORT\n"
+        "Key Audit Matters: revenue recognition and recoverability of trade receivables.\n"
+        "Related party: certain transactions with promoter-controlled entities.\n"
+        "Contingent Liabilities: corporate guarantees given on behalf of related parties.\n"
+        "Annexure A — CARO 2020\n"
+        "(ix) The Company has made default in repayment of loans from banks during the year.\n"
+        "(xi) No fraud has been noticed or reported.\n"
+        "Trade Receivables ageing schedule as at 31 March 2026\n"
+        "Current Ratio 0.92 1.10\n"
     ),
 )
 

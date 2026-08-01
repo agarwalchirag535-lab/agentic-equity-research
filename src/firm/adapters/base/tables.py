@@ -47,10 +47,21 @@ _RUPEE = r"(?:₹|`|Rs\.?|INR)"
 #: mentions "Rs. 1.26 crores" once in a sentence about an EPCG licence. Crore is tested first, so the prose
 #: mention won and every figure on the page was read as crore — a silent 100x on grade-A facts, which is
 #: indistinguishable from a fabricated number once it carries a filing locator (ADR-0038).
+#: A SUBSTITUTED RUPEE GLYPH (ADR-0040). Several Indian annual reports set ₹ in a custom-encoded font, and
+#: text extraction renders every one of them as a bare capital "H": Balaji Amines' FY25 report declares
+#: "(All amounts are in H lakh)" and prints "H2,857.50 lakh" inline. The declaration therefore matched no
+#: rupee pattern, `page_unit_hint` returned '', and — because ADR-0024 makes an unresolvable scale a refusal
+#: rather than an assumption — **not one figure in the entire filing could be read**. Silent and total.
+#:
+#: It is admitted only in the `in <glyph> <scale>` position, never as a general rupee alternative: an
+#: unanchored "H" would match a capital letter anywhere within twenty characters of the word "lakh".
+_SUBSTITUTED_RUPEE = r"[`₹H]"
 _UNIT_HINTS = [
-    (re.compile(rf"{_RUPEE}[^\n\d]{{0,20}}?\bcr(?:ore)?s?\b|\bin\s+cr(?:ore)?s?\b", re.IGNORECASE),
+    (re.compile(rf"{_RUPEE}[^\n\d]{{0,20}}?\bcr(?:ore)?s?\b|"
+                rf"\bin\s+(?:{_SUBSTITUTED_RUPEE}\s*)?cr(?:ore)?s?\b", re.IGNORECASE),
      "INR_cr"),
-    (re.compile(rf"{_RUPEE}[^\n\d]{{0,20}}?\blakhs?\b|\bin\s+lakhs?\b", re.IGNORECASE), "INR_lakh"),
+    (re.compile(rf"{_RUPEE}[^\n\d]{{0,20}}?\blakhs?\b|"
+                rf"\bin\s+(?:{_SUBSTITUTED_RUPEE}\s*)?lakhs?\b", re.IGNORECASE), "INR_lakh"),
     (re.compile(rf"(?:{_RUPEE}|\$)[^\n\d]{{0,20}}?\b(?:million|mn|MM)\b|\bin\s+millions?\b",
                 re.IGNORECASE),
      "MM"),

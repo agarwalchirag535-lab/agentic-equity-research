@@ -1,4 +1,7 @@
-"""The Schedule III ageing schedules, from the printed page to a published finding (ADR-0039).
+"""From a printed page to a published finding: the ageing schedules and the note bodies.
+
+ADR-0039 wired the Schedule III ageing tables; ADR-0040 wired the inventories, borrowings and
+contingent-liabilities note bodies onto the same rails.
 
 ADR-0038 built the parser and said so plainly in its own text: the tables were parsed and consumed by
 nothing. That is the failure this module is here to make impossible to reintroduce — a parser with no
@@ -301,3 +304,118 @@ def test_the_thresholds_that_decide_these_checks_all_live_in_config():
         "receivables_disputed_max", "payables_beyond_1y_max", "reconciliation_tolerance",
     }
     assert all(isinstance(v, (int, float)) for v in ageing_thresholds().values())
+
+
+# --------------------------------------------------------------------------------------------------
+# 5. The note BODIES, on the same rails as the ageing tables (ADR-0040).
+# --------------------------------------------------------------------------------------------------
+
+
+def test_the_note_figures_become_grade_a_facts_and_decide_checks(store):
+    """Inventory composition, contingent claims and guarantees — none visible on the face of the accounts."""
+    _, facts, derived, evaluation = _run(
+        store, "NOTESREAD", clean_series(), CLEAN_AR_PAGES, [BusinessModel.MANUFACTURER])
+
+    gross = facts.fact(D.INVENTORY_GROSS, "FY26")
+    assert gross is not None and gross.grade == "A" and gross.value == approx(97.0)
+    # The comparative column too: the forensic question about inventory is entirely about the CHANGE.
+    assert facts.fact(D.INVENTORY_GROSS, "FY25") is not None
+    assert derived.value("finished_goods_share") == approx(38.0 / 97.0)
+
+    for check in ("finished_goods_buildup", "inventory_provision_absent",
+                  "contingent_liabilities_heavy", "guarantees_heavy"):
+        record = evaluation.record(check)
+        assert record is not None and record.outcome is CheckOutcome.PASS, f"{check}: {record}"
+        assert record.detail
+
+
+def test_all_four_note_checks_fire_on_the_fraud_filing(store):
+    """The same fraud, seen a third way: in what the inventory is made of and what is guaranteed."""
+    _, _, _, evaluation = _run(
+        store, "NOTESFRAUD", fraud_series(), FRAUD_AR_PAGES, [BusinessModel.MANUFACTURER])
+
+    buildup = evaluation.record("finished_goods_buildup")
+    assert buildup.outcome is CheckOutcome.FLAG and "+20.0 share points" in buildup.detail
+    assert evaluation.metrics.finished_goods_buildup is True
+
+    provision = evaluation.record("inventory_provision_absent")
+    assert provision.outcome is CheckOutcome.FLAG and "₹0.00cr written down" in provision.detail
+
+    assert evaluation.record("contingent_liabilities_heavy").outcome is CheckOutcome.FLAG
+    guarantees = evaluation.record("guarantees_heavy")
+    assert guarantees.outcome is CheckOutcome.FLAG and "₹150.00cr" in guarantees.detail
+    assert evaluation.metrics.guarantees_heavy is True
+
+
+def test_a_note_that_says_there_are_no_guarantees_is_a_pass_not_an_absence(store):
+    """ADR-0027's rule at its sharpest: "we looked and there are none" is a governance finding.
+
+    Reporting it UNAVAILABLE would collapse it into "we could not look", and the Verified-Clean Checklist
+    would then list a check the firm failed to run instead of a fact about the company.
+    """
+    _, _, _, evaluation = _run(
+        store, "NOGUAR", clean_series(), CLEAN_AR_PAGES, [BusinessModel.MANUFACTURER])
+    record = evaluation.record("guarantees_heavy")
+    assert record.outcome is CheckOutcome.PASS
+    assert "discloses no guarantees" in record.detail
+    assert evaluation.metrics.guarantees_heavy is False
+
+
+def test_an_unsized_guarantee_is_unavailable_and_says_the_exposure_exists(store):
+    """Balaji Amines FY25: a corporate guarantee to a subsidiary, disclosed with no amount.
+
+    Neither PASS nor FLAG is honest. The reason has to carry the finding, because an unquantified
+    off-balance-sheet obligation is a weaker disclosure than a large quantified one.
+    """
+    pages = tuple(
+        p.replace("ii. Corporate guarantee given on behalf of a promoter-controlled entity  150.00  120.00\n", "")
+         .replace("Total  170.00  138.00",
+                  "Corporate guarantee extended on behalf of the promoter-controlled entity\nTotal  20.00  18.00")
+        for p in FRAUD_AR_PAGES
+    )
+    _, _, _, evaluation = _run(
+        store, "UNSIZED", fraud_series(), pages, [BusinessModel.MANUFACTURER])
+    record = evaluation.record("guarantees_heavy")
+    assert record.outcome is CheckOutcome.UNAVAILABLE
+    assert "DISCLOSES a guarantee" in record.reason
+    assert "cannot be sized" in record.reason
+
+
+def test_the_contingent_liabilities_note_is_finally_enumerated_at_all(store):
+    """"36a" defeated the enumerator entirely, so the note could never be dispositioned (ADR-0040).
+
+    Ten headings were invisible on the FY26 filing, among them contingent liabilities and commitments.
+    Coverage read 100% of a denominator that silently excluded them.
+    """
+    from firm.adapters.india.notes import enumerate_notes, notes_section_start
+
+    notes = enumerate_notes(CLEAN_AR_PAGES, first_page=notes_section_start(CLEAN_AR_PAGES))
+    lettered = [n for n in notes if n.suffix]
+    assert [n.label for n in lettered] == ["36a"]
+    assert lettered[0].category == "contingent_liabilities"
+
+    walk, _, _, evaluation = _run(
+        store, "ENUM", clean_series(), CLEAN_AR_PAGES, [BusinessModel.MANUFACTURER])
+    review, dispositions = disposition_notes(walk.notes, evaluation)
+    by_label = {d.note_label: d for d in dispositions}
+    assert by_label["36a"].status == "clean"
+    assert "contingent_liabilities_heavy" in by_label["36a"].rationale
+    assert review.coverage == 1.0 and review.undispositioned == ()
+
+
+def test_a_screener_only_run_reports_the_note_checks_unavailable_too(store):
+    seed_store(store, "NONOTES", clean_series())
+    facts = D.load_company_facts(store, "NONOTES", AS_OF)
+    derived = D.derive_metrics(facts)
+    evaluation = evaluate_checks(
+        build_playbook([BusinessModel.MANUFACTURER], PB), derived, facts, forensic=TH["forensic"],
+        universal=universal_forensic_thresholds(), model_specific=model_forensic_thresholds(),
+        external=ExternalInputs(),
+    )
+    for check in ("finished_goods_buildup", "inventory_provision_absent",
+                  "contingent_liabilities_heavy", "guarantees_heavy"):
+        record = evaluation.record(check)
+        assert record.outcome is CheckOutcome.UNAVAILABLE
+        assert "no filing was walked" in record.reason
+    assert evaluation.metrics.finished_goods_buildup is False
+    assert evaluation.metrics.guarantees_heavy is False

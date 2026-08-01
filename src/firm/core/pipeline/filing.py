@@ -32,7 +32,12 @@ from firm.adapters.base.tables import (
 )
 from firm.adapters.india.ageing import AgeingTable, parse_ageing_table
 from firm.adapters.india.filings import disclosure_gaps, forensic_sections
-from firm.adapters.india.notes_content import related_party_summary
+from firm.adapters.india.notes_content import (
+    borrowings_summary,
+    contingent_liabilities_summary,
+    inventory_summary,
+    related_party_summary,
+)
 from firm.adapters.india.notes import (
     Note,
     notes_section_start,
@@ -46,7 +51,7 @@ from firm.adapters.india.notes import (
 )
 from firm.core.facts.store import Document, FactStore
 from firm.core.pipeline import derive as D
-from firm.core.pipeline.checks import AgeingEvidence, CheckEvaluation, ExternalInputs
+from firm.core.pipeline.checks import AgeingEvidence, CheckEvaluation, ExternalInputs, NotesContent
 from firm.core.report.assemble import NotesReview
 from firm.schemas.report import CheckOutcome
 
@@ -92,7 +97,7 @@ COMPONENT_SUM_ROWS: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
 #: expose. If you add a note category, add its checks here or coverage becomes theatre again.
 NOTE_CHECKS: Mapping[str, tuple[str, ...]] = {
     "receivables": ("receivables_divergent", "receivables_ageing_tail", "receivables_disputed"),
-    "inventory": ("inventory_divergent",),
+    "inventory": ("inventory_divergent", "finished_goods_buildup", "inventory_provision_absent"),
     "cash": ("cash_interest_inconsistent", "cash_debt_paradox"),
     "ppe_cwip": ("ageing_cwip", "stalled_capex"),
     "payables": ("payables_ageing_tail",),
@@ -104,6 +109,7 @@ NOTE_CHECKS: Mapping[str, tuple[str, ...]] = {
     "provisions": ("provision_book_divergent", "reserve_suppression"),
     "ecl_impairment": ("provision_coverage_low", "gnpa_drift"),
     "borrowings": ("cash_debt_paradox",),
+    "contingent_liabilities": ("contingent_liabilities_heavy", "guarantees_heavy"),
 }
 
 #: ageing table kind -> (total metric, {classified row metric: the `AgeingTable` property that holds it},
@@ -299,11 +305,80 @@ def register_ageing_facts(
     return tables, tuple(all_ids), evidence
 
 
+def register_notes_content_facts(
+    store: FactStore, ticker: str, filing: FilingSource
+) -> tuple[NotesContent, tuple[str, ...]]:
+    """Read the inventories, borrowings and contingent-liabilities notes into grade-A facts (ADR-0040).
+
+    Three notes, chosen because each answers a question the face of the statements cannot. The balance
+    sheet gives one inventory number and the note gives its composition; the borrowings line gives a
+    balance and the note gives the RATE and the security behind it; and contingent liabilities appear
+    nowhere in the statements at all — they exist only in the note, which is the point of them.
+
+    A figure is registered only when its note reconciled to its own printed total, on the same contract
+    the ageing schedules use: a split that does not add up means a row was missed or picked up from
+    outside the table, and every share computed from it is wrong in an unknown direction.
+    """
+    _register_document(store, filing)
+    content = NotesContent(
+        inventory=inventory_summary(filing.pages),
+        borrowings=borrowings_summary(filing.pages),
+        contingent=contingent_liabilities_summary(filing.pages),
+    )
+    fact_ids: list[str] = []
+
+    def store_fact(metric: str, value: float | None, locator: str, period: str | None = None) -> None:
+        if value is None:
+            return
+        when = period or filing.period
+        fact_id = f"{filing.doc_id}:{metric}:{when}"
+        store.add_fact(
+            fact_id=fact_id, doc_id=filing.doc_id, ticker=ticker, metric=metric,
+            period=when, value=float(value), unit="INR_cr", locator=locator,
+        )
+        fact_ids.append(fact_id)
+
+    inv = content.inventory
+    if inv.located:
+        where = f"{inv.locator} (inventories note)"
+        store_fact(D.INVENTORY_PROVISION, inv.provision_cr or 0.0 if inv.gross_cr else None, where)
+        if inv.reconciled:
+            store_fact(D.INVENTORY_GROSS, inv.gross_cr, where)
+            store_fact(D.INVENTORY_FINISHED_GOODS, inv.components.get("finished_goods"), where)
+            store_fact(D.INVENTORY_WORK_IN_PROGRESS, inv.components.get("work_in_progress"), where)
+            store_fact(D.INVENTORY_RAW_MATERIALS, inv.components.get("raw_materials"), where)
+            # The note's own COMPARATIVE column, registered against the prior period. Without it the
+            # composition is a snapshot, and the forensic question about inventory mix is entirely about
+            # the change: a 44% finished-goods share means nothing until you know last year's.
+            if filing.prior_period:
+                prior_where = f"{where}, comparative column"
+                store_fact(D.INVENTORY_GROSS, inv.prior_gross_cr, prior_where, filing.prior_period)
+                for metric, key in ((D.INVENTORY_FINISHED_GOODS, "finished_goods"),
+                                    (D.INVENTORY_WORK_IN_PROGRESS, "work_in_progress"),
+                                    (D.INVENTORY_RAW_MATERIALS, "raw_materials")):
+                    store_fact(metric, inv.prior_components.get(key), prior_where, filing.prior_period)
+
+    con = content.contingent
+    if con.located:
+        where = f"{con.locator} (contingent liabilities note)"
+        store_fact(D.CONTINGENT_LIABILITIES, con.total_cr, where)
+        store_fact(D.CONTINGENT_GUARANTEES, con.guarantees_cr, where)
+        store_fact(D.CAPITAL_COMMITMENTS, con.capital_commitments_cr, where)
+
+    bor = content.borrowings
+    if bor.located:
+        where = f"{bor.locator} (borrowings note)"
+        store_fact(D.BORROWINGS_NOTE_TOTAL, bor.total_cr, where)
+        store_fact(D.BORROWINGS_SECURED, bor.secured_cr, where)
+    return content, tuple(fact_ids)
+
+
 def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWalk:
     """Enumerate the notes, scan the mandated disclosures, and register the filing's figures as facts."""
     rows, statement_fact_ids, unresolved = register_filing_facts(store, ticker, filing)
     _, ageing_fact_ids, ageing = register_ageing_facts(store, ticker, filing)
-    fact_ids = (*statement_fact_ids, *ageing_fact_ids)
+    notes_content, notes_fact_ids = register_notes_content_facts(store, ticker, filing)
+    fact_ids = (*statement_fact_ids, *ageing_fact_ids, *notes_fact_ids)
     # Only the notes to the ACCOUNTS count (ADR-0027). An unscoped scan enumerates AGM-notice and
     # directors'-report paragraph numbers, which no financial check can ever disposition.
     notes = tuple(enumerate_notes(filing.pages, first_page=notes_section_start(filing.pages)))
@@ -372,6 +447,12 @@ def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWa
     if any(e.located for e in ageing.values()):
         locators["ageing_reconciliation"] = filing.doc_id
         ids_by_check["ageing_reconciliation"] = fact_ids
+    for check, summary in (("finished_goods_buildup", notes_content.inventory),
+                           ("inventory_provision_absent", notes_content.inventory),
+                           ("contingent_liabilities_heavy", notes_content.contingent),
+                           ("guarantees_heavy", notes_content.contingent)):
+        if summary is not None and summary.located:
+            locators[check] = f"{filing.doc_id} {summary.locator}"
 
     external = ExternalInputs(
         receivables=pair(D.RECEIVABLES),
@@ -384,6 +465,7 @@ def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWa
         disclosure_gaps=missing,
         disclosure_scanned=True,
         ageing=ageing,
+        notes=notes_content,
         source_locators=locators,
         fact_ids=ids_by_check,
     )
@@ -428,7 +510,7 @@ def disposition_notes(
         if status in ("clean", "flag"):
             substantive += 1
         dispositions.append(NoteDisposition(
-            note_number=note.number, status=status, rationale=rationale,
+            note_number=note.number, note_suffix=note.suffix, status=status, rationale=rationale,
             figure_locators=[f"p.{note.page} l.{note.line}"],
         ))
 

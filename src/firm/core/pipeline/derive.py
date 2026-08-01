@@ -110,12 +110,33 @@ AGEING_METRICS: tuple[str, ...] = (
     PAYABLES_AGEING_TOTAL, PAYABLES_AGEING_DISPUTED, PAYABLES_AGEING_BEYOND_1Y,
 )
 
+#: Figures read from INSIDE a note (ADR-0040) rather than off the face of the statements. The balance
+#: sheet says how much inventory there is; only note 9 says what it is made of, and the composition is
+#: what distinguishes a company building stock to sell from one producing into a market that has stopped
+#: buying. Same for contingent liabilities: the face of the accounts never mentions them at all.
+INVENTORY_GROSS = "notes:Inventory Gross"
+INVENTORY_FINISHED_GOODS = "notes:Inventory Finished Goods"
+INVENTORY_WORK_IN_PROGRESS = "notes:Inventory Work in Progress"
+INVENTORY_RAW_MATERIALS = "notes:Inventory Raw Materials"
+INVENTORY_PROVISION = "notes:Inventory Provision"
+CONTINGENT_LIABILITIES = "notes:Contingent Liabilities"
+CONTINGENT_GUARANTEES = "notes:Guarantees Given"
+CAPITAL_COMMITMENTS = "notes:Capital Commitments"
+BORROWINGS_NOTE_TOTAL = "notes:Borrowings Total"
+BORROWINGS_SECURED = "notes:Borrowings Secured"
+
+NOTES_METRICS: tuple[str, ...] = (
+    INVENTORY_GROSS, INVENTORY_FINISHED_GOODS, INVENTORY_WORK_IN_PROGRESS, INVENTORY_RAW_MATERIALS,
+    INVENTORY_PROVISION, CONTINGENT_LIABILITIES, CONTINGENT_GUARANTEES, CAPITAL_COMMITMENTS,
+    BORROWINGS_NOTE_TOTAL, BORROWINGS_SECURED,
+)
+
 READ_METRICS: tuple[str, ...] = (
     SALES, PAT, OPERATING_PROFIT, DEPRECIATION, INTEREST, TAX_PCT, OTHER_INCOME, PBT,
     CFO, FCF, BORROWINGS, EQUITY_CAPITAL, RESERVES, CWIP, FIXED_ASSETS, TOTAL_ASSETS,
     CASH, RECEIVABLES, INVENTORY, PAYABLES,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
-    *AGEING_METRICS,
+    *AGEING_METRICS, *NOTES_METRICS,
 )
 
 
@@ -373,6 +394,13 @@ _AGEING_SHARES: tuple[tuple[str, tuple[str, ...], str, str], ...] = (
      "payables aged beyond 1 year / total payables (Schedule III ageing schedule)"),
     ("payables_disputed_share", (PAYABLES_AGEING_DISPUTED,), PAYABLES_AGEING_TOTAL,
      "disputed payables / total payables (Schedule III ageing schedule)"),
+    # Read from inside the notes (ADR-0040) rather than off the face of the statements.
+    ("finished_goods_share", (INVENTORY_FINISHED_GOODS,), INVENTORY_GROSS,
+     "finished goods / gross inventory (inventories note)"),
+    ("inventory_provision_share", (INVENTORY_PROVISION,), INVENTORY_GROSS,
+     "provision for inventories / gross inventory (inventories note)"),
+    ("secured_borrowings_share", (BORROWINGS_SECURED,), BORROWINGS_NOTE_TOTAL,
+     "secured borrowings / total borrowings (borrowings note)"),
 )
 
 
@@ -391,14 +419,22 @@ def _ageing_shares(b: _Builder, facts: CompanyFacts) -> None:
     table is read at all, and claiming the company failed to disclose would charge it for the fact that
     nobody opened its annual report.
     """
-    looked = any(facts.has(m) for m in AGEING_METRICS)
+    # "Looked" is judged per FAMILY — the `ageing:` schedules and the `notes:` bodies are read by
+    # different code against different parts of the filing, so one succeeding says nothing about the
+    # other. Keying the claim on the denominator's own namespace keeps a working ageing parser from
+    # certifying that the company failed to disclose an inventory note we never managed to read.
+    looked = {
+        family: any(facts.has(m) for m in metrics)
+        for family, metrics in (("ageing", AGEING_METRICS), ("notes", NOTES_METRICS))
+    }
     for metric, numerators, denominator, formula in _AGEING_SHARES:
         period = facts.latest_period(denominator)
         if period is None:
-            if looked:
+            family, name = denominator.split(":", 1)
+            if looked.get(family):
                 b.missing.setdefault(metric, ((
-                    f"{denominator} — this filing's other Schedule III ageing schedules were read, but "
-                    f"no usable {denominator.split(':')[1].lower()} was found in it"
+                    f"{denominator} — other figures in this filing's {family} were read, but no usable "
+                    f"{name.lower()} was found in it"
                 ),))
             continue
         pairs = tuple((m, period) for m in (*numerators, denominator))

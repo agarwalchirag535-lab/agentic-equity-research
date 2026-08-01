@@ -45,6 +45,11 @@ playbooks:
       - receivables_ageing_tail
       - receivables_disputed
       - payables_ageing_tail
+      # Read from inside the notes (ADR-0040). Contingent liabilities are universal because they exist
+      # ONLY in the note — the face of the accounts never mentions them — and Ind AS 37 requires it of
+      # every company. `guarantees_heavy` finally has data behind it.
+      - contingent_liabilities_heavy
+      - guarantees_heavy
     priority_notes:
       - related_party
       - contingent_liabilities
@@ -69,6 +74,8 @@ playbooks:
       - stalled_capex
       - receivables_ageing_tail
       - receivables_disputed
+      - finished_goods_buildup
+      - inventory_provision_absent
     priority_notes:
       - ecl_impairment
       - loans_advances
@@ -86,6 +93,8 @@ playbooks:
       - inventory_divergent
       - receivables_ageing_tail
       - receivables_disputed
+      - finished_goods_buildup
+      - inventory_provision_absent
     priority_notes:
       - ecl_impairment
       - investments
@@ -94,6 +103,8 @@ playbooks:
     applies:
       - receivables_divergent
       - inventory_divergent
+      - finished_goods_buildup
+      - inventory_provision_absent
       - ageing_cwip
       - stalled_capex
       - high_accruals
@@ -135,6 +146,8 @@ playbooks:
       - adjusted_ebitda_gap
     suppress:
       - inventory_divergent             # no meaningful inventory in a services model
+      - finished_goods_buildup
+      - inventory_provision_absent
     priority_notes:
       - receivables
       - intangibles
@@ -143,10 +156,10 @@ playbooks:
   REAL_ESTATE:
     applies:
       - inventory_divergent
+      - inventory_provision_absent
       - high_accruals
       - ageing_cwip
       - stalled_capex
-      - guarantees_heavy
     priority_notes:
       - inventory
       - borrowings

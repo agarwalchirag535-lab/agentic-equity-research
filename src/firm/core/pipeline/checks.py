@@ -82,6 +82,34 @@ class AgeingEvidence:
 
 
 @dataclass(frozen=True)
+class NotesContent:
+    """What the three note readers found, carried past the check layer for locators and tri-states.
+
+    The FIGURES travel as ordinary grade-A facts; what cannot travel as a fact is again the state of the
+    reading — a note that was never found, a note read whose split did not reconcile, and a note read
+    cleanly that reports nothing are three different answers and only one of them is "clean".
+
+    Typed as `object` here on purpose: `checks.py` is offline and pure and must not import an adapter.
+    The attributes accessed are the ones every summary in `adapters/india/notes_content.py` shares.
+    """
+
+    inventory: Any = None
+    borrowings: Any = None
+    contingent: Any = None
+
+    def reason(self, which: str, what: str) -> str:
+        """Why ``what`` is unavailable, from the note's own reading state — never a bare absence."""
+        summary = getattr(self, which, None)
+        if summary is None:
+            return (f"no filing was walked in this run, so the {which} note was never opened and {what} "
+                    f"could not be established")
+        if not getattr(summary, "located", False):
+            return getattr(summary, "reason", "") or f"the {which} note was not found in the filing"
+        return (getattr(summary, "reason", "")
+                or f"the {which} note at {getattr(summary, 'locator', 'AR')} does not break out {what}")
+
+
+@dataclass(frozen=True)
 class ExternalInputs:
     """Facts that live in the annual report rather than in a summary financials feed.
 
@@ -108,6 +136,8 @@ class ExternalInputs:
     #: kind ('receivables' | 'payables' | 'cwip') -> how that ageing schedule read (ADR-0039). Empty on a
     #: run that walked no filing, which makes every ageing check UNAVAILABLE naming the absent walk.
     ageing: Mapping[str, AgeingEvidence] = field(default_factory=dict)
+    #: What the inventories / borrowings / contingent-liabilities note readers found (ADR-0040).
+    notes: NotesContent = field(default_factory=lambda: NotesContent())
     source_locators: Mapping[str, str] | None = None    # check name -> "AR p.12 l.4"
     fact_ids: Mapping[str, tuple[str, ...]] | None = None
 
@@ -116,6 +146,10 @@ class ExternalInputs:
 
     def ids(self, check: str) -> tuple[str, ...]:
         return (self.fact_ids or {}).get(check, ())
+
+    def notes_reason(self, which: str, what: str) -> str:
+        """Why a note-derived figure is unavailable, from that note's own reading state (ADR-0040)."""
+        return self.notes.reason(which, what)
 
     def ageing_reason(self, kind: str, what: str) -> str:
         """Why an ageing figure is unavailable — from the schedule's own reading state, never generic."""
@@ -272,6 +306,31 @@ def _reconcile_ageing(
     )
 
 
+def _prior_fg_share(facts: CompanyFacts) -> tuple[float, float] | None:
+    """(finished goods, gross inventory) for the year BEFORE the latest note read, or None.
+
+    The comparative column of the same note, not last year's filing: a prior-year figure restated in this
+    year's accounts is the one the current figure is actually comparable with.
+    """
+    periods = [p for p in facts.periods if facts.fact(D.INVENTORY_GROSS, p) is not None]
+    if len(periods) < 2:
+        return None
+    prior = periods[-2]
+    fg, gross = facts.fact(D.INVENTORY_FINISHED_GOODS, prior), facts.fact(D.INVENTORY_GROSS, prior)
+    if fg is None or gross is None or gross.value <= 0:
+        return None
+    return fg.value, gross.value
+
+
+def _net_worth(facts: CompanyFacts, period: str) -> tuple[float | None, tuple[str, ...]]:
+    """Equity capital + reserves, with the fact ids that make it citable."""
+    equity, reserves = facts.fact(D.EQUITY_CAPITAL, period), facts.fact(D.RESERVES, period)
+    if equity is None or reserves is None:
+        return None, ()
+    total = equity.value + reserves.value
+    return (total if total > 0 else None), (equity.fact_id, reserves.fact_id)
+
+
 def evaluate_checks(
     playbook: Playbook,
     derived: DerivedSet,
@@ -283,6 +342,7 @@ def evaluate_checks(
     external: ExternalInputs | None = None,
     check_inputs: Mapping[str, float] | None = None,
     ageing: Mapping[str, float] | None = None,
+    notes_policy: Mapping[str, float] | None = None,
 ) -> CheckEvaluation:
     """Evaluate every check the playbook selects, and mark every suppressed check NOT_APPLICABLE.
 
@@ -300,6 +360,10 @@ def evaluate_checks(
         from firm.core.config import ageing_thresholds
 
         ageing = ageing_thresholds()
+    if notes_policy is None:
+        from firm.core.config import notes_content_thresholds
+
+        notes_policy = notes_content_thresholds()
     ext = external or ExternalInputs()
     # Grades of every fact in scope, so each record can report the provenance span it rests on (ADR-0028).
     grades = {
@@ -482,6 +546,93 @@ def evaluate_checks(
 
         elif check == "ageing_reconciliation":
             r.records.append(_reconcile_ageing(facts, ext, ageing["reconciliation_tolerance"]))
+
+        # ---- read from inside the notes (ADR-0040) -----------------------------------------------
+        elif check == "finished_goods_buildup":
+            now, before = derived.get("finished_goods_share"), _prior_fg_share(facts)
+            if now is None or before is None:
+                r.unavailable(check, (ext.notes_reason(
+                    "inventory", "the finished-goods share of inventory in both years"),))
+            else:
+                limit = notes_policy["finished_goods_share_rise_max"]
+                shift, flagged = quality.finished_goods_buildup(
+                    now.inputs[0].value, now.inputs[1].value, before[0], before[1], limit)
+                r.ran(check, flagged,
+                      f"finished goods are {now.value:.1%} of gross inventory against "
+                      f"{before[0] / before[1]:.1%} a year earlier — a shift of {shift * 100:+.1f} share "
+                      f"points vs limit {limit * 100:.0f} ({ext.locator(check) or 'AR'})", now.fact_ids)
+
+        elif check == "inventory_provision_absent":
+            d = derived.get("inventory_provision_share")
+            gross = facts.fact(D.INVENTORY_GROSS, facts.latest_period(D.INVENTORY_GROSS) or "")
+            assets = facts.fact(D.TOTAL_ASSETS, derived.last_period or "")
+            if d is None or gross is None or assets is None or assets.value <= 0:
+                r.unavailable(check, (ext.notes_reason(
+                    "inventory", "the write-down carried against inventory"),))
+            elif (weight := gross.value / assets.value) < notes_policy["inventory_materiality_to_assets"]:
+                # A book this small cannot carry a verdict either way: zero provision on ₹2cr of spares
+                # is not evidence of anything, and flagging it would be noise dressed as rigour.
+                r.unavailable(check, [(
+                    f"gross inventory is {weight:.2%} of total assets (floor "
+                    f"{notes_policy['inventory_materiality_to_assets']:.0%}), too small for the absence "
+                    f"of a write-down to carry a conclusion"
+                )])
+            else:
+                floor = notes_policy["inventory_provision_floor"]
+                share, flagged = quality.inventory_provision_absent(
+                    d.inputs[0].value, d.inputs[1].value, floor)
+                r.ran(check, flagged,
+                      f"₹{d.inputs[0].value:,.2f}cr written down against ₹{d.inputs[1].value:,.2f}cr of "
+                      f"gross inventory — {share:.2%} vs floor {floor:.1%} "
+                      f"({ext.locator(check) or 'AR'})", d.fact_ids)
+
+        elif check in ("contingent_liabilities_heavy", "guarantees_heavy"):
+            metric = (D.CONTINGENT_LIABILITIES if check == "contingent_liabilities_heavy"
+                      else D.CONTINGENT_GUARANTEES)
+            what = ("claims not acknowledged as debt" if check == "contingent_liabilities_heavy"
+                    else "guarantees given on behalf of others")
+            amount = facts.fact(metric, facts.latest_period(metric) or "")
+            worth, worth_ids = _net_worth(facts, derived.last_period or "")
+            given = getattr(ext.notes.contingent, "guarantees_given", None)
+            if check == "guarantees_heavy" and amount is None and given is False:
+                # THE NOTE WAS READ AND SAYS NONE. That is a governance finding, not an absence: the
+                # company has put nothing off its balance sheet. Reporting it UNAVAILABLE would collapse
+                # "we looked and there are none" into "we could not look", which is the ADR-0027 rule and
+                # the difference between a Verified-Clean Checklist that means something and one that
+                # merely lists what we failed to read.
+                r.ran(check, False,
+                      f"the contingent-liabilities note was read ({ext.locator(check) or 'AR'}) and "
+                      f"discloses no guarantees given on behalf of subsidiaries, related parties or "
+                      f"anyone else", ext.ids(check))
+            elif check == "guarantees_heavy" and amount is None and given is True:
+                # The note SAYS guarantees exist but does not size them — Balaji Amines FY25 discloses a
+                # corporate guarantee to a subsidiary inside a GST-claim sentence with no separate figure.
+                # An unsized guarantee is a worse answer than a large one, and the reason has to say that
+                # rather than the bland "not broken out": the reader must learn the exposure exists.
+                related = getattr(ext.notes.contingent, "guarantees_for_related_party", False)
+                whose = ("a subsidiary, associate or other related party" if related
+                         else "another entity")
+                r.unavailable(check, [(
+                    f"the contingent-liabilities note ({ext.locator(check) or 'AR'}) DISCLOSES a "
+                    f"guarantee given on behalf of {whose} but does not state its amount, so the "
+                    f"exposure is known to exist and cannot be sized against net worth — an "
+                    f"unquantified off-balance-sheet obligation, which is a weaker disclosure than a "
+                    f"large quantified one"
+                )])
+            elif amount is None or worth is None:
+                absent = [ext.notes_reason("contingent", what)] if amount is None else []
+                if worth is None:
+                    absent.append("net worth (equity capital + reserves) for the latest period")
+                r.unavailable(check, absent)
+            else:
+                limit = notes_policy[
+                    "contingent_to_net_worth_max" if check == "contingent_liabilities_heavy"
+                    else "guarantees_to_net_worth_max"]
+                ratio, flagged = quality.contingent_to_net_worth(amount.value, worth, limit)
+                r.ran(check, flagged,
+                      f"₹{amount.value:,.2f}cr of {what} against ₹{worth:,.2f}cr net worth — "
+                      f"{ratio:.1%} vs limit {limit:.0%} ({ext.locator(check) or 'AR'})",
+                      (amount.fact_id, *worth_ids))
 
         # ---- universal SPEC §5 tells -------------------------------------------------------------
         elif check == "other_income_heavy":

@@ -45,6 +45,24 @@ ageing:
   # untrustworthy. Wider than a rounding tolerance because the two are struck at different precisions.
   reconciliation_tolerance: 0.02
 
+# Figures read from inside the notes rather than off the face of the statements (ADR-0040). PROVISIONAL
+# until the Phase-6 golden set, and all MEDIUM severity for that reason — see the note in `ageing:`.
+notes_content:
+  # Rise in the finished-goods SHARE of gross inventory, in share points, year on year. A mix tilting
+  # this hard toward finished goods is production the channel did not clear; the total inventory line
+  # moves the same whether the build-up is raw material (buying ahead) or finished goods (not selling).
+  finished_goods_share_rise_max: 0.08
+  # A write-down below this share of gross inventory reads as "none carried". Every real inventory holds
+  # something that will not sell at cost, so exactly zero on a material book means nobody looked.
+  inventory_provision_floor: 0.001
+  # Gross inventory below this share of total assets is too small for its composition to carry a verdict.
+  inventory_materiality_to_assets: 0.02
+  # Claims not acknowledged as debt, against net worth. Below the first number it is a footnote; above
+  # it, the company's judgement that it will never pay is doing real work in the accounts.
+  contingent_to_net_worth_max: 0.15
+  # Guarantees given for others, against net worth (the existing `guarantees_to_net_worth` compute).
+  guarantees_to_net_worth_max: 0.10
+
 # Lender-specific forensic checks (ADR-0002) — used when sector_class == FINANCIAL
 financial_forensic:
   gnpa_drift_flag: 0.010        # YoY rise in GNPA ratio above this = flag

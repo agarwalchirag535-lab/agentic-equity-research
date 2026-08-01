@@ -88,6 +88,11 @@ def ageing_thresholds() -> dict[str, float]:
     return load_thresholds()["ageing"]
 
 
+def notes_content_thresholds() -> dict[str, float]:
+    """Policy for figures read from inside the notes: inventory mix, provisions, contingents (ADR-0040)."""
+    return load_thresholds()["notes_content"]
+
+
 def load_playbooks() -> dict[str, Any]:
     """Business-model detection thresholds + per-model check playbooks (ADR-0017)."""
     return load_yaml("forensic_playbooks.yaml")

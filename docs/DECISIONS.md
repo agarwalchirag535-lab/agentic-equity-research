@@ -1207,3 +1207,95 @@ balance-sheet row is now read; both sides are grade A and agree exactly.
 **Consequence.** The fixture filings now carry real ageing tables. They previously carried the schedule
 *headings* with no table beneath them, which satisfied the `disclosure_gap` scan while testing a document
 that could not legally exist — and that is part of why nothing noticed the parser had no caller.
+
+---
+
+### ADR-0040 — Three notes read, and the ten headings nobody could see
+**Context.** `substantive_share` sat at 22% against a 50% floor, and the largest remaining blocks of
+enumerated-but-unread notes were inventories, borrowings and contingent liabilities. Each answers a
+question the face of the statements cannot: the balance sheet gives one inventory number and only the
+note says whether it is inputs or unsold output; the borrowings line gives a balance and only the note
+gives the rate and the security; and contingent liabilities appear nowhere in the statements at all —
+they exist only in the note, which is the point of them.
+
+**Decision.** Read all three, on the rails ADR-0039 built for the ageing schedules: figures become
+grade-A facts, facts become derived shares, shares decide checks, checks disposition notes and reach the
+agent packet. Four new checks — `finished_goods_buildup`, `inventory_provision_absent`,
+`contingent_liabilities_heavy` — plus `guarantees_heavy`, which has existed in the check library since
+ADR-0020 **with no data behind it** and now has some.
+
+**The enabling defect, and it was worse than the missing readers.** `notes_content.py` carried its OWN
+note-heading pattern, separate from the one `notes.py` uses. Two patterns for one concept means the
+second is always the stale one: this one had learned neither ADR-0037's trailing unit marker nor
+anything since, so `find_note_body` could locate the related-party note (by luck) and **nothing else in
+a real filing**. It is now built on `enumerate_notes`, and the related-party reader is the regression
+guard for the swap.
+
+**And the enumerator itself could not see a lettered sub-note.** "36a Contingent Liabilities and
+Commitments" and "36b Commitments" matched no heading form, so on the FY26 Alkyl Amines filing **ten
+headings were invisible** — including the two most forensically important disclosures in an Indian
+annual report. They could never be dispositioned, and coverage read 100% of a denominator that silently
+excluded them: the same species of untruth ADR-0037 fixed one layer up. A sub-note has its own heading,
+its own table and its own subject, so it is now its own note. The count goes 45 → 57, `Note.suffix`
+carries the letter, and `coverage()` keys on the LABEL ("36a") rather than the integer — keying on the
+number would let a disposition for note 36 satisfy the gate for 36a.
+
+**Four ways a note table lies to a naive reader, each now a refusal and a test.**
+1. **An amount inside the label is not a column.** Balaji Amines prints "Raw materials (includes
+   materials in transit of ₹2,857.50 lakh; P.Y. ₹3,322.22 lakh) 13,816.62 13,223.01" — four figures, of
+   which the first two are asides. Rows are read from the RIGHT.
+2. **A dash holds its column.** "Total  -    360.45" is a company that repaid its borrowings. Drop the
+   dash and one number remains, is read as the current year, and the report states that a debt-free
+   company owes ₹3.60cr at grade A. The ageing parser learned this on bucket columns (ADR-0038); a note
+   table has the same shape and the same trap.
+3. **The table ends at its own Total.** What follows is footnote prose carrying amounts — "* Includes
+   ₹21.07 lakhs deposited with CESTAT" — which read as rows are both phantom balances and a guaranteed
+   reconciliation failure, i.e. a finding against the company caused entirely by reading past the end.
+4. **Page furniture parses as data.** The running footer "Annual Report 2025-2026Website:
+   www.alkylamines.com 120" is a ₹20.25cr row. The related-party filter could not be reused: it excludes
+   every line starting with "(", which is exactly how Indian inventory notes letter their components.
+
+**Two false positives the tests caught before the checks could publish them.**
+- A row reading "GST on technical know-how paid to foreign entity and corporate guarantee extended on
+  behalf of the subsidiary company" is a **GST claim**. With `guarantees` ahead of the tax heads in the
+  bucket order, that entire ₹14.05cr demand was reported as an off-balance-sheet guarantee and sized
+  against net worth as one.
+- **Every** Ind AS filing says "the Company recognises financial guarantee contracts initially at fair
+  value". Matching it reports an off-balance-sheet exposure against every company ever read. A guarantee
+  must be named as a KIND (corporate, bank, performance) or be GIVEN by a verb.
+
+**A note body may not run more than two pages past its heading.** Enumeration is sparse wherever a
+heading style defeats the matcher, so "the next note" can be four pages on and the body swallows the
+auditor's report in between. That is not hypothetical: it turned the sentence "Loans or advances to
+promoters: NIL" into a related-party `loans_given` category and fired `promoter_lending` — a SEVERE flag
+and an automatic hard fail — against a company whose filing says the opposite of what was read.
+
+**The rupee glyph that is a capital H.** Several Indian annual reports set ₹ in a custom-encoded font
+and text extraction renders every one as "H": Balaji Amines declares "(All amounts are in H lakh)" and
+prints "H2,857.50 lakh" inline. The declaration matched no rupee pattern, `page_unit_hint` returned '',
+and — because ADR-0024 makes an unresolvable scale a refusal rather than an assumption — **not one
+figure in the entire filing could be read.** Silent and total. Admitted only in the `in <glyph> <scale>`
+position, never as a general rupee alternative.
+
+**"We looked and there are none" is a PASS.** `guarantees_heavy` on a located contingent note that
+discloses no guarantee reports a pass with that sentence, not UNAVAILABLE. Reporting it unavailable
+would collapse a governance finding into "we could not look", and the Verified-Clean Checklist would
+list a check the firm failed to run instead of a fact about the company. Where a guarantee IS disclosed
+but unsized (Balaji Amines), the check is UNAVAILABLE and the **reason carries the finding** — an
+unquantified off-balance-sheet obligation is a weaker disclosure than a large quantified one.
+
+**Verified on two real filings, not one.** Alkyl Amines FY26 and Balaji Amines FY25 — deliberately a
+second company, because every parser in this repo that was tested against one filing broke on the next:
+- ALKYLAMINE: inventory ₹122.81cr gross reconciled, finished goods 44.3% (from 49.1%), ₹0.67cr written
+  down, contingent claims ₹36.84cr (5.6% of net worth), **no guarantees given**. All four checks PASS.
+  Unavailable share 12% → 10%; notes 45 → 57 with 36a/36b now dispositioned.
+- BALAMINES: **`inventory_provision_absent` FLAGS — ₹250.58cr of inventory with not one rupee written
+  down against it**, and `guarantees_heavy` correctly reports a corporate guarantee to a subsidiary that
+  the filing does not size.
+
+**Not done, and named so it is not mistaken for finished.** Neither test company carries a **standalone
+borrowings note** — both are debt-free — so the borrowings reader is verified against the real Balaji
+*consolidated* note text (rate, security, repayment schedule) rather than through a full pipeline run.
+`secured_borrowings_share` and the disclosed rate are therefore parsed and stored but not yet consulted
+by `cash_debt_paradox`, which still divides Interest by Borrowings. Closing ADR-0028's mixed-provenance
+hole for debt needs a levered company in the corpus.
