@@ -14,6 +14,7 @@ from firm.adapters.india.notes import (
     parse_caro_clauses,
     scan_schedule_iii,
     schedule_iii_gaps,
+    sequence_gaps,
 )
 
 PAGE_1 = (
@@ -60,24 +61,69 @@ def test_enumerate_notes_ignores_prose_lines():
     assert notes == []
 
 
+#: The three heading shapes the Alkyl Amines FY26 filing actually uses that a digits-then-space pattern
+#: could not see. The first is the one that matters most: the contingent-liabilities note — the whole
+#: hidden-liability disclosure — is filed as a lettered sub-note and was silently never enumerated.
+SUFFIXED_PAGE = (
+    "36a  CONTINGENT LIABILITIES AND COMMITMENTS  ` in Lakhs\n"
+    "Claims against the company not acknowledged as debt  1234.56\n"
+    "44  VALUE OF IMPORTS CALCULATED ON C.I.F. BASIS  ` in Lakhs\n"
+    "45a  EXPENDITURE IN FOREIGN CURRENCY  ` in Lakhs\n"
+    "45b  EARNINGS IN FOREIGN CURRENCY  ` in Lakhs\n"
+)
+
+
+def test_a_lettered_sub_note_is_enumerated_and_keeps_its_label():
+    notes = enumerate_notes([SUFFIXED_PAGE])
+    labels = [n.label for n in notes]
+    assert labels == ["36a", "44", "45a", "45b"]
+
+    contingent = next(n for n in notes if n.label == "36a")
+    assert contingent.title == "CONTINGENT LIABILITIES AND COMMITMENTS"
+    assert contingent.category == "contingent_liabilities"
+    # The number still orders it; the suffix is what distinguishes it from a sibling.
+    assert (contingent.number, contingent.suffix) == (36, "a")
+
+
+def test_sibling_sub_notes_are_two_notes_not_one():
+    """45a and 45b share a number. Keying on the number silently discarded the second."""
+    notes = enumerate_notes([SUFFIXED_PAGE])
+    assert [n.label for n in notes if n.number == 45] == ["45a", "45b"]
+
+
+def test_a_dotted_title_is_still_a_heading():
+    """"C.I.F." — the character class excluded the period, so the whole note vanished."""
+    notes = enumerate_notes([SUFFIXED_PAGE])
+    assert next(n for n in notes if n.label == "44").title == (
+        "VALUE OF IMPORTS CALCULATED ON C.I.F. BASIS")
+
+
+def test_a_hole_in_the_filed_numbering_is_reported():
+    """Coverage measures the notes we FOUND. A gap in the sequence is a note we could not see, and
+    saying 100% without saying that overstates the reading."""
+    notes = enumerate_notes(["1  Corporate Information\n2  Accounting Policies\n5  Inventories\n"])
+    assert sequence_gaps(notes) == [3, 4]
+    assert sequence_gaps([]) == []
+
+
 # ---- disposition + coverage (the publish gate) --------------------------------------------------
 def test_coverage_full_and_partial():
     notes = enumerate_notes([PAGE_1, PAGE_2])
     disp = [
-        NoteDisposition(1, "clean", "boilerplate"),
-        NoteDisposition(2, "clean", "policies unchanged YoY"),
-        NoteDisposition(29, "flag", "contingents rose vs net worth", ["p.2 l.2"]),
+        NoteDisposition("1", "clean", "boilerplate"),
+        NoteDisposition("2", "clean", "policies unchanged YoY"),
+        NoteDisposition("29", "flag", "contingents rose vs net worth", ["p.2 l.2"]),
     ]
     pct, missing = coverage(notes, disp)
-    assert pct == pytest.approx(3 / 4) and missing == [30]    # note 30 unread -> cannot publish
-    pct, missing = coverage(notes, disp + [NoteDisposition(30, "unknown", "RPT schedule unreadable")])
+    assert pct == pytest.approx(3 / 4) and missing == ["30"]   # note 30 unread -> cannot publish
+    pct, missing = coverage(notes, disp + [NoteDisposition("30", "unknown", "RPT schedule unreadable")])
     assert pct == 1.0 and missing == []
 
 
 def test_coverage_phantom_disposition_raises():
     notes = enumerate_notes([PAGE_1])
     with pytest.raises(ValueError):                           # claiming to have read a non-existent note
-        coverage(notes, [NoteDisposition(99, "clean", "??")])
+        coverage(notes, [NoteDisposition("99", "clean", "??")])
 
 
 def test_coverage_empty_notes():
@@ -86,7 +132,7 @@ def test_coverage_empty_notes():
 
 def test_disposition_status_validated():
     with pytest.raises(ValueError):
-        NoteDisposition(1, "fine", "not a valid status")
+        NoteDisposition("1", "fine", "not a valid status")
 
 
 def test_note_is_frozen_dataclass():

@@ -42,11 +42,21 @@ from typing import Sequence
 #:
 #: Sub-numbered continuations ("3.3a. Ageing of Capital Work in progress", "4.1 -Lease period of land")
 #: are excluded by requiring whitespace after the number's terminator, which a sub-number does not have.
+#: A note number may carry a SINGLE-LETTER SUFFIX — "36a", "45b". Indian filings use it for the
+#: sub-notes of a disclosure, and the most important note in the whole document is one of them: Alkyl
+#: Amines prints contingent liabilities as "36a  CONTINGENT LIABILITIES AND COMMITMENTS". A pattern
+#: demanding digits-then-whitespace matched none of them, so the filing's hidden-liability disclosure was
+#: never enumerated — while `coverage` still reported 100%, because it measures the notes we FOUND.
+#:
+#: Titles also carry dots ("44  VALUE OF IMPORTS CALCULATED ON C.I.F. BASIS"), which the character class
+#: excluded, and a trailing unit annotation ("` in Lakhs") already handled by the `\s{2,}` tail.
 _NOTE_HEADING = re.compile(
-    r"^\s*(?:NOTE|Note)\s+(\d{1,3})\s*[:.\-–)]\s*(\S.{2,90}?)(?:\s{2,}.*)?$|"
-    r"^\s*(\d{1,3})\s*[.)]\s+([A-Za-z][A-Za-z &,/()'\-]{3,70}?)(?:\s{2,}.*)?$|"
-    r"^\s*(\d{1,3})\s{1,}([A-Z][A-Za-z &,/()'\-]{4,70}?)(?:\s{2,}.*)?$"
+    r"^\s*(?:NOTE|Note)\s+(\d{1,3}[a-zA-Z]?)\s*[:.\-–)]\s*(\S.{2,90}?)(?:\s{2,}.*)?$|"
+    r"^\s*(\d{1,3}[a-zA-Z]?)\s*[.)]\s+([A-Za-z][A-Za-z .&,/()'\-]{3,70}?)(?:\s{2,}.*)?$|"
+    r"^\s*(\d{1,3}[a-zA-Z]?)\s{1,}([A-Z][A-Za-z .&,/()'\-]{4,70}?)(?:\s{2,}.*)?$"
 )
+#: Splits "36a" into (36, "a"). The number orders the notes; the suffix distinguishes siblings.
+_NOTE_NUMBER = re.compile(r"^(\d{1,3})([a-zA-Z]?)$")
 
 # CARO clause markers: (i) ... (xxi), at line starts.
 _CARO_CLAUSE = re.compile(r"^\s*\(\s*([ivxl]{1,5})\s*\)", re.IGNORECASE | re.MULTILINE)
@@ -143,6 +153,14 @@ class Note:
     title: str
     page: int    # 1-based
     line: int    # 1-based
+    #: "a" in "36a". Sibling sub-notes share a number and differ only here, so `label` — never `number`
+    #: — is what identifies a note. Keying on the number alone silently merged 45a and 45b into one.
+    suffix: str = ""
+
+    @property
+    def label(self) -> str:
+        """How the filing itself names this note: '36', '36a'. The identity used everywhere."""
+        return f"{self.number}{self.suffix}"
 
     @property
     def category(self) -> str:
@@ -159,7 +177,8 @@ class Note:
 class NoteDisposition:
     """Exactly one per enumerated note. `figure_locators` bind extracted numbers to (page,line)."""
 
-    note_number: int
+    #: The note's own label ("36", "36a"), not its number — sub-notes share a number (ADR-0045).
+    note_label: str
     status: str                      # 'clean' | 'flag' | 'unknown'
     rationale: str
     figure_locators: list[str] = field(default_factory=list)
@@ -195,7 +214,7 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
     (1-based) restricts the scan to the notes-to-accounts section; pass `notes_section_start(pages)` for it.
     Page numbers stay absolute so provenance still points at the real page.
     """
-    seen: set[int] = set()
+    seen: set[str] = set()
     candidates: list[Note] = []
     floor = first_page or 1
     for p_idx, page in enumerate(pages, start=1):
@@ -205,12 +224,19 @@ def enumerate_notes(pages: Sequence[str], *, first_page: int | None = None) -> l
             m = _NOTE_HEADING.match(line)
             if not m:
                 continue
-            number = int(m.group(1) or m.group(3) or m.group(5))
-            title = (m.group(2) or m.group(4) or m.group(6) or "").strip(" .:-–")
-            if number in seen:
+            token = m.group(1) or m.group(3) or m.group(5)
+            parsed = _NOTE_NUMBER.match(token)
+            if parsed is None:  # pragma: no cover - the heading pattern cannot produce another shape
                 continue
-            seen.add(number)
-            candidates.append(Note(number, title, p_idx, l_idx))
+            number, suffix = int(parsed.group(1)), parsed.group(2).lower()
+            title = (m.group(2) or m.group(4) or m.group(6) or "").strip(" .:-–")
+            label = f"{number}{suffix}"
+            # De-duplicate on the LABEL: continuation pages repeat a heading, but 45a and 45b are two
+            # different notes and de-duplicating on the number would have discarded the second.
+            if label in seen:
+                continue
+            seen.add(label)
+            candidates.append(Note(number, title, p_idx, l_idx, suffix))
     return _in_filed_order(candidates)
 
 
@@ -236,7 +262,10 @@ def _in_filed_order(candidates: Sequence[Note]) -> list[Note]:
     previous = [-1] * len(candidates)
     for i in range(len(candidates)):
         for j in range(i):
-            if candidates[j].number < candidates[i].number and best[j] + 1 > best[i]:
+            # Ordered on (number, suffix): sibling sub-notes share a number, so a strict `<` on the
+            # number alone treats 45a and 45b as non-ascending and discards the second.
+            if ((candidates[j].number, candidates[j].suffix)
+                    < (candidates[i].number, candidates[i].suffix)) and best[j] + 1 > best[i]:
                 best[i], previous[i] = best[j] + 1, j
     index = max(range(len(candidates)), key=lambda i: best[i])
     chain: list[Note] = []
@@ -269,14 +298,17 @@ def note_body(pages: Sequence[str], notes: Sequence[Note], note: Note) -> list[s
     return out
 
 
-def coverage(notes: Sequence[Note], dispositions: Sequence[NoteDisposition]) -> tuple[float, list[int]]:
-    """(fraction of notes dispositioned, note numbers still missing). Publish gate requires (1.0, []).
+def coverage(notes: Sequence[Note], dispositions: Sequence[NoteDisposition]) -> tuple[float, list[str]]:
+    """(fraction of notes dispositioned, note labels still missing). Publish gate requires (1.0, []).
 
     A disposition for a note that was never enumerated raises — you cannot claim to have read a note
     that does not exist (that is how fake coverage would sneak in).
+
+    Keyed on `label`, not `number`: sibling sub-notes (45a, 45b) share a number, and a number-keyed set
+    silently merged them into one — inflating the denominator's honesty and the numerator's alike.
     """
-    have = {n.number for n in notes}
-    got = {d.note_number for d in dispositions}
+    have = {n.label for n in notes}
+    got = {d.note_label for d in dispositions}
     phantom = sorted(got - have)
     if phantom:
         raise ValueError(f"dispositions reference non-existent notes: {phantom}")
@@ -284,6 +316,23 @@ def coverage(notes: Sequence[Note], dispositions: Sequence[NoteDisposition]) -> 
         return 0.0, []
     missing = sorted(have - got)
     return (len(have) - len(missing)) / len(have), missing
+
+
+def sequence_gaps(notes: Sequence[Note]) -> list[int]:
+    """Note numbers missing from the filed sequence — notes that exist and were NOT enumerated.
+
+    `coverage` measures dispositions against the notes we FOUND, so it reports 100% while the enumerator
+    is blind to a whole note. That is exactly how Alkyl Amines' contingent-liabilities note ("36a") went
+    unread behind a 100% coverage figure. Notes to the accounts are numbered consecutively, so a hole in
+    the run is direct evidence of a note the parser could not see.
+
+    This is a CAPABILITY gap, never a disclosure gap: the company numbered its notes correctly and we
+    failed to read one. It must lower our confidence, never the company's verdict (ADR-0022).
+    """
+    if not notes:
+        return []
+    numbers = {n.number for n in notes}
+    return [n for n in range(min(numbers), max(numbers) + 1) if n not in numbers]
 
 
 def categorise_notes(notes: Sequence[Note]) -> dict[str, list[int]]:

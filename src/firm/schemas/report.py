@@ -72,7 +72,10 @@ class VerifiedCleanChecklist(BaseModel):
     expected_checks: list[str] = Field(default_factory=list)
     records: list[CheckRecord] = Field(default_factory=list)
     note_coverage: float = Field(default=0.0, ge=0.0, le=1.0)
-    notes_undispositioned: list[int] = Field(default_factory=list)
+    notes_undispositioned: list[str] = Field(default_factory=list)
+    #: Note numbers absent from the filed sequence — notes that exist and the parser could not see.
+    #: Printed beside coverage because 100% coverage of the notes we FOUND is not 100% of the notes.
+    notes_unenumerated: list[int] = Field(default_factory=list)
     disclosure_gaps: list[str] = Field(default_factory=list)
 
     def outcome_of(self, name: str) -> CheckOutcome | None:

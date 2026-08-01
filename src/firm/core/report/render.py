@@ -158,6 +158,13 @@ def render_markdown(report: ResearchReport) -> str:
     out += [f"**Note coverage: {cl.note_coverage:.0%}**"
             + (f" · undispositioned: {cl.notes_undispositioned}" if cl.notes_undispositioned else ""),
             ""]
+    if cl.notes_unenumerated:
+        # Coverage is a share of the notes we FOUND. A hole in the filed numbering means a note exists
+        # that the parser never saw, and saying 100% without saying this would overstate the reading.
+        out += [f"**Notes the parser could not locate: {cl.notes_unenumerated}** — numbered by the "
+                f"company and absent from our enumeration, so the coverage figure above is a share of "
+                f"the notes we found, not of the notes that exist. This is a gap in our reading, not in "
+                f"the company's disclosure.", ""]
     if cl.records:
         out += ["### Verified-clean checklist", "",
                 "_Every check that ran, passes included — a clean verdict with an invisible process is "

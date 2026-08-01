@@ -152,7 +152,7 @@ def test_full_chain_clean_manufacturer_passes(tmp_path):
     notes = enumerate_notes(pages)
     numbers = {n.number for n in notes}
     assert {1, 2, 9, 10, 29, 30} <= numbers
-    cov, missing = coverage(notes, [NoteDisposition(n.number, "clean", "reviewed") for n in notes])
+    cov, missing = coverage(notes, [NoteDisposition(n.label, "clean", "reviewed") for n in notes])
     assert cov == 1.0 and missing == []                              # publishable
 
     # mandated disclosures present -> no gap

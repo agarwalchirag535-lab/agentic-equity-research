@@ -102,7 +102,7 @@ def test_too_much_of_the_playbook_unevaluable_is_insufficient_disclosure():
 
 
 def test_incomplete_note_coverage_is_insufficient_disclosure():
-    notes = NotesReview(coverage=0.7, undispositioned=(30,), substantive_share=0.7, notes_total=10)
+    notes = NotesReview(coverage=0.7, undispositioned=("30",), substantive_share=0.7, notes_total=10)
     assert _choose(notes=notes).verdict is Verdict.INSUFFICIENT_DISCLOSURE
 
 
@@ -191,11 +191,11 @@ def test_assembly_attaches_criteria_by_verdict_class_and_states_the_rationale(st
 def test_checklist_carries_the_models_the_expected_checks_and_the_note_proof():
     checklist = build_checklist(
         _evaluation(unavailable=1), [BusinessModel.MANUFACTURER, BusinessModel.LENDER],
-        NotesReview(coverage=0.9, undispositioned=(30,), substantive_share=0.5, notes_total=10,
+        NotesReview(coverage=0.9, undispositioned=("30",), substantive_share=0.5, notes_total=10,
                     disclosure_gaps=("benami_property",)))
     assert checklist.business_models == ["MANUFACTURER", "LENDER"]
     assert len(checklist.expected_checks) == 10
-    assert checklist.note_coverage == 0.9 and checklist.notes_undispositioned == [30]
+    assert checklist.note_coverage == 0.9 and checklist.notes_undispositioned == ["30"]
     assert checklist.disclosure_gaps == ["benami_property"]
     assert checklist.outcome_of("check_0") is CheckOutcome.UNAVAILABLE
 

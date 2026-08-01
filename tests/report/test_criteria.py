@@ -75,7 +75,7 @@ def test_rehabilitation_criteria_come_from_the_fired_and_unavailable_checks(stor
             CheckRecord(name="promoter_lending", outcome=CheckOutcome.UNAVAILABLE,
                         reason="Schedule III row absent"),
         ],
-        note_coverage=0.6, notes_undispositioned=[30],
+        note_coverage=0.6, notes_undispositioned=["30"],
     )
     criteria = rehabilitation_criteria(
         derived, checklist, forensic=FORENSIC, policy=POLICY, as_of=AS_OF)

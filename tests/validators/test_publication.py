@@ -91,7 +91,7 @@ def test_p1_unavailable_or_na_requires_reason():
 
 
 def test_p1_note_coverage_below_100_blocks():
-    cl = _clean_checklist(note_coverage=0.75, notes_undispositioned=[30])
+    cl = _clean_checklist(note_coverage=0.75, notes_undispositioned=["30"])
     v = verified_clean_completeness(_report(checklist=cl))
     assert any("note coverage" in x.detail for x in v)
 

@@ -1276,3 +1276,38 @@ pushed onto continuation lines beside the wrapped digits. The pattern from ADR-0
 layout mode — 26 registered quarters fell to 14 on merge. The conjunction is now the anchor and the rest
 of the label optional; a bare `A\s+promoter` was rejected because it also matches prose like "held by a
 promoter". Both extraction modes are now covered by fixtures.
+
+### ADR-0045 — 100% coverage of the notes we found is not 100% of the notes
+**Context.** STATUS §0b said substantive note coverage was 9% against a 50% floor and prescribed content
+readers, one category at a time. The acceptance run reported **64%** — the merge's note-reconciliation
+work had already cleared the floor — so the prescribed milestone was chasing a number that no longer
+existed. Checking what was actually left surfaced something worse.
+
+**What was actually wrong.** The enumerated note numbers had holes: 10, 36, 44, 45, 46, 50 were absent
+from a 1..51 sequence, and `coverage` still reported **100%**, because it measures dispositions against
+the notes the parser FOUND. Three enumeration defects, each invisible:
+
+* **A note number may carry a letter suffix.** Alkyl Amines files contingent liabilities as
+  `36a  CONTINGENT LIABILITIES AND COMMITMENTS`. The heading pattern demanded digits-then-whitespace, so
+  **the entire hidden-liability disclosure was never enumerated, never dispositioned, and never read** —
+  behind a perfect coverage score. For a firm whose premise is forensic reading, this is the worst class
+  of defect: not a wrong answer, an unasked question wearing the costume of a complete one.
+* **Sibling sub-notes were merged.** `45a` and `45b` share a number, and both `enumerate_notes` and
+  `coverage` keyed on the number — so the second was discarded and the denominator was quietly wrong.
+  Notes are now identified by `label` ("36a"), never by `number`.
+* **Titles carry dots.** `44  VALUE OF IMPORTS CALCULATED ON C.I.F. BASIS` failed a character class that
+  excluded the period.
+
+**Decision — and the structural half is the important one.** Fixing the three patterns is worth little on
+its own: the next filing will use a shape nobody anticipated. `sequence_gaps` reports note numbers missing
+from the filed run, `NotesReview.unenumerated` carries them, and the report **prints them beside the
+coverage figure**. A hole in a consecutively-numbered sequence is direct evidence of a note that exists and
+was not read, so the reader now sees "coverage 100%" and "notes the parser could not locate: [10, 46, 50]"
+together, and cannot mistake one for the other. Classified a CAPABILITY gap (ADR-0022): it lowers our
+confidence and never the company's verdict.
+
+**Result, and it is the right direction.** Enumeration went 45 → **59** notes; substantive share went
+64% → **51%** and confidence 0.55 → 0.51. Finding more notes made the score *worse and truer* — the 64%
+was a share of an incomplete denominator. It also puts the reading barely above the 50% floor, which
+makes the note-content readers genuinely load-bearing rather than a nice-to-have: one more note found
+and this report stops publishing.

@@ -40,6 +40,7 @@ from firm.adapters.india.notes import (
     NoteDisposition,
     caro_candidate_flags,
     coverage,
+    sequence_gaps,
     enumerate_notes,
     note_body,
     parse_caro_clauses,
@@ -240,7 +241,7 @@ class FilingWalk:
     caro_flags: tuple[tuple[str, str], ...]
     missing_disclosures: tuple[str, ...]
     rows: Mapping[str, ExtractedValue]
-    #: note number -> (status, why) from `reconcile_notes`, for `disposition_notes`.
+    #: note LABEL ('36a') -> (status, why) from `reconcile_notes`, for `disposition_notes`.
     reconciliations: Mapping[int, tuple[str, str]] = field(default_factory=dict)
 
 
@@ -539,7 +540,7 @@ def reconcile_notes(
     notes: Sequence[Note],
     values: Mapping[str, tuple[float, ...]],
 ) -> dict[int, tuple[str, str]]:
-    """Check each note's body against the statement line it details. `{note number: (status, why)}`.
+    """Check each note's body against the statement line it details. `{note label: (status, why)}`.
 
     THE TEST. A note to the accounts exists to break one figure on the face of the statements into its
     parts, so somewhere in its body that figure must appear. "Note 29 Other Income" must carry ₹3,165.21
@@ -564,19 +565,19 @@ def reconcile_notes(
             printed.extend(to_canonical_crore(v, _page_unit(filing, note.page)) or 0.0
                            for v in numbers_on_line(line))
         if any(abs(v - expected) <= _TIE_TOLERANCE for v in printed):
-            out[note.number] = ("clean", (
+            out[note.label] = ("clean", (
                 f"the note's own figures reconcile to the {metric} line on the face of the statements "
                 f"(₹{expected:,.2f}cr) — the breakup was read, not merely listed"
             ))
         elif printed:
-            out[note.number] = ("unknown", (
+            out[note.label] = ("unknown", (
                 f"the note carries {len(printed)} figures but none reconciles to the {metric} line it "
                 f"details (₹{expected:,.2f}cr), so the breakup could not be tied to the statements — "
                 f"treated as unread rather than as a discrepancy, because a line-anchored reader misses "
                 f"continuation tables that the company did print"
             ))
         else:
-            out[note.number] = ("unknown", (
+            out[note.label] = ("unknown", (
                 f"no figures could be read from this note's body, so its reconciliation to the "
                 f"{metric} line was not attempted"
             ))
@@ -619,7 +620,7 @@ def disposition_notes(
         fired = [c for c, o in outcomes.items() if o is CheckOutcome.FLAG]
         passed = [c for c, o in outcomes.items() if o is CheckOutcome.PASS]
         absent = [c for c, o in outcomes.items() if o is CheckOutcome.UNAVAILABLE]
-        tie_status, tie_reason = ties.get(note.number, ("", ""))
+        tie_status, tie_reason = ties.get(note.label, ("", ""))
 
         if fired:
             status, rationale = "flag", f"check(s) fired on this note: {', '.join(fired)}"
@@ -643,7 +644,7 @@ def disposition_notes(
         if status in ("clean", "flag"):
             substantive += 1
         dispositions.append(NoteDisposition(
-            note_number=note.number, status=status, rationale=rationale,
+            note_label=note.label, status=status, rationale=rationale,
             figure_locators=[f"p.{note.page} l.{note.line}"],
         ))
 
@@ -656,5 +657,6 @@ def disposition_notes(
         notes_total=total,
         disclosure_gaps=tuple(disclosure_gaps_found),
         scanned=True,
+        unenumerated=tuple(sequence_gaps(notes)),
     )
     return review, tuple(dispositions)

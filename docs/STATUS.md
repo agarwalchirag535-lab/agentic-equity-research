@@ -181,10 +181,22 @@ depends on, so it needs its own tests: a restatement must still be invisible bef
 a grade-A filing must not resurrect a figure the company later corrected.
 </details>
 
-### 0b. Substantive note coverage is 9% against a 50% floor
-Not a defect — the floor is right and the coverage is not there yet. Needs note-content readers for inventory,
-receivables, borrowings, contingent liabilities, tax, leases, employee benefits and segment, on the pattern of
-`notes_content.related_party_summary`. Several sessions of work, one note category at a time.
+### 0b. Substantive note coverage is 51% against a 50% floor — barely publishing
+**Rewritten 2026-08-01 (ADR-0045); the old "9%" figure was stale twice over.** The merge's note
+reconciliation lifted it to 64%, and then fixing the enumerator lowered it to a truer **51%**: the
+parser had been blind to 14 notes (lettered sub-notes like `36a`, dotted titles like `C.I.F.`, merged
+siblings `45a`/`45b`), so 64% was a share of an incomplete denominator. **The contingent-liabilities
+note was among the invisible ones** — the whole hidden-liability disclosure, unread behind a 100%
+coverage score.
+
+Enumeration is now 59 notes and the report prints the numbers it still cannot locate ([10, 46, 50])
+beside the coverage figure, so a blind spot can no longer hide inside a perfect score.
+
+**This is now load-bearing, not cosmetic: at 51% against a 50% floor, one more note found stops the
+report publishing.** The remaining work is unchanged in shape — note-content readers on the
+`notes_content.related_party_summary` pattern — but the priority order should follow the categories that
+are actually `unknown` today: `contingent_liabilities` (now visible and still unread by any check),
+`tax` (3 notes), `employee_benefits`, `segment`, `leases`, and the 10 `uncategorised`.
 
 ### 0. ~~A FALSE-POSITIVE FORENSIC_CAUTION~~ — FIXED 2026-07-30 (ADR-0025)
 Both causes fixed: `ExternalInputs` is now canonical ₹ crore (the ADR-0024 unit fix had normalised only the

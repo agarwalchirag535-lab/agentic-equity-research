@@ -59,11 +59,16 @@ class NotesReview:
     """
 
     coverage: float = 0.0
-    undispositioned: tuple[int, ...] = ()
+    undispositioned: tuple[str, ...] = ()
     substantive_share: float = 0.0
     notes_total: int = 0
     disclosure_gaps: tuple[str, ...] = ()
     scanned: bool = False
+    #: Note numbers missing from the filed sequence — notes that exist and the enumerator could not see.
+    #: `coverage` measures dispositions against the notes we FOUND, so it reads 100% while a note is
+    #: invisible; that is how the contingent-liabilities note went unread behind a perfect score
+    #: (ADR-0045). A CAPABILITY gap: it lowers our confidence, never the company's verdict.
+    unenumerated: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -246,6 +251,7 @@ def build_checklist(
         expected_checks=list(evaluation.expected),
         records=list(evaluation.records),
         note_coverage=notes.coverage,
+        notes_unenumerated=list(notes.unenumerated),
         notes_undispositioned=list(notes.undispositioned),
         disclosure_gaps=list(notes.disclosure_gaps),
     )

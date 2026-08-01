@@ -85,11 +85,11 @@ def test_substantive_share_exposes_coverage_that_did_not_read_anything(store):
 def test_a_fired_check_flags_its_note(store):
     walk, evaluation = _walk_and_evaluate(store, "STUFFED", FRAUD_AR_PAGES)
     _, dispositions = disposition_notes(walk.notes, evaluation)
-    by_number = {d.note_number: d for d in dispositions}
+    by_label = {d.note_label: d for d in dispositions}
 
-    assert by_number[9].status == "flag"                       # Note 9: Trade Receivables
-    assert "receivables_divergent" in by_number[9].rationale
-    assert by_number[9].figure_locators == ["p.4 l.3"]   # the notes page follows the three audited statement pages
+    assert by_label["9"].status == "flag"                       # Note 9: Trade Receivables
+    assert "receivables_divergent" in by_label["9"].rationale
+    assert by_label["9"].figure_locators == ["p.4 l.3"]   # the notes page follows the three audited statement pages
 
 
 def test_missing_mandated_disclosures_and_adverse_caro_clauses_surface(store):
