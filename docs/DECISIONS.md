@@ -953,3 +953,39 @@ human-readable label couples two things that have no reason to agree.
 primary-source governance claim: *"Promoter holding at the latest quarter read is 72.05%
 [fact:SHP-Q4FY26-…:promoter_holding:Q4FY26]"* — grade A, and the pledge question answered no in every
 quarter that answers it. The verdict is unchanged; a positive governance finding did not buy a better one.
+
+### ADR-0036 — The transcript parser: guidance is a quote with a date, never a paraphrase
+**Context.** STATUS §3 Phase 3 remainder: `transcript_analyst` and `management_analyst` need concall
+transcripts parsed. Thirteen Alkyl Amines transcripts sat in bronze, satisfying the roster prerequisite on
+paper while the agents had nothing they could cite — the ADR-0035 gap again, one document class over.
+
+**Decision — `adapters/india/transcripts.py` extracts dated, verbatim, unit-anchored guidance.** A guidance
+statement is a sentence that attaches a number to the future, recorded exactly as printed with its page. Four
+refusals define the parser more than its extractions:
+
+*A question is not guidance.* An analyst asking "do we expect 21%?" must never be counted as management
+guiding 21%. Sentences are classified statement/question — by final punctuation AND by interrogative
+phrasing, because real asks trail off without a question mark ("Sir, just wanted to ask, any guidance
+regarding this FY.").
+
+*An announcement is not a transcript.* The May-2022 intimation letter names an "earnings conference call"
+and parsed as a transcript with zero guidance. Refused now: a document must carry the transcript itself
+(the word in the Reg-30 letter, or the moderator's dialogue), or it is not read for guidance.
+
+*No speaker attribution.* The text layer detaches the speaker column from the dialogue (every name first,
+then every utterance), and "the CFO said" is a claim about a person. Quotes carry a page, not a name.
+
+*Only unit-anchored values.* "15%" and "Rs. 150 crores" become values; bare numbers, calendar years and
+dial-in codes stay in the quote. An unanchored figure has no meaning an agent could safely cite.
+
+**Three parsing defects the real filings caught.** (1) The sentence splitter broke at the dot in "Rs. 150
+crores", stranding every rupee figure from its anchor — abbreviation dots no longer end sentences. (2)
+"Q4 FY23-24" read as FY23: the range form names the FY twice and the Indian FY is named for the year it
+ends in, so the second token wins. (3) "held on Thursday, November 7, 2019" — the weekday broke the
+held-on pattern and every call date silently fell back to the letter date.
+
+**Result.** All 13 real transcripts parse: call dates from the cover letter's own "held on" sentence,
+submission dates strictly after them, 12 of 13 quarters stated (one inferred and labelled
+`derived-from-call-date`), 77 guidance statements with 57 unit-anchored values across FY20-FY26. The
+announcement is refused with its reason. Registration as citable facts is the next step — this ADR ends
+where ADR-0035 began.
