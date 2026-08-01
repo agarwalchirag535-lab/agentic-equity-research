@@ -137,9 +137,14 @@ sections that discovery had never opened. Remaining in this phase:
    The transcript chain is complete (ADR-0036/0037): `adapters/india/transcripts.py` parses dated verbatim
    guidance quotes (statement/question separation, unit-anchored values only), `core/ingest/transcripts.py`
    registers them grade-A, and `run_deep_dive` feeds the series to the packet as `management_guidance` with
-   citable ids — 57 guided figures across 13 real quarters FY20-FY26. Remaining: the older shareholding
-   layout (14 quarters that fail at location), and peer ingest for `sector_analyst`.
+   citable ids — 57 guided figures across 13 real quarters FY20-FY26. The older shareholding layout is
+   fixed (ADR-0038): 27 of 27 filings now parse and **26 quarters** register grade-A (Q1FY20-Q4FY26, was
+   12). Remaining: peer ingest for `sector_analyst`.
 2. ~~parser + registration for transcripts (guidance extraction)~~ DONE (ADR-0036/0037)
+   ~~older shareholding layout~~ DONE (ADR-0038). Two stated gaps left: one filing (Q3FY26) has its
+   reporting date scrambled by the text layer and is refused rather than guessed (that quarter is
+   duplicated by another file); and SEBI's 2025 NDU / other-encumbrance declarations are not parsed — only
+   the pledge question is. Folding NDU into `pledged` would misreport it.
 3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
 
 

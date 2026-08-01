@@ -1016,3 +1016,48 @@ announcement refused with its reason; the one transcript without a letter date d
 scripted agent citing "15% [fact:TRN-Q4FY25-…:guidance_volume_growth:…]" passes the citation gate — the
 test the whole chain exists to satisfy. Known cosmetic debt: a running header occasionally joins a quote
 ("Alkyl Amines Chemicals Limited May 06, 2026 And given…"); values and pages are unaffected.
+
+### ADR-0038 — The shareholding parser reads the layout the filings use, not the one we met first
+**Context.** STATUS §3 carried "the older shareholding layout (14 quarters that fail at location)" as
+Phase-3 remainder. Fourteen of Alkyl Amines' 27 shareholding patterns were refused with *"the promoter and
+public category rows were not both located"* — the parser had been written against the 2023-onward layout
+and quietly could not read the seven years before it.
+
+**Decision — scan whitespace-collapsed page text with bounded category regions.** The pre-2023 filings wrap
+both the category label and its figures across a dozen physical lines ("A Promoter &\nPromoter\nGroup\n13
+1513278\n8 ..."), so a line-anchored pattern can never see a whole row. Collapsing each page to one string
+makes both layouts read alike; collapsing *per page* rather than per document keeps the page number the
+locator needs. Each row is then bounded by the next category label, because Table II — the promoter
+breakdown by name — follows Table I in the same document, and its per-shareholder percentages must never
+compete with the category's own.
+
+**The wrapped digits were not the problem.** The text layer splits share counts across line breaks
+("1513278\n8"), which no join rule repairs: joining without a space glues the next line's percentage onto
+the count, and joining with one splits the count in two. It did not need repairing. The parser wants the
+*percentage*, the percentage survives unwrapped, and ADR-0032's category identity (promoter + public = 100)
+was already there to choose among readings. The fix was locating the row, not reconstructing it.
+
+**A whole-number percentage needed a second reading.** Two quarters print "72" and "28" rather than
+72.05/27.95, and the decimal-in-range discriminator rejects an integer by construction — correctly, since
+share counts are large integers and the shareholder count is a small one. So the integer reading is
+consulted **only** where the decimal reading fails to reconcile, and it must still satisfy the identity,
+which for two integers means summing to exactly 100. The count (13) can never be mistaken for the stake
+(72): pairing it with the public reading sums to 41.
+
+**SEBI restructured the pledge question and we were reading silence.** From 2025 the single declaration
+("pledge or otherwise encumbered?") became three — encumbered under "Pledged", under "Non-Disposal
+Undertaking", and otherwise. The old pattern matched none of them, so the two most recent filings reported
+pledge as *unknown* while the page in front of us answered "No". Both wordings are now read. NDU and
+other encumbrance are deliberately **not** folded into a field named `pledged`: SEBI separates the
+instruments, and aliasing them would misreport a governance fact. They are an open gap, stated as one.
+
+**Result.** 27 of 27 filings located, every one reconciling to exactly 100.0, pledge answered in all of
+them. Registered facts go from 12 quarters to **26**, Q1FY20-Q4FY26 — the promoter stake drifting 74.19%
+to 72.05% with a visible step between Q1FY22 and Q2FY22, which is a series `ownership_flows_analyst` can
+finally read as a trend rather than a point. Also deleted `_holding_pct`, dead since the identity-based
+pairing replaced it.
+
+**Two gaps left standing, both stated rather than papered over.** One filing (Q3FY26) has its reporting
+date scrambled out of position by the text layer; it is refused and skipped, because a wrongly dated
+filing breaks Law 3 more quietly than a missing one, and that quarter is duplicated by another file
+anyway. And the NDU / other-encumbrance answers are parsed by nobody yet.
