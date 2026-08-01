@@ -1061,3 +1061,43 @@ pairing replaced it.
 date scrambled out of position by the text layer; it is refused and skipped, because a wrongly dated
 filing breaks Law 3 more quietly than a missing one, and that quarter is duplicated by another file
 anyway. And the NDU / other-encumbrance answers are parsed by nobody yet.
+
+### ADR-0039 — Peer comparison: one period, both companies, or it is not a comparison
+**Context.** The last Phase-3 prerequisite with nothing behind it. `sector_analyst`'s mandate is to locate
+the sector's profit pool and say who holds pricing power — both *relative* claims — so the roster gave it
+a `peers` prerequisite that no ingest satisfied, and the agent never ran. Balaji Amines' annual reports
+were already in the fact store, grade A, FY21-FY25, read by nobody: the ADR-0035 pattern a third time.
+
+**Decision — `core/pipeline/peers.py`, and the invariant is the period.** The obvious implementation
+compares each company at *its own* latest year. The subject files before its peer, so that silently
+compares ALKYLAMINE FY26 against BALAMINES FY25 — two different years of a chemicals cycle — and the
+output looks entirely normal while measuring nothing. On the live data it would also have been *wrong in
+the flattering direction* for the peer: the subject's FY26 revenue is ₹36cr **below** its FY25, so the
+naive read understates the gap between them. Every row therefore carries ONE period, used for both sides,
+chosen as the latest period where both companies disclose every input that row needs. `PeerMetric.period`
+is a single field precisely so the dangerous object cannot be constructed.
+
+Growth is compared over the longest window BOTH cover (FY21-FY25 here, not the subject's FY15-FY26): a
+peer with five years and a subject with twelve, each measured over its own record, compares a half-cycle
+against a full one.
+
+**No proxies, and no arithmetic in this module.** Inventory days needs COGS, which neither company's
+ingested metric set carries cleanly, so it is not compared rather than computed off an "expenses"
+stand-in that would make two firms' working capital differ where only the approximation does. Every
+figure comes from `core/compute/ratios.py` (Law 1). `cagr` moved there from a private copy in `derive.py`
+— a third copy was about to exist, which is exactly what Law 1 forbids.
+
+**A measure that cannot be compared says so.** An absent row reads as "these companies are alike here".
+`incomparable` carries the reason instead, and a *named* peer we hold no facts on returns an empty
+comparison with its own reason — that is a gap in the firm's coverage, not a row to drop.
+
+**Availability is earned, not asserted.** `peers` is satisfied by another company's facts rather than by
+a document in this company's manifest, so the CLI resolves it — and only when the comparison actually
+yields a row. Naming a peer we have no data on must not let the roster claim coverage that produces
+nothing citable.
+
+**Result.** `sector_analyst` is staffed for the first time. Against BALAMINES on FY25, all grade A except
+net margin: Alkyl Amines is the larger business (₹1,571.8cr vs ₹1,273.6cr), earns slightly *less* per
+rupee of sales (11.83% vs 12.27%), collects markedly faster (53.6 days vs 70.4), and grew sales at 6.1%
+CAGR against the peer's 0.9% over FY21-FY25. Both sides of every row are citable, and a scripted agent
+quoting the peer's figure passes the citation gate.

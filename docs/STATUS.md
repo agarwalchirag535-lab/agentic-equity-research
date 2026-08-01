@@ -127,7 +127,7 @@ a company for the firm's own unfinished note-parser would reject every good busi
 
 ## 3. What is REMAINING (priority order)
 
-### PHASE 3 IN PROGRESS — roster wired, 89% staffed (ADR-0030/0031)
+### PHASE 3 — every data prerequisite is now satisfiable (ADR-0030/0031)
 `config/roster.yaml` declares all 14 agents with stage, gate, phase and data prerequisites; `plan_run`
 enforces build order and reports three distinct kinds of skip. 54 governance documents ingested from the IR
 sections that discovery had never opened. Remaining in this phase:
@@ -139,13 +139,22 @@ sections that discovery had never opened. Remaining in this phase:
    registers them grade-A, and `run_deep_dive` feeds the series to the packet as `management_guidance` with
    citable ids — 57 guided figures across 13 real quarters FY20-FY26. The older shareholding layout is
    fixed (ADR-0038): 27 of 27 filings now parse and **26 quarters** register grade-A (Q1FY20-Q4FY26, was
-   12). Remaining: peer ingest for `sector_analyst`.
+   12). Peer comparison is built (ADR-0039), so `sector_analyst` is staffed and every Phase-3 data
+   prerequisite in `config/roster.yaml` now has something behind it.
 2. ~~parser + registration for transcripts (guidance extraction)~~ DONE (ADR-0036/0037)
    ~~older shareholding layout~~ DONE (ADR-0038). Two stated gaps left: one filing (Q3FY26) has its
    reporting date scrambled by the text layer and is refused rather than guessed (that quarter is
    duplicated by another file); and SEBI's 2025 NDU / other-encumbrance declarations are not parsed — only
    the pledge question is. Folding NDU into `pledged` would misreport it.
-3. peer-set ingest for `sector_analyst` — same pipeline aimed at a peer's IR site
+3. ~~peer-set ingest for `sector_analyst`~~ DONE (ADR-0039). `core/pipeline/peers.py` + `--peer TICKER`
+   on `deep-dive`/`packets`. Every row is measured on one period BOTH companies cover — the subject files
+   before its peer, so "each company's latest" would compare FY26 against FY25 and look normal doing it.
+   Live: ALKYLAMINE vs BALAMINES on FY25 — larger (₹1,571.8cr vs ₹1,273.6cr), slightly thinner net margin
+   (11.83% vs 12.27%), much faster collection (53.6 vs 70.4 days), 6.1% vs 0.9% sales CAGR FY21-FY25.
+   **Next for this item:** peers are supplied by ticker and must already be ingested; pointing
+   `discover-filings` at a peer's IR site to build the peer set automatically is not done. Only three
+   measures are compared (scale, net margin, receivable days) plus growth — inventory days and interest
+   cover need COGS/EBIT, which the peer metric set does not carry cleanly, and proxies were refused.
 
 
 ### 0. ~~RECENCY BEATS PROVENANCE~~ — FIXED 2026-07-30 (ADR-0029)

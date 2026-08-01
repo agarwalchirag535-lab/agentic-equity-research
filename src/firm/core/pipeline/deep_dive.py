@@ -80,6 +80,10 @@ from firm.core.monitoring.predictions import Prediction, log_report_predictions
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs, evaluate_checks
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
+from firm.core.pipeline.peers import PeerComparison
+from firm.core.pipeline.peers import citable_values as peer_citable_values
+from firm.core.pipeline.peers import load_peer_comparisons
+from firm.core.pipeline.peers import payload_rows as peer_payload_rows
 from firm.core.pipeline.filing import FilingSource, FilingWalk, disposition_notes, walk_filing
 from firm.core.pipeline.interrogate import Interrogation, interrogate
 from firm.core.report.assemble import (
@@ -234,6 +238,7 @@ def agent_facts_payload(
     derived: DerivedSet, evaluation: CheckEvaluation, screen: quality.ForensicScreenResult,
     feasibility: multibagger.FeasibilityResult | None, models: Sequence[BusinessModel],
     notes: NotesReview, guidance: Sequence[Fact] = (),
+    peers: Sequence[PeerComparison] = (),
 ) -> dict[str, Any]:
     """What the agents are shown: computed numbers WITH their fact ids, and nothing they must compute.
 
@@ -273,6 +278,10 @@ def agent_facts_payload(
             "substantive_share": notes.substantive_share,
             "disclosure_gaps": list(notes.disclosure_gaps),
         },
+        # The sector read, deterministically (Phase 3). Every row is measured on ONE period both companies
+        # cover, so `sector_analyst` cannot accidentally compare the subject's newest year against a peer's
+        # older one; a measure with no common period arrives as a stated reason, not as an absent row.
+        "peer_comparison": peer_payload_rows(peers),
         # Management's own forward numbers, quoted verbatim from Reg-30 transcripts (ADR-0036). A quarter
         # is present only when a transcript was ingested for it; the series reads oldest first so drift is
         # visible as a sequence. House standard applies: these are data about MANAGEMENT, not the business.
@@ -549,6 +558,9 @@ def run_deep_dive(
     #: Coverage gaps from `plan_agents` — agents the roster planned but could not run (ADR-0033). Passed
     #: in rather than recomputed so the report states exactly the plan this run was executed against.
     coverage_gaps: Sequence[str] = (),
+    #: Tickers to compare against, for `sector_analyst`. Their facts are read point-in-time like the
+    #: subject's, and a named peer with no facts as-of the date is reported as a coverage gap.
+    peers: Sequence[str] = (),
     start_year: int = 2015,
     write: bool = True,
     max_citation_retries: int = 1,
@@ -606,11 +618,13 @@ def run_deep_dive(
     # several guided figures under one metric, and the per-(metric, period) resolution that is right for a
     # balance-sheet row would silently drop all but one of them (ADR-0036).
     guidance = store.query_metric_prefix(ticker, "guidance:", as_of)
+    peer_comparisons = load_peer_comparisons(store, ticker, peers, as_of, start_year=start_year)
+    peer_values = peer_citable_values(peer_comparisons)
     payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes,
-                                  guidance=guidance)
+                                  guidance=guidance, peers=peer_comparisons)
     packets = build_packets(payload, agents_dir=agents_path, repo_root=repo, agents=agents)
     known_fact_ids = (set(facts.all_fact_ids()) | {f"derived:{n}" for n in derived.values}
-                      | {f.fact_id for f in guidance})
+                      | {f.fact_id for f in guidance} | set(peer_values))
     # {fact_id: value} so a number cited to a real fact must state that fact's figure (Law 1): the most
     # plausible way an LLM corrupts a number is to keep the citation and change the digits.
     known_values: dict[str, float] = {
@@ -618,6 +632,7 @@ def run_deep_dive(
     }
     known_values.update({f"derived:{n}": d.value for n, d in derived.values.items()})
     known_values.update({f.fact_id: f.value for f in guidance})
+    known_values.update(peer_values)
 
     # PRE-FLIGHT (ADR-0033). On the Claude-in-the-loop path (`--answers`) an agent with no answer file used
     # to fall through to whatever provider was configured — by default the local stub, whose output fails
@@ -637,9 +652,11 @@ def run_deep_dive(
 
     run = _AgentRun()
     specs = [spec for spec, _, _ in packets.values()]
-    # Guidance ids join the key: two runs seeing different transcript inputs are different runs (Law 5).
+    # Guidance and peer ids join the key: two runs seeing different transcripts, or a different peer set,
+    # are different runs (Law 5).
     run_id = compute_run_id(
-        ticker, as_of, specs, tuple(facts.all_fact_ids()) + tuple(f.fact_id for f in guidance))
+        ticker, as_of, specs,
+        tuple(facts.all_fact_ids()) + tuple(f.fact_id for f in guidance) + tuple(sorted(peer_values)))
 
     for name, (spec, system, user) in packets.items():
         agent_provider = provider

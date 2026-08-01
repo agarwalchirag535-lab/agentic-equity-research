@@ -286,6 +286,11 @@ def deep_dive(
         help="path to a documents manifest (data/manifests/{TICKER}-documents.json). Determines which "
              "roster prerequisites are satisfied, so agent coverage is derived from what is actually "
              "ingested rather than asserted (ADR-0031)."),
+    peer: list[str] = typer.Option(
+        [], "--peer",
+        help="a peer ticker whose facts are already ingested; repeatable. Satisfies the roster's `peers` "
+             "prerequisite for sector_analyst. Every comparison is measured on a period BOTH companies "
+             "cover, so the subject's newest year is never compared against a peer's older one."),
     force: bool = typer.Option(
         False, "--force", help="write the report even if a publication gate fails (debugging only)"),
 ) -> None:
@@ -372,6 +377,21 @@ def deep_dive(
                            f"{len(quoted)} of {len(calls)} transcripts registered as facts")
         if latest_filing is not None:
             satisfied |= {"financials", "filing", "segments"}
+        # `peers` is satisfied by another company's FACTS, not by a document in this company's manifest,
+        # so it is resolved here rather than in `available_inputs_from`. And it counts only when the
+        # comparison actually yields a row: naming a peer we hold no data on would otherwise let the
+        # roster claim coverage that produces nothing citable — the ADR-0035 mistake in reverse.
+        if peer:
+            from firm.core.pipeline.peers import load_peer_comparisons
+
+            probe = load_peer_comparisons(store, ticker, peer, run_date)
+            usable = [c for c in probe if c.comparable]
+            if usable:
+                satisfied.add("peers")
+            typer.echo(f"  peers: {len(usable)} of {len(probe)} comparable "
+                       f"({', '.join(c.peer for c in usable) or 'none'})")
+            for gap in (c for c in probe if not c.comparable):
+                typer.echo(f"    {gap.peer}: {gap.incomparable[0] if gap.incomparable else 'no data'}")
         available: tuple[str, ...] = tuple(sorted(satisfied))
         roster_agents, coverage_gaps = plan_agents(phase=phase, available_inputs=available)
         if answers:
@@ -381,7 +401,7 @@ def deep_dive(
 
         result = run_deep_dive(
             store, ticker, run_date, provider=llm, answers=prepared, filing=latest_filing,
-            agents=roster_agents, coverage_gaps=coverage_gaps,
+            agents=roster_agents, coverage_gaps=coverage_gaps, peers=peer,
             company_name=company or ticker, model=model, reports_root=reports_root,
             write=not force,
         )
@@ -427,6 +447,10 @@ def packets(
         help="build phase; selects the roster from config/roster.yaml (ADR-0030). Packets are written for "
              "every agent the roster plans, so a phase-3 run can actually be staffed."),
     documents: str = typer.Option("", "--documents", help="documents manifest, for roster availability"),
+    peer: list[str] = typer.Option(
+        [], "--peer",
+        help="peer ticker(s) to compare against; repeatable. Must match the --peer set the run will use, "
+             "or the packet an agent answers is not the packet the run validates it against."),
 ) -> None:
     """Write the planned agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
 
@@ -456,8 +480,11 @@ def packets(
 
     run_date = date.fromisoformat(as_of) if as_of else date.today()
     store = FactStore(db)
+    from firm.core.pipeline.peers import load_peer_comparisons
+
     facts = D.load_company_facts(store, ticker, run_date)
     guidance = store.query_metric_prefix(ticker, "guidance:", run_date)
+    peer_comparisons = load_peer_comparisons(store, ticker, peer, run_date)
     store.close()
     derived = D.derive_metrics(facts)
     models = detect_models(statement_shape(facts, derived), model_detection_thresholds())
@@ -474,10 +501,12 @@ def packets(
 
     payload = agent_facts_payload(
         derived, evaluation, screen, feasibility_at_target(derived, report_policy(), thresholds["multibagger"]),
-        models, NotesReview(), guidance=guidance)
+        models, NotesReview(), guidance=guidance, peers=peer_comparisons)
     # Packets follow the ROSTER, not a fixed trio (ADR-0034): a phase-3 run that plans eight agents needs
     # eight packets, or it can never be staffed and the phase stalls at "wired, not staffed".
     satisfied: set[str] = {"financials", "filing", "segments"}
+    if any(c.comparable for c in peer_comparisons):
+        satisfied.add("peers")
     if documents:
         import json as _json
         from pathlib import Path as _Path

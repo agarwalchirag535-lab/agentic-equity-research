@@ -141,6 +141,39 @@ def test_an_agent_can_cite_managements_guided_figure(store):
     assert run.report is not None  # the citation survived the gate; a fake id or value would have raised
 
 
+def test_an_agent_can_cite_a_peers_figure(store):
+    """`sector_analyst`'s claims are relative ones, so the peer's number has to be citable too."""
+    seed_store(store, "ACME", clean_series())
+    seed_store(store, "RIVAL", clean_series(), periods=("FY21", "FY22", "FY23", "FY24", "FY25"),
+               doc_id="ar-RIVAL", grade="A")
+    answers = clean_answers("ACME", business_analyst={
+        "narrative": "The peer turned over 1000.0 crore [fact:peer:RIVAL:sales:FY25] in the last year "
+                     "both companies have filed, which frames the scale question this note discusses.",
+    })
+    run = run_deep_dive(store, "ACME", AS_OF, answers=answers, peers=["RIVAL"], write=False)
+    assert run.report is not None
+
+
+def test_the_peer_block_reaches_the_packet_with_its_periods(store):
+    _, derived = _derived(store, "ACME")
+    seed_store(store, "RIVAL", clean_series(), periods=("FY21", "FY22", "FY23", "FY24", "FY25"),
+               doc_id="ar-RIVAL", grade="A")
+    from firm.core.pipeline.peers import load_peer_comparisons
+
+    comparisons = load_peer_comparisons(store, "ACME", ["RIVAL"], AS_OF)
+    payload = agent_facts_payload(
+        derived, CheckEvaluation((), ForensicMetrics(), ()),
+        ForensicScreenResult(ForensicVerdict.PASS, False, []), None, [], NotesReview(),
+        peers=comparisons)
+
+    block = payload["peer_comparison"][0]
+    assert block["peer"] == "RIVAL"
+    sales = next(m for m in block["metrics"] if m["metric"] == "sales")
+    # ACME has FY26; RIVAL stops at FY25. The row must be FY25 on BOTH sides, never FY26 vs FY25.
+    assert sales["period"] == "FY25"
+    assert sales["ACME"]["value"] == sales["RIVAL"]["value"] == 1000
+
+
 def test_write_packets_then_read_answers_round_trips(store, tmp_path):
     """The no-API-key path: packets to disk, answered by hand, read back as provider output."""
     _, derived = _derived(store, "ACME")

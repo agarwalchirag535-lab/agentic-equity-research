@@ -22,6 +22,21 @@ def net_margin(pat: float, sales: float) -> float:
     return pat / _nonzero(sales, "sales")
 
 
+# --- growth ---
+def cagr(first: float, last: float, years: int) -> float:
+    """Compound annual growth from ``first`` to ``last`` over ``years``.
+
+    Undefined rather than merely awkward when a bound is non-positive: a company that went from a loss to
+    a profit has no meaningful compound *rate*, and the fractional power of a negative ratio is not real.
+    Callers that would rather have "no answer" than an exception guard before calling.
+    """
+    if years <= 0:
+        raise ValueError("years must be positive")
+    if first <= 0 or last <= 0:
+        raise ValueError("cagr needs positive endpoints")
+    return (last / first) ** (1.0 / years) - 1.0
+
+
 # --- returns ---
 def roa(pat: float, avg_total_assets: float) -> float:
     return pat / _nonzero(avg_total_assets, "avg_total_assets")

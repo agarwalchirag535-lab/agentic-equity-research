@@ -278,9 +278,10 @@ def _as_fraction(fact: Fact) -> float:
 
 
 def _cagr(first: float, last: float, years: int) -> float | None:
+    """`ratios.cagr` with a None instead of an exception, which is what a derivation wants."""
     if years <= 0 or first <= 0 or last <= 0:
         return None
-    return (last / first) ** (1.0 / years) - 1.0
+    return ratios.cagr(first, last, years)
 
 
 def _cum(

@@ -14,6 +14,16 @@ def test_margins_and_returns():
     assert ratios.roe(120, 600) == pytest.approx(0.20)
 
 
+def test_cagr_compounds_and_refuses_an_undefined_rate():
+    assert ratios.cagr(600, 1000, 4) == pytest.approx(0.1362, abs=1e-4)
+    assert ratios.cagr(100, 100, 3) == pytest.approx(0.0)
+    # A company that went from a loss to a profit has no compound RATE, and the fractional power of a
+    # negative ratio is not a real number. Refusing beats returning something plottable and meaningless.
+    for bad in ((600, 1000, 0), (-10, 1000, 4), (600, 0, 4)):
+        with pytest.raises(ValueError):
+            ratios.cagr(*bad)
+
+
 def test_liquidity_and_leverage():
     assert ratios.current_ratio(400, 200) == pytest.approx(2.0)
     assert ratios.quick_ratio(400, 100, 200) == pytest.approx(1.5)

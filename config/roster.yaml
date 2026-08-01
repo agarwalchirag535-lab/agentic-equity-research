@@ -18,11 +18,11 @@
 #   financials      screener snapshot or an ingested annual report          — available
 #   filing          an audited annual report walked this run                — available (ADR-0024)
 #   segments        segment note from the filing                            — available, unparsed
-#   peers           a peer set with comparable financials                   — NOT INGESTED
-#   transcripts     concall transcripts                                     — NOT INGESTED
-#   guidance        management guidance history                             — NOT INGESTED
-#   shareholding    quarterly shareholding pattern                          — NOT INGESTED
-#   pledge          promoter pledge disclosures                             — NOT INGESTED
+#   peers           a peer set with comparable financials                   — available via `--peer`
+#   transcripts     concall transcripts                                     — available (ADR-0036)
+#   guidance        management guidance history                             — available (ADR-0037)
+#   shareholding    quarterly shareholding pattern                          — available (ADR-0032/0035)
+#   pledge          promoter pledge disclosures                             — available (ADR-0035/0038)
 #   prices          price/volume history                                    — NOT INGESTED
 
 agents:
