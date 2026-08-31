@@ -94,6 +94,11 @@ PURCHASES_STOCK_IN_TRADE = "pnl:Purchases of Stock-in-Trade"
 LOAN_BOOK = "balance_sheet:Loans"
 IMPAIRMENT = "pnl:Impairment on Financial Instruments"
 INTEREST_INCOME_PNL = "pnl:Interest Income"
+#: Read from the loans / ECL-staging notes rather than the face, and trusted only because the note
+#: reconciles to the face (ADR-0052). These are what the asset-quality checks have always needed.
+GROSS_LOANS = "notes:Gross Loans"
+IMPAIRMENT_ALLOWANCE = "notes:Impairment Allowance"
+STAGE3_GROSS = "notes:Stage 3 Gross"
 INVENTORY_CHANGE = "pnl:Changes in Inventories"
 EMPLOYEE_COST = "pnl:Employee Benefits"
 OTHER_EXPENSES = "pnl:Other Expenses"
@@ -138,6 +143,7 @@ READ_METRICS: tuple[str, ...] = (
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
     TOTAL_INCOME, MATERIALS, PURCHASES_STOCK_IN_TRADE, INVENTORY_CHANGE, EMPLOYEE_COST, OTHER_EXPENSES,
     TOTAL_EXPENSES, LOAN_BOOK, IMPAIRMENT, INTEREST_INCOME_PNL,
+    GROSS_LOANS, IMPAIRMENT_ALLOWANCE, STAGE3_GROSS,
     TOTAL_TAX, OTHER_BANK, PAYABLES, CFF, CAPEX, DIVIDEND_PAID, INTEREST_PAID, INTEREST_INCOME,
     *BALANCE_SHEET_REMAINDER,
 )

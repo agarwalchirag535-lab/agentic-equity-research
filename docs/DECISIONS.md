@@ -1926,3 +1926,69 @@ mandated-disclosure scan passes. The verdict stays FORENSIC_CAUTION off single-y
 the published report now carries the direct counter-evidence beside the flag, which is exactly the
 shape the golden-set treasury-conversion calibration question needs
 (`reports/SYMPHONY/2018-12-31-e2051e41d639`).
+
+### ADR-0056 — Notes are read the way statements are, and trusted because they reconcile (sibling line, committed as "ADR-0052" in `b6f0244`)
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0046 · **Enforces** ADR-0038's standard ·
+**Closes** two of the five note-level gaps ADR-0052 (its "ADR-0050") declared
+
+**Context.** ADR-0053 (its "ADR-0051") left CreditAccess at 67% of its playbook unavailable, every point of it the firm's
+own reach: the checks that would judge a lender's asset quality live in the loans and ECL-staging notes,
+and the pipeline read only the face of the statements. The same is true of contingent liabilities,
+segment revenue and every other note — the largest remaining capability gap in the firm.
+
+**The hypothesis worth testing first.** A note table is a table with a heading, columns and figures, so
+the ADR-0046 verifier ought to read one already. Tested against CreditAccess's note 7: mostly true, and
+the exceptions are informative.
+
+* **V3 (columns name their year) and V4 (the value is on the page) work unchanged.** Note tables label
+  their columns exactly as statements do.
+* **V1's year test cannot apply.** A note heading names a *note*, not a period — "7 Loans", "46
+  Contingent liability" — so a note is identified by its **label** instead, which must appear in its own
+  heading.
+* **V1's basis test cannot apply either.** A note heading never says "consolidated"; the *section* does,
+  and the filing prints the same note twice under both bases.
+
+**Decision.** `statement="note"` with a `note_label`, and — replacing both dropped tests with something
+stronger — **the reconciliation gate**: a note figure mapped to a face metric (`NOTE_RECONCILES_TO`)
+must equal that metric as already stored, read from the store so the comparison is against a figure
+verified independently from a different page. This is ADR-0038's standard ("a note is read when it
+reconciles to the face of the statements") turned from a principle into a gate. It also settles the
+basis question better than a heading would: a standalone note does not tie to the consolidated face
+figure, so a note that reconciles has *demonstrated* which statements it belongs to rather than
+asserting it.
+
+The gate was verified by corrupting a note to claim the gross loan figure as the net one — a value
+genuinely printed on the page, which every page-level check therefore passes. Only the tie to the
+balance sheet caught it.
+
+**Result — the lender family becomes real.** With notes 7 and 7(A) read (Stage-3 gross composed in
+trusted code from the group and individual lending books, both rows named in the locator):
+
+| check | outcome | detail |
+|---|---|---|
+| `gnpa_drift` | **FLAG** | Stage-3 share of the gross book **1.18% → 4.79%** (+3.61pp vs a 1.00pp limit) |
+| `provision_coverage_low` | **PASS** | allowance ₹1,308.63cr on Stage-3 gross ₹1,225.61cr = **107%** coverage |
+
+The FY24 figure of **1.18% reproduces the GNPA CreditAccess discloses itself** — computed here from the
+staging note rather than taken from the company's summary, which makes it an independent corroboration
+of the reading. (FY25 reads 4.79% against their stated 4.76%; the small gap is a denominator definition,
+and the locator names exactly what was computed.) The capability gap fell from **67% to 50%**.
+
+**The calibration question this raises, recorded and NOT acted on.** The verdict moved to
+`FORENSIC_CAUTION`, because `gnpa_drift` is HIGH severity and one HIGH flag escalates the ladder. Yet
+every corroborating check says honest recognition rather than concealment: reserve suppression PASSES
+(the credit-cost rate was *raised* 1.80% → 7.95%), and coverage exceeds the impaired book at 107%. That
+is ADR-0012's own distinction — rising provisions are honest, a *cut* is the tell — and the screen
+respects it while the ladder does not: **the ladder reads flags, not the pattern of flags.** Whether one
+HIGH flag should escalate when the exculpatory checks all pass is exactly the kind of question a single
+observation must not answer, so it goes to `memory/lessons.jsonl` for the golden set. The published
+checklist shows all six checks, so a reader sees the whole pattern either way, and FORENSIC_CAUTION is
+by construction an invitation to investigate rather than an accusation.
+
+**Merge note (ADR-0054 continued).** This landed from the sibling session after the trunk merge — the
+loop over there kept firing after the owner paused it (a scheduled self-wakeup; now stood down at the
+owner's instruction) and minted "ADR-0052" a second time. Filed here as ADR-0056 with its tests
+adapted to the trunk's typed `end` field. The reconciliation gate composes with the trunk verifier
+unchanged: V3c dates a note's columns like any table's, and the note's basis is proven by the tie to
+the face rather than claimed by a heading.
