@@ -23,12 +23,15 @@ def net_margin(pat: float, sales: float) -> float:
 
 
 # --- growth ---
-def cagr(first: float, last: float, years: int) -> float:
+def cagr(first: float, last: float, years: float) -> float:
     """Compound annual growth from ``first`` to ``last`` over ``years``.
 
     Undefined rather than merely awkward when a bound is non-positive: a company that went from a loss to
     a profit has no meaningful compound *rate*, and the fractional power of a negative ratio is not real.
     Callers that would rather have "no answer" than an exception guard before calling.
+
+    ``years`` may be fractional (ADR-0049): across a fiscal-year-end change the true compounding time
+    between two annual closes is not a whole number of years, and the stated dates beat the labels.
     """
     if years <= 0:
         raise ValueError("years must be positive")

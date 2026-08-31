@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS facts (
     period    TEXT NOT NULL,           -- e.g. 'FY24', 'Q1FY25'
     value     REAL NOT NULL,
     unit      TEXT NOT NULL,
-    locator   TEXT NOT NULL            -- page/paragraph within the document
+    locator   TEXT NOT NULL,           -- page/paragraph within the document
+    period_end TEXT                    -- ISO close the FILING states (ADR-0049); NULL when unstated
 );
 CREATE INDEX IF NOT EXISTS idx_facts_lookup ON facts(ticker, metric, period);
 """
@@ -67,6 +68,10 @@ class Fact:
     published_at: date
     grade: str
     extractor_version: str
+    #: The period's closing date AS THE FILING STATES IT (ADR-0049) — 2015-06-30 for a June closer's
+    #: "FY15". None when the source states no close (screener snapshots), in which case consumers fall
+    #: back to label arithmetic, the pre-ADR-0049 status quo. Never inferred from the label.
+    period_end: date | None = None
 
 
 class FactStore:
@@ -75,6 +80,13 @@ class FactStore:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA foreign_keys = ON")
         self._conn.executescript(_SCHEMA)
+        # Migration for stores created before ADR-0049: CREATE TABLE IF NOT EXISTS never widens an
+        # existing table, and the ingest layer is idempotent, so an old on-disk store must gain the
+        # column in place rather than force a re-ingest.
+        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(facts)")}
+        if "period_end" not in columns:
+            self._conn.execute("ALTER TABLE facts ADD COLUMN period_end TEXT")
+            self._conn.commit()
 
     def close(self) -> None:
         self._conn.close()
@@ -97,11 +109,14 @@ class FactStore:
 
     def add_fact(
         self, fact_id: str, doc_id: str, ticker: str, metric: str, period: str,
-        value: float, unit: str, locator: str,
+        value: float, unit: str, locator: str, period_end: date | None = None,
     ) -> None:
         self._conn.execute(
-            "INSERT OR REPLACE INTO facts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (fact_id, doc_id, ticker, metric, period, value, unit, locator),
+            "INSERT OR REPLACE INTO facts"
+            " (fact_id, doc_id, ticker, metric, period, value, unit, locator, period_end)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (fact_id, doc_id, ticker, metric, period, value, unit, locator,
+             period_end.isoformat() if period_end is not None else None),
         )
         self._conn.commit()
 
@@ -126,6 +141,8 @@ class FactStore:
             metric=row["metric"], period=row["period"], value=row["value"], unit=row["unit"],
             locator=row["locator"], published_at=date.fromisoformat(row["published_at"]),
             grade=row["grade"], extractor_version=row["extractor_version"],
+            period_end=(date.fromisoformat(row["period_end"])
+                        if row["period_end"] is not None else None),
         )
 
     def query_fact(self, ticker: str, metric: str, period: str, as_of: date) -> Fact | None:

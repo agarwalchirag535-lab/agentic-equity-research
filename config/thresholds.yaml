@@ -62,6 +62,17 @@ model_forensic:
   adjusted_ebitda_gap_max: 0.05       # (adjusted − statutory) EBITDA above this share of revenue = flag
   promoter_loan_max_share: 0.10       # loans to promoters/KMP above this share of advances = flag
 
+# Periods as first-class objects (ADR-0049). `FY{yy}` label arithmetic silently assumes a 31-March
+# close; these tolerances decide when the filing's own stated closes prove the labels wrong.
+periods:
+  # |actual elapsed days - label years| above this → the dates win the CAGR exponent. March-to-March
+  # windows differ from whole years by at most a couple of leap days; the smallest real year-end shift
+  # is a quarter (~90 days). 45 sits between the two with a wide margin on both sides.
+  label_span_tolerance_days: 45
+  # Two companies' "same" period must close within this many days to be compared as one window.
+  # Same-convention closers coincide to the day; the smallest year-end offset is ~30 days.
+  peer_close_tolerance_days: 7
+
 # Report assembly + publication policy (Phase 2, ADR-0021). Decides the verdict, promotes load-bearing
 # claims, and dates the kill/rehabilitation criteria. Every number here is policy, never code.
 report:

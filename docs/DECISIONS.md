@@ -1515,3 +1515,61 @@ self-consistent, but a CAGR spanning the June→March discontinuity is wrong, `r
 wrong filing date, and a peer comparison across differing year-ends compares different twelve-month
 windows. The real fix is periods as first-class objects `(start, end, months)`; this ADR delivers the
 `months` half, which is the half that was producing false positives.
+
+### ADR-0049 — Periods become first-class objects: the close is read, never assumed
+
+**Date** 2026-08-31 · **Status** accepted · **Completes** ADR-0048 · **Source** the open item ADR-0048
+named rather than fixed: Symphony's FY13–FY15 filings close on **30 June**, and `FY{yy}` label
+arithmetic silently assumes 31 March for every company.
+
+**Context.** ADR-0048 made period *length* part of a reading's claim (`months`, V3b) — the half that
+was producing false positives. The date half remained: within one company the labels stay
+self-consistent, but the moment label arithmetic is used as *time* arithmetic it lies in three places
+at once. A CAGR spanning a June→March year-end change compounds over fewer years than the labels count
+(FY15–FY18 is 2.75 years lived, 3 counted — the label exponent understates growth on every such
+window). `resolve_by` dates every criterion to a 31-March filing a June closer will never make. And a
+peer comparison across differing year-ends compares different twelve-month windows through different
+price environments under one shared label — the exact trap `peers.py` was built to refuse, one level
+down.
+
+**Decision, in four layers.**
+
+1. **The close is part of the reading's claim (V3c).** `end_stated(text, year)` reads the closing date
+   from the same verbatim quotes V1/V3 already pin to the page, in every form Indian filings print
+   ('31/03/2016', '31st March, 2017', 'March 31, 2017', '30th June, 2015'). Precedence mirrors V3b:
+   declared `end`, then the column's own words, then the heading — but both text sources are filtered
+   to the period's **own calendar year**, which is what makes the heading fallback safe: "year ended
+   March 31, 2026" can date the FY26 column and never the FY25 one beside it. A period column whose
+   close cannot be established is **refused**, not assumed to be 31 March; a declaration the column's
+   own unambiguous words contradict is refused; two dates in the same year are ambiguous and decide
+   nothing. All eight committed readings (PCJ FY13–FY18, Alkyl FY26, Symphony FY18) re-verify
+   unchanged, every close read from the filings' own words. Verified live against the real Symphony
+   FY18 PDF (sha256-pinned): 0 violations, 54 of 54 registered facts dated.
+
+2. **The store carries what the filing stated.** `facts.period_end` (nullable; guarded `ALTER TABLE`
+   migrates pre-ADR-0049 stores in place). `Period(label, end, months)` with its derived `start` lives
+   in `core/compute/periods.py` — pure stdlib date arithmetic, 100% covered. A screener fact has no
+   stated close and stores NULL; nothing is ever inferred from a label.
+
+3. **CAGRs compound over lived time.** `span_years(label_span, first_end, last_end, tolerance)`
+   returns the *integer* label span when the stated closes agree with it (March-to-March windows keep
+   the exact exponents they always had — no drift to 4.9994), and the true elapsed years when they
+   contradict it beyond `periods.label_span_tolerance_days`. The corrected exponent is printed in the
+   derivation's formula (`^(1/2.7516)`) so a third party can replicate from the formula alone. Ends
+   unknown → label arithmetic, the status quo, at the grade the sourcing already carries.
+
+4. **`resolve_by` and peers use the company's own calendar.** A criterion resolves against the next
+   occurrence of the company's *stated* close (`DerivedSet.fy_close`) plus the filing lag; 31 March
+   remains only the statutory default for a company no filing has dated. A peer row whose shared label
+   closes more than `periods.peer_close_tolerance_days` apart on the two sides is **not compared**,
+   with the sentence naming both dates; the growth window's exponent uses the stated closes for both
+   companies at once or not at all.
+
+**The capability-vs-disclosure line, held.** A side with no stated closes (screener-only history) is
+the firm's own extraction gap, so it is *not* refused — it compares and derives exactly as before,
+at its grade. Only a contradiction between stated closes changes an outcome.
+
+**Residue, named:** the legacy `walk_filing` extraction line does not date its facts (the reading line
+does); the rolling three-year incremental-ROIC windows still count labels; and quarterly labels
+(`Q1FY20`) carry no close. None of these currently crosses a discontinuity in the ingested corpus.
+The live June-year-end target is Symphony's own FY13–FY15 filings, not yet ingested.

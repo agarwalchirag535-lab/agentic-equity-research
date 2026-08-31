@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, Mapping, Sequence
 
+from firm.core.compute import periods as P
 from firm.core.compute import quality, ratios
 from firm.core.compute import roic as RO
 from firm.core.facts.store import Fact, FactStore
@@ -273,6 +274,10 @@ class DerivedSet:
     missing: Mapping[str, tuple[str, ...]]
     first_period: str | None = None
     last_period: str | None = None
+    #: The company's latest known fiscal-year close, read from the filing's own stated period end
+    #: (ADR-0049). None when no source stated one — consumers (`resolve_by`) then fall back to the
+    #: Indian statutory 31-March default, which is policy, not an inference.
+    fy_close: date | None = None
 
     def get(self, metric: str) -> Derivation | None:
         return self.values.get(metric)
@@ -333,7 +338,7 @@ def _as_fraction(fact: Fact) -> float:
     return fact.value if fact.unit == "ratio" else fact.value / 100.0
 
 
-def _cagr(first: float, last: float, years: int) -> float | None:
+def _cagr(first: float, last: float, years: float) -> float | None:
     """`ratios.cagr` with a None instead of an exception, which is what a derivation wants."""
     if years <= 0 or first <= 0 or last <= 0:
         return None
@@ -365,7 +370,12 @@ def _cum(
     return b.values.get(metric)
 
 
-def derive_metrics(facts: CompanyFacts, *, forensic: Mapping[str, Any] | None = None) -> DerivedSet:
+def derive_metrics(
+    facts: CompanyFacts,
+    *,
+    forensic: Mapping[str, Any] | None = None,
+    periods_policy: Mapping[str, float] | None = None,
+) -> DerivedSet:
     """Compute every derived metric the Phase-2 report and checks need, keeping provenance on each.
 
     Nothing is estimated: a metric whose inputs are absent lands in `missing`, which the report renders
@@ -373,18 +383,38 @@ def derive_metrics(facts: CompanyFacts, *, forensic: Mapping[str, Any] | None = 
 
     `forensic` is the `config/thresholds.yaml:forensic` block; it is read here only for the minimum
     window a cumulative ratio needs. Injectable so a test can state the window it means.
+    `periods_policy` is the `periods` block (ADR-0049): when the endpoint facts carry the closes their
+    filings stated and those closes contradict the FY-label count — a June→March year-end change — the
+    CAGR exponent uses the true elapsed years instead of the label arithmetic.
     """
     if forensic is None:
         from firm.core.config import forensic_thresholds_raw
 
         forensic = forensic_thresholds_raw()
+    if periods_policy is None:
+        from firm.core.config import periods_policy as _load_periods
+
+        periods_policy = _load_periods()
     thresholds = forensic
     b = _Builder(facts)
     with_core = [p for p in facts.periods if facts.fact(SALES, p) and facts.fact(PAT, p)]
     if not with_core:
         return DerivedSet(facts.ticker, facts.as_of, {}, {"*": ("no Sales/PAT history",)})
     f0, fN = with_core[0], with_core[-1]
-    span = int(fN[2:]) - int(f0[2:])
+    # The labels count the window; the filings' own stated closes overrule them when they disagree
+    # beyond tolerance (ADR-0049). An integer-valued span stays an int so the formula strings print
+    # "^(1/3)" exactly as before; a discontinuity window rounds to 4dp (~1 hour) so the printed
+    # exponent is the one the computation used and a third party can replicate from the formula alone.
+    label_span = int(fN[2:]) - int(f0[2:])
+    if label_span > 0:
+        span = P.span_years(
+            label_span,
+            facts.fact(SALES, f0).period_end, facts.fact(SALES, fN).period_end,
+            tolerance_days=float(periods_policy["label_span_tolerance_days"]),
+        )
+        span = int(span) if span == int(span) else round(span, 4)
+    else:
+        span = label_span  # a single readable year has no window; every CAGR stays underivable
 
     # ---- growth + margins -----------------------------------------------------------------------
     if (got := b.need("revenue_cagr", (SALES, f0), (SALES, fN))) is not None:
@@ -662,7 +692,8 @@ def derive_metrics(facts: CompanyFacts, *, forensic: Mapping[str, Any] | None = 
         value, inputs, window = incremental
         b.add("incremental_roic_3y", value, f"ΔNOPAT / ΔInvested capital, {window}", inputs)
 
-    return DerivedSet(facts.ticker, facts.as_of, b.values, b.missing, f0, fN)
+    fy_close = (facts.fact(SALES, fN).period_end or facts.fact(PAT, fN).period_end)
+    return DerivedSet(facts.ticker, facts.as_of, b.values, b.missing, f0, fN, fy_close)
 
 
 def _working_capital_days(b: _Builder, facts: CompanyFacts, periods: Sequence[str]) -> None:

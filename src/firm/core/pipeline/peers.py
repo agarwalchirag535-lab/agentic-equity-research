@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Callable, Mapping, Sequence
 
+from firm.core.compute import periods as P
 from firm.core.compute import ratios
 from firm.core.facts.store import Fact, FactStore
 from firm.core.pipeline.derive import (
@@ -148,6 +149,38 @@ def _common_periods(subject: CompanyFacts, peer: CompanyFacts, metrics: Sequence
     ]
 
 
+def _stated_closes(facts: CompanyFacts, metrics: Sequence[str], period: str) -> set[date]:
+    """Every close the company's filings state for its facts at (metrics, period)."""
+    return {
+        f.period_end for m in metrics
+        if (f := facts.fact(m, period)) is not None and f.period_end is not None
+    }
+
+
+def _close_mismatch(
+    subject: CompanyFacts, peer: CompanyFacts, metrics: Sequence[str], period: str,
+    tolerance_days: float,
+) -> str | None:
+    """Why one shared label is NOT one shared window, or None when it is (ADR-0049).
+
+    A `FY{yy}` label matching on both sides does not make the periods the same: Symphony's FY15 closed
+    on 30 June 2015 and a March closer's FY15 on 31 March 2015 — different twelve-month windows through
+    different price and demand environments, exactly the trap `_common_periods`' docstring exists to
+    avoid, one level down. Checkable only where both sides' filings stated their closes; a side with no
+    stated close (a screener-only series) is the pre-ADR-0049 status quo and is not refused for the
+    firm's own missing extractor.
+    """
+    ours, theirs = _stated_closes(subject, metrics, period), _stated_closes(peer, metrics, period)
+    if not ours or not theirs:
+        return None
+    spread = max(ours | theirs) - min(ours | theirs)
+    if spread.days <= tolerance_days:
+        return None
+    return (f"{period} closes on {max(ours).isoformat()} for {subject.ticker} and "
+            f"{max(theirs).isoformat()} for {peer.ticker} — the same label is not the same "
+            "twelve-month window")
+
+
 def _figure(facts: CompanyFacts, comparison: Comparison, period: str) -> PeerFigure | None:
     inputs = [facts.fact(m, period) for m in comparison.inputs]
     if any(f is None for f in inputs):
@@ -164,14 +197,21 @@ def _figure(facts: CompanyFacts, comparison: Comparison, period: str) -> PeerFig
 
 
 def _point_metric(
-    subject: CompanyFacts, peer: CompanyFacts, comparison: Comparison
+    subject: CompanyFacts, peer: CompanyFacts, comparison: Comparison,
+    policy: Mapping[str, float],
 ) -> PeerMetric | str:
-    """One comparison at the latest common period, or a sentence explaining why there is none."""
-    periods = _common_periods(subject, peer, comparison.inputs)
-    if not periods:
+    """One comparison at the latest ALIGNED common period, or a sentence explaining why there is none."""
+    tolerance = float(policy["peer_close_tolerance_days"])
+    candidates = _common_periods(subject, peer, comparison.inputs)
+    if not candidates:
         needed = ", ".join(comparison.inputs)
         return (f"{comparison.name} is not compared: {subject.ticker} and {peer.ticker} share no period "
                 f"in which both disclose {needed}")
+    mismatches = {p: _close_mismatch(subject, peer, comparison.inputs, p, tolerance)
+                  for p in candidates}
+    periods = [p for p in candidates if mismatches[p] is None]
+    if not periods:
+        return f"{comparison.name} is not compared: {mismatches[candidates[-1]]}"
     period = periods[-1]
     subject_side = _figure(subject, comparison, period)
     peer_side = _figure(peer, comparison, period)
@@ -186,18 +226,36 @@ def _point_metric(
     )
 
 
-def _growth_metric(subject: CompanyFacts, peer: CompanyFacts) -> PeerMetric | str:
+def _growth_metric(
+    subject: CompanyFacts, peer: CompanyFacts, policy: Mapping[str, float]
+) -> PeerMetric | str:
     """Sales CAGR over the longest window BOTH companies cover, so neither gets a friendlier period.
 
     A peer with five years of history and a subject with twelve must be compared over the five they share;
-    measuring each over its own record would compare a half-cycle against a full one.
+    measuring each over its own record would compare a half-cycle against a full one. The window's bounds
+    must also be the same *dates* on both sides (ADR-0049), and the exponent uses the stated closes when
+    they contradict the label count — a June→March discontinuity compounds over fewer years than the
+    labels say, for both companies at once or not at all.
     """
-    periods = _common_periods(subject, peer, _GROWTH.inputs)
+    tolerance = float(policy["peer_close_tolerance_days"])
+    candidates = _common_periods(subject, peer, _GROWTH.inputs)
+    mismatches = {p: _close_mismatch(subject, peer, _GROWTH.inputs, p, tolerance)
+                  for p in candidates}
+    periods = [p for p in candidates if mismatches[p] is None]
     if len(periods) < 2:
+        misaligned = next((m for m in mismatches.values() if m is not None), None)
+        if misaligned is not None:
+            return f"sales_cagr is not compared: {misaligned}"
         return (f"sales_cagr is not compared: {subject.ticker} and {peer.ticker} share fewer than two "
                 f"periods of disclosed Sales")
     first, last = periods[0], periods[-1]
-    span = int(last[2:]) - int(first[2:])
+    ends = (_stated_closes(subject, _GROWTH.inputs, first) | _stated_closes(peer, _GROWTH.inputs, first),
+            _stated_closes(subject, _GROWTH.inputs, last) | _stated_closes(peer, _GROWTH.inputs, last))
+    label_span = int(last[2:]) - int(first[2:])
+    span = P.span_years(
+        label_span, max(ends[0]) if ends[0] else None, max(ends[1]) if ends[1] else None,
+        tolerance_days=float(policy["label_span_tolerance_days"]))
+    span = int(span) if span == int(span) else round(span, 4)
     window = f"{first}-{last}"
     sides: list[PeerFigure] = []
     facts: list[Fact] = []
@@ -218,13 +276,24 @@ def _growth_metric(subject: CompanyFacts, peer: CompanyFacts) -> PeerMetric | st
     )
 
 
-def compare(subject: CompanyFacts, peer: CompanyFacts) -> PeerComparison:
-    """Every comparable measure between two companies, each on a period they both cover."""
+def compare(
+    subject: CompanyFacts, peer: CompanyFacts,
+    *, periods_policy: Mapping[str, float] | None = None,
+) -> PeerComparison:
+    """Every comparable measure between two companies, each on a period they both cover.
+
+    `periods_policy` is the `config/thresholds.yaml:periods` block (ADR-0049); injectable so a test
+    can state the tolerances it means.
+    """
+    if periods_policy is None:
+        from firm.core.config import periods_policy as _load_periods
+
+        periods_policy = _load_periods()
     metrics: list[PeerMetric] = []
     incomparable: list[str] = []
     for comparison in (*COMPARISONS, _GROWTH):
-        result = (_growth_metric(subject, peer) if comparison is _GROWTH
-                  else _point_metric(subject, peer, comparison))
+        result = (_growth_metric(subject, peer, periods_policy) if comparison is _GROWTH
+                  else _point_metric(subject, peer, comparison, periods_policy))
         if isinstance(result, PeerMetric):
             metrics.append(result)
         else:

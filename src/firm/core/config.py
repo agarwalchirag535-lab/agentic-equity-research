@@ -69,6 +69,11 @@ def financial_forensic_thresholds() -> dict[str, float]:
     return load_thresholds()["financial_forensic"]
 
 
+def periods_policy() -> dict[str, float]:
+    """Tolerances for when a filing's stated period closes overrule FY-label arithmetic (ADR-0049)."""
+    return load_thresholds()["periods"]
+
+
 def report_policy() -> dict[str, Any]:
     """Verdict selection, load-bearing promotion, and criteria dating policy (Phase 2, ADR-0021)."""
     return load_thresholds()["report"]

@@ -29,7 +29,7 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 663 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 737 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -610,10 +610,19 @@ The first company chosen to test **false positives** rather than to catch a frau
 Probably not fraud either — ~20% of its PBT is treasury income, which the indirect-method cash flow puts
 under investing, so treasury-heavy companies systematically convert below 1.0. Changing a threshold on
 one observation is the overfitting the golden set exists to prevent, so it is a lesson
-(`memory/lessons.jsonl`), not a code change. **Also open:** Symphony's FY13-FY15 report **June**
-year-ends — the `FY{YY}` label assumes a March close for every company. Periods as first-class objects
-`(start, end, months)` is the real fix; ADR-0048 delivers the `months` half, the half producing false
-positives.
+(`memory/lessons.jsonl`), not a code change. ~~**Also open:** Symphony's FY13-FY15 report **June**
+year-ends~~ **CLOSED 2026-08-31 (ADR-0049): periods are first-class objects.** V3c reads every period
+column's closing date from the filing's own verbatim quotes (refused if unstated, never assumed to be
+31 March); `facts.period_end` stores it (old DBs migrate in place); CAGRs compound over the true
+elapsed years when the stated closes contradict the label count (formula prints the exponent, e.g.
+`^(1/2.7516)`); `resolve_by` dates criteria to the company's own next close; and a peer row whose
+shared label closes on different dates for the two companies is refused with both dates named.
+March-closer behaviour is byte-identical (integer exponents kept; all 8 committed readings re-verify;
+verified live against the sha256-pinned Symphony FY18 PDF — 0 violations, 54/54 facts dated). A side
+with no stated closes (screener-only) still compares at its grade — the capability-vs-disclosure line.
+Residue in the ADR: the legacy walker doesn't date facts, rolling-3y windows still count labels,
+quarters carry no close; Symphony's own FY13-FY15 filings are the live June-end target, not yet
+ingested.
 
 ## 7. Suggested next step
 

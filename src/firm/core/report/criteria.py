@@ -15,9 +15,10 @@ The threshold for a kill criterion sits `criteria_headroom` *inside* today's val
 floor, whichever binds first), so the criterion is a genuine tripwire rather than a restatement of the
 status quo — a criterion that can never trigger is the failure mode `red_team` is explicitly warned about.
 
-Dates: Indian FY ends 31 March and the annual report lands within roughly seven months, so
-`resolve_by = 31-Mar of the target FY + filing_lag_days`. That is the first date a third party could
-actually check the claim in a filing.
+Dates: `resolve_by = the company's next FY close + filing_lag_days` — the first date a third party
+could actually check the claim in a filing. The close is the company's own, read from its filings'
+stated period ends (ADR-0049: Symphony closed on 30 June until FY16); 31 March is only the Indian
+statutory default for a company no filing has dated yet.
 
 Symmetry (ADR-0016) is structural: positives get kill criteria, negatives get rehabilitation criteria,
 and both come out of the same deterministic machinery so optimism gets no easier standard.
@@ -28,19 +29,28 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any, Mapping
 
+from firm.core.compute import periods
 from firm.core.compute.multibagger import FeasibilityResult
 from firm.core.pipeline.derive import DerivedSet
 from firm.schemas.report import CheckOutcome, Criterion, VerifiedCleanChecklist
 
 
-def resolve_by(as_of: date, horizon_years: int, filing_lag_days: int) -> date:
+def resolve_by(
+    as_of: date, horizon_years: int, filing_lag_days: int, fy_close: date | None = None,
+) -> date:
     """The first date a future filing could resolve a criterion set today.
 
-    The next FY close after ``as_of`` plus the statutory filing lag. `horizon_years` shifts it further
-    out for slower-moving claims.
+    The next FY close on/after ``as_of`` plus the statutory filing lag. `horizon_years` shifts it
+    further out for slower-moving claims.
+
+    ``fy_close`` is the company's own latest stated fiscal close (ADR-0049): a June closer's criterion
+    resolves against a 30-June filing, not a 31-March one that never comes. When no filing has stated
+    a close, 31 March is the Indian statutory default — policy, not an inference about the company.
     """
-    fy_close_year = as_of.year + horizon_years if as_of.month >= 4 else as_of.year + horizon_years - 1
-    return date(fy_close_year, 3, 31) + timedelta(days=filing_lag_days)
+    anchor = fy_close if fy_close is not None else date(as_of.year, 3, 31)
+    close = periods.next_close(as_of, anchor)
+    return (periods.shift_months(close, 12 * (horizon_years - 1))
+            + timedelta(days=filing_lag_days))
 
 
 def _floor_with_headroom(current: float, policy_floor: float, headroom: float) -> float:
@@ -70,7 +80,7 @@ def kill_criteria(
     headroom = float(policy["criteria_headroom"])
     horizon = int(policy["criteria_horizon_years"])
     lag = int(policy["filing_lag_days"])
-    deadline = resolve_by(as_of, horizon, lag)
+    deadline = resolve_by(as_of, horizon, lag, fy_close=derived.fy_close)
     out: list[Criterion] = []
 
     if (cum := derived.get("cum_cfo_pat")) is not None:
@@ -157,7 +167,7 @@ def rehabilitation_criteria(
       symmetry gate would (correctly) refuse to publish it.
     """
     horizon = int(policy["criteria_horizon_years"])
-    deadline = resolve_by(as_of, horizon, int(policy["filing_lag_days"]))
+    deadline = resolve_by(as_of, horizon, int(policy["filing_lag_days"]), fy_close=derived.fy_close)
     out: list[Criterion] = []
 
     floors = {
