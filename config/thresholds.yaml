@@ -66,6 +66,11 @@ report:
   criteria_horizon_years: 1       # resolve against the NEXT annual filing
   filing_lag_days: 210            # Indian AR lands within ~7 months of the 31-Mar FY close
   criteria_headroom: 0.10         # a kill threshold sits this far inside the current value (10% relative)
+  # P(criterion holds) = confidence x prior + (1 - confidence)/2, where prior is this persistence rate
+  # for a criterion its metric SATISFIES today and (1 - rate) for one it already violates. PROVISIONAL
+  # until the golden set calibrates it; the first resolution (PC Jeweller, lesson 2) scored Brier 0.224
+  # under the old broadcast-confidence rule and 0.149 under this one.
+  criterion_persistence_prior: 0.80
   # Promotion of an agent claim to a report load-bearing point (grade A/B support is also required — R1).
   load_bearing_min_confidence: 0.60
   load_bearing_max_points: 3

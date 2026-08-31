@@ -47,7 +47,30 @@ def read_jsonl(path: Path) -> list[Prediction]:
     return [Prediction.model_validate_json(line) for line in p.read_text().splitlines() if line.strip()]
 
 
-def predictions_from_report(report: ResearchReport) -> list[Prediction]:
+def _persistence_prior() -> float:
+    from firm.core.config import report_policy
+
+    return float(report_policy()["criterion_persistence_prior"])
+
+
+def _criterion_probability(report: ResearchReport, criterion, persistence: float) -> float:
+    """See decision 2 above. Every input is computed: confidence from the report, satisfaction from
+    arithmetic over `computed_facts`, persistence from config."""
+    from firm.core.monitoring.resolver import (
+        evaluate,  # function-level: resolver imports this module
+    )
+
+    c = report.confidence.value
+    current = report.computed_facts.get(criterion.metric)
+    if current is None:
+        return c
+    prior = persistence if evaluate(criterion.operator, current, criterion.threshold) else 1.0 - persistence
+    return round(c * prior + (1.0 - c) / 2.0, 4)
+
+
+def predictions_from_report(
+    report: ResearchReport, *, persistence: float | None = None
+) -> list[Prediction]:
     """Turn a published report's **kill** criteria into scoreable predictions (Phase 5, ADR-0023).
 
     Two decisions, because a prediction log is only worth keeping if it is honest about what was actually
@@ -59,14 +82,22 @@ def predictions_from_report(report: ResearchReport) -> list[Prediction]:
        fill the Brier record with events nobody forecast and make the calibration score meaningless. The
        rehabilitation criteria stay in the report, where they belong, and out of the ledger.
 
-    2. **`probability` is the report's own confidence, not a fresh judgment.** Law 1 forbids an LLM
-       authoring a number, and inventing a per-criterion probability in code would be worse — arbitrary
-       precision with nothing behind it. `Confidence.value` already states how much the firm believes the
-       evidence under these claims, computed from playbook evaluability, note-review share, line-item
-       coverage and the weakest grade relied on. That is exactly the right quantity: the probability that
-       the facts the criterion rests on keep holding. It also means a shallow report logs a low-confidence
-       prediction and is scored gently, while a confident one is scored hard — which is the incentive the
-       calibration loop should create.
+    2. **`probability` is computed, never authored — and it is per-criterion since the first real
+       resolution.** The original rule broadcast `Confidence.value` to every criterion; PC Jeweller
+       (lesson 2 in memory/lessons.jsonl) showed that miscalibrates by construction — the report's own
+       numbers said two criteria were ALREADY violated and one comfortably satisfied, yet all three got
+       0.38. The revision uses only computed inputs: whether today's derived value in
+       `report.computed_facts` satisfies the criterion (pure arithmetic) and a persistence prior from
+       config (`report.criterion_persistence_prior`, provisional until the golden set calibrates it):
+
+           P(holds) = confidence × prior + (1 − confidence) / 2
+           prior    = persistence        if the metric satisfies the criterion today
+                    = 1 − persistence    if it already violates it
+
+       With probability `confidence` our measurement of today's state is right and persistence governs;
+       otherwise we know nothing and say 0.5. A metric absent from `computed_facts` falls back to bare
+       confidence — the honest "cannot assess the current state". On the resolved PCJ ledger this rule
+       would have scored Brier 0.149 against the broadcast rule's 0.224.
 
     `prediction_id` is derived from `(run_id, metric)`, so re-running the same inputs cannot double-log
     (Law 5: idempotent).
@@ -86,7 +117,9 @@ def predictions_from_report(report: ResearchReport) -> list[Prediction]:
             operator=c.operator,
             threshold=c.threshold,
             resolve_by=c.resolve_by,
-            probability=report.confidence.value,
+            probability=_criterion_probability(
+                report, c,
+                _persistence_prior() if persistence is None else persistence),
             load_bearing=c.load_bearing,
         )
         for c in report.kill_criteria

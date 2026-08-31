@@ -561,6 +561,14 @@ miscalibrates); CFS comparative restatements are a signal (FY18 restated FY17 CF
 column fails the V7 tie). Also caught: the FY18 bonus issue halves comparative EPS and the quarantine
 cannot distinguish that from a misread (per-share restatement handling is open).
 
+**Lesson 2 is closed (2026-08-31): per-criterion probabilities.** `predictions_from_report` no longer
+broadcasts the report confidence: P(holds) = confidence × prior + (1 − confidence)/2, where the prior
+is `report.criterion_persistence_prior` (config, provisional) for a criterion its metric satisfies
+TODAY (arithmetic over `computed_facts`) and its complement for one already violated; a metric absent
+from the run falls back to bare confidence. Everything computed, nothing authored (Law 1). On the
+resolved PCJ ledger the new rule scores Brier 0.149 vs the broadcast rule's 0.224 (regression test
+asserts the improvement on the real outcomes).
+
 **Lesson 3 is closed (2026-08-31): the restatement log is a report section.** `restatement_log()`
 (core/ingest/filings.py) reads the store point-in-time — a revision published after `as_of` does not
 exist yet — classifies every same-(metric, period) disagreement with the quarantine's own classifier,
