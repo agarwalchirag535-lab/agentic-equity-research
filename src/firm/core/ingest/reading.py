@@ -382,6 +382,11 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
                 "V3c_period_close", name,
                 f"column {col.label_quote!r} declares the close as {col.end} but its own words say "
                 f"{stated_end}"))
+        elif col.end is not None and str(col.end.year) != col_year:
+            violations.append(Violation(
+                "V3c_period_close", name,
+                f"column {col.period} declares the close as {col.end}, which is not in {col_year} — "
+                "the Indian FY label names the calendar year the period ends in"))
         else:
             end_by_period[col.period] = effective_end
         if col_year not in _letters(col.label_quote):
@@ -570,21 +575,32 @@ def register_reading(
         if stmt.statement == "balance_sheet":
             parts = {(f.metric, f.period): f for f in stmt.figures}
             periods = {f.period for f in stmt.figures}
+            # The lender rule is a THREE-part sum and is tried first: a lender that also printed a
+            # current/non-current split would otherwise compose the wrong total from the wrong two rows.
             composed = (
                 ("balance_sheet:Borrowings",
-                 "balance_sheet:Non-Current Borrowings", "balance_sheet:Current Borrowings"),
+                 ("balance_sheet:Debt Securities",
+                  "balance_sheet:Borrowings (Other than Debt Securities)",
+                  "balance_sheet:Subordinated Liabilities")),
+                ("balance_sheet:Borrowings",
+                 ("balance_sheet:Non-Current Borrowings", "balance_sheet:Current Borrowings")),
                 ("balance_sheet:Trade Payables",
-                 "balance_sheet:Trade Payables (Micro)", "balance_sheet:Trade Payables (Other)"),
+                 ("balance_sheet:Trade Payables (Micro)", "balance_sheet:Trade Payables (Other)")),
             )
             for period in sorted(periods):
-                for total_metric, a_metric, b_metric in composed:
-                    a, b = parts.get((a_metric, period)), parts.get((b_metric, period))
-                    if a is not None and b is not None and (total_metric, period) not in parts:
-                        write(total_metric, period, a.value_crore + b.value_crore,
-                              f"p.{a.page} '{a.row_label}' + p.{b.page} '{b.row_label}' "
-                              f"(composed: {a.value_printed} + {b.value_printed} {a.unit}; "
-                              f"{stmt.basis})",
-                              a.period_end)
+                done: set[str] = set()
+                for total_metric, part_metrics in composed:
+                    if total_metric in done or (total_metric, period) in parts:
+                        continue
+                    found = [parts.get((m, period)) for m in part_metrics]
+                    if any(f is None for f in found):
+                        continue
+                    write(total_metric, period, sum(f.value_crore for f in found),
+                          " + ".join(f"p.{f.page} '{f.row_label}'" for f in found)
+                          + f" (composed: {' + '.join(f.value_printed for f in found)} "
+                            f"{found[0].unit}; {stmt.basis})",
+                          found[0].period_end)
+                    done.add(total_metric)
     return tuple(fact_ids), tuple(skipped)
 
 
@@ -737,6 +753,18 @@ READING_VOCABULARY: Mapping[str, str] = {
     "balance_sheet:Reserves": "other equity / reserves and surplus",
     "balance_sheet:Non-Current Borrowings": "long-term / non-current borrowings",
     "balance_sheet:Current Borrowings": "short-term / current borrowings",
+    # A lender's statements have a different shape: the loan book IS the asset base, credit cost is an
+    # expense line, and borrowings come in three named kinds rather than a current/non-current split.
+    "balance_sheet:Loans": "loans (a lender's loan book, net of impairment allowance) — the financial "
+                           "asset, NOT loans given to employees or related parties",
+    "balance_sheet:Debt Securities": "debt securities issued (lender)",
+    "balance_sheet:Borrowings (Other than Debt Securities)": "borrowings other than debt securities "
+                                                             "(lender)",
+    "balance_sheet:Subordinated Liabilities": "subordinated liabilities (lender)",
+    "pnl:Interest Income": "interest income (lender revenue line)",
+    "pnl:Impairment on Financial Instruments": "impairment on financial instruments / provisions and "
+                                               "write-offs / expected credit loss charge for the year — "
+                                               "a lender's credit cost",
     "balance_sheet:Fixed Assets": "property, plant and equipment (tangible assets, net block)",
     "balance_sheet:CWIP": "capital work-in-progress",
     "balance_sheet:Inventories": "inventories",
@@ -771,7 +799,9 @@ standalone AND consolidated where both exist), report:
 - `columns`: every figure column, each with its `label_quote` verbatim and its `period` (FY label), or
   period null for a column that is NOT a reporting period (a GAAP-transition adjustment, a % column).
   A column may also declare `months` (integer) and `end` (ISO date, the period's closing date) when
-  the printed words are ambiguous — both are verified against the page and refused on contradiction
+  the printed words are ambiguous — both are verified against the page and refused on contradiction.
+  Say what the filing says, never what you expect: Indian companies do not all close in March, and a
+  company that moves its year-end files a short period once — both are stated plainly in the filing
 - `figures`: for each vocabulary metric printed, {metric, period, value_printed EXACTLY as printed
   (keep commas, parentheses, dashes), page, row_label as printed}
 

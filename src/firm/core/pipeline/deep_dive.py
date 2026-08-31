@@ -260,6 +260,14 @@ def statement_shape(facts: CompanyFacts, derived: DerivedSet) -> StatementShape:
         ppe_to_assets=(facts.value(D.FIXED_ASSETS, period) or 0.0) / assets,
         revenue_to_assets=sales / assets,
         gross_margin=None,
+        # Without these two the detector could not see a lender however plainly the filing said so, and
+        # the whole ADR-0002 branch — the suppression of Beneish/accruals/inventory checks that would be
+        # meaningless on a loan book — was unreachable from a real filing.
+        loan_book_to_assets=(facts.value(D.LOAN_BOOK, period) or 0.0) / assets,
+        interest_income_to_revenue=(
+            (facts.value(D.INTEREST_INCOME_PNL, period) or 0.0) / sales if sales > 0 else 0.0),
+        employee_cost_to_revenue=(
+            (facts.value(D.EMPLOYEE_COST, period) or 0.0) / sales if sales > 0 else 0.0),
     )
 
 

@@ -28,7 +28,7 @@ from firm.core.compute import quality
 from firm.core.compute.models import Playbook
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
-from firm.schemas.report import CheckOutcome, CheckRecord
+from firm.schemas.report import CheckOutcome, CheckRecord, GapKind
 
 #: playbook check name -> the `ForensicMetrics` field that carries it into `forensic_screen`.
 #: Four checks are value-carrying (the screen compares them to a threshold itself); the rest are
@@ -39,6 +39,55 @@ CHECK_TO_FIELD: Mapping[str, str] = {
     "high_accruals": "accrual_ratio",
     "beneish_manipulator": "beneish_m",
 }
+
+#: What a lender check needs that the FACE of the statements does not carry. Named individually so a
+#: report distinguishes "we cannot read this yet" from "the company did not disclose it" — the two are
+#: different findings and only one of them is about the company.
+_LENDER_NOTE_INPUTS: Mapping[str, str] = {
+    "gnpa_drift": "gross NPA ratio for two consecutive years (asset-quality note / RBI disclosures, not "
+                  "the face of the statements)",
+    "provision_coverage_low": "impairment allowance and gross NPA amount (asset-quality note)",
+    "restructured_book_high": "restructured advances and gross advances (asset-quality note)",
+    "gain_on_sale_reliant": "gain on derecognition / assignment income broken out (revenue note) — a "
+                            "lender that does not sell loans has none, which is a different answer",
+    "held_for_sale_no_reserve": "loans classified held-for-sale and their reserve treatment "
+                                "(classification note)",
+}
+
+#: Checks a playbook can select that this module has NO evaluator for, each naming what it specifically
+#: needs. The compute functions exist and are unit-tested (`quality.py`); what is missing is the wiring
+#: and, for most, an input the pipeline does not yet read.
+#:
+#: This registry exists because of ADR-0050. All seven lender checks were selected by config, backed by
+#: tested compute functions and documented as validated — and none had an evaluator, so a lender's report
+#: could only ever say UNAVAILABLE. The failure was invisible precisely because every part looked done.
+#: `tests/pipeline/test_check_coverage.py` now asserts that every selectable check either has an
+#: evaluator or appears here, so adding a check to a playbook without wiring it fails the build instead
+#: of quietly producing an unrunnable report.
+#:
+#: Entries are removed by BUILDING the evaluator against a real filing, never by deleting the line. The
+#: lender path is the pattern: wire it when a company that needs it is actually run, so the evaluator is
+#: validated against a document rather than against an expectation.
+UNIMPLEMENTED_CHECKS: Mapping[str, str] = {
+    "contract_asset_divergent":
+        "contract assets / unbilled revenue for two consecutive years (an Ind AS 115 balance-sheet line "
+        "the reading vocabulary does not yet carry) — needs an EPC or infrastructure company to build "
+        "and validate against",
+    "guarantees_heavy":
+        "guarantees outstanding to subsidiaries and SPVs, from the contingent-liabilities note (the note "
+        "is enumerated today but its contents are not read)",
+    "capitalised_cost_heavy":
+        "development or R&D cost capitalised in the year and the total spend it came from (intangibles "
+        "note plus the expensed line) — needs a platform or pharma company to build against",
+    "adjusted_ebitda_gap":
+        "the company's own 'adjusted' EBITDA from an investor presentation (a grade-C management claim) "
+        "beside the statutory figure — the firm ingests presentations but does not yet parse them",
+}
+
+#: Prefix the unimplemented branch writes, so a test can tell "we have not built this" apart from a real
+#: UNAVAILABLE about the company's disclosure. The distinction is the same one ADR-0022 draws between a
+#: CAPABILITY gap and a DISCLOSURE gap, and it must survive into the report.
+NOT_IMPLEMENTED_PREFIX = "no evaluator is wired for this check yet"
 
 #: The name `forensic_screen` gives a fired check, where it differs from the playbook name.
 CHECK_TO_FLAG: Mapping[str, str] = {
@@ -101,12 +150,37 @@ class CheckEvaluation:
         return None if r is None else r.outcome
 
     @property
+    def applicable(self) -> list[CheckRecord]:
+        return [r for r in self.records if r.name in self.expected]
+
+    @property
     def unavailable_share(self) -> float:
-        """Share of *applicable* checks whose inputs were not disclosed. Drives the honest verdict."""
-        applicable = [r for r in self.records if r.name in self.expected]
+        """Share of *applicable* checks that could not run, for ANY reason. Drives confidence: whoever
+        the gap belongs to, the firm knows less because of it."""
+        applicable = self.applicable
         if not applicable:
             return 1.0
         return sum(r.outcome is CheckOutcome.UNAVAILABLE for r in applicable) / len(applicable)
+
+    @property
+    def disclosure_gap_share(self) -> float:
+        """Share of applicable checks the pipeline LOOKED FOR and the company had not disclosed. This is
+        the only unavailability allowed to degrade a verdict (ADR-0022's rule, applied to checks by
+        ADR-0051): charging a company for a note we never opened is how a firm rejects every business it
+        cannot yet read and calls that rigour."""
+        applicable = self.applicable
+        if not applicable:
+            return 0.0
+        return sum(r.gap is GapKind.DISCLOSURE for r in applicable) / len(applicable)
+
+    @property
+    def capability_gap_share(self) -> float:
+        """Share of applicable checks the firm could not run for want of its OWN reach. Lowers
+        confidence and belongs in the report as our limitation, never in the verdict."""
+        applicable = self.applicable
+        if not applicable:
+            return 0.0
+        return sum(r.gap is GapKind.CAPABILITY for r in applicable) / len(applicable)
 
 
 class _Recorder:
@@ -137,10 +211,21 @@ class _Recorder:
             return f" (grade {seen[0]})"
         return f" (grades {'+'.join(seen)} — mixed provenance, weakest is {seen[-1]})"
 
-    def unavailable(self, check: str, missing: Sequence[str]) -> None:
+    def unavailable(self, check: str, missing: Sequence[str],
+                    gap: GapKind = GapKind.CAPABILITY) -> None:
+        """Record a check that could not run, and WHOSE gap it is (ADR-0051).
+
+        The default is CAPABILITY on purpose: blaming ourselves is the safe direction, and a caller must
+        state positively that it looked in the right place before the verdict is allowed to hold the
+        company responsible. The wording follows the classification so the report never says "not
+        disclosed" about a note we never opened.
+        """
+        lead = ("inputs not disclosed in the sources read as-of this run"
+                if gap is GapKind.DISCLOSURE else
+                "this check could not be run on the sources read as-of this run")
         self.records.append(CheckRecord(
-            name=check, outcome=CheckOutcome.UNAVAILABLE,
-            reason="inputs not disclosed in the sources read as-of this run: " + ", ".join(missing),
+            name=check, outcome=CheckOutcome.UNAVAILABLE, gap=gap,
+            reason=f"{lead}: " + ", ".join(missing),
         ))
 
     def ran(self, check: str, flagged: bool, detail: str, fact_ids: Sequence[str]) -> None:
@@ -219,6 +304,7 @@ def evaluate_checks(
     model_specific: Mapping[str, float],
     external: ExternalInputs | None = None,
     check_inputs: Mapping[str, float] | None = None,
+    lender: Mapping[str, float] | None = None,
 ) -> CheckEvaluation:
     """Evaluate every check the playbook selects, and mark every suppressed check NOT_APPLICABLE.
 
@@ -232,6 +318,10 @@ def evaluate_checks(
         from firm.core.config import check_input_thresholds
 
         check_inputs = check_input_thresholds()
+    if lender is None:
+        from firm.core.config import originate_to_sell_thresholds
+
+        lender = originate_to_sell_thresholds()
     ext = backfill_external_inputs(external or ExternalInputs(), facts)
     # Grades of every fact in scope, so each record can report the provenance span it rests on (ADR-0028).
     grades = {
@@ -390,7 +480,10 @@ def evaluate_checks(
                        else "inventory_flow_gap")
             label = "receivables" if check == "receivables_divergent" else "inventory"
             if stock is None or ext.revenue is None:
-                r.unavailable(check, (f"{label} (current, prior)", "revenue (current, prior)"))
+                # A filing we walked that does not print the row is the company's gap; a run with no
+                # filing behind it never looked, and that is ours (ADR-0051).
+                r.unavailable(check, (f"{label} (current, prior)", "revenue (current, prior)"),
+                              GapKind.DISCLOSURE if ext.disclosure_scanned else GapKind.CAPABILITY)
             else:
                 sg, fg, flagged = quality.stock_flow_divergence(
                     stock[0], stock[1], ext.revenue[0], ext.revenue[1], universal[gap_key])
@@ -417,7 +510,8 @@ def evaluate_checks(
         # ---- disclosure + model-specific ---------------------------------------------------------
         elif check == "disclosure_gap":
             if not ext.disclosure_scanned:
-                r.unavailable(check, ("annual-report text (no filing was walked in this run)",))
+                r.unavailable(check, ("annual-report text (no filing was walked in this run)",),
+                              GapKind.CAPABILITY)
             else:
                 r.ran(check, bool(ext.disclosure_gaps),
                       ("mandated disclosures absent: " + ", ".join(ext.disclosure_gaps))
@@ -438,7 +532,11 @@ def evaluate_checks(
                       f"related-party note read ({ext.locator(check) or 'AR'}): categories disclosed = "
                       f"{categories}{pay}", ext.ids(check))
             elif ext.promoter_loans is None:
-                r.unavailable(check, ("loans and advances to promoters/KMP (Schedule III row)",))
+                # Only a DISCLOSURE gap if we actually walked the filing and the mandated row was not
+                # there. With no filing walked we simply never looked, which is ours (ADR-0051).
+                r.unavailable(
+                    check, ("loans and advances to promoters/KMP (Schedule III row)",),
+                    GapKind.DISCLOSURE if ext.disclosure_scanned else GapKind.CAPABILITY)
             else:
                 share, flagged = quality.promoter_loan_share(
                     ext.promoter_loans[0], ext.promoter_loans[1],
@@ -447,11 +545,56 @@ def evaluate_checks(
                       f"loans to promoters/KMP {share:.1%} of advances vs limit "
                       f"{model_specific['promoter_loan_max_share']:.0%}", ext.ids(check))
 
+        # ---- lender checks (ADR-0002/0012; first wired to real filings by ADR-0050) ---------------
+        # Two of the seven are computable from the FACE of a lender's statements — the credit-cost line
+        # and the loan book are both printed there. The other five need note-level disclosure (asset
+        # quality, ECL stages, assignment income), so they name what they need rather than reporting the
+        # generic "no evaluator wired": a reader must be able to tell a check we cannot run from a
+        # disclosure the company did not make.
+        elif check in ("provision_book_divergent", "reserve_suppression"):
+            impairment = _consecutive_pair(facts, D.IMPAIRMENT)
+            book = _consecutive_pair(facts, D.LOAN_BOOK)
+            if impairment is None or book is None:
+                r.unavailable(check, tuple(
+                    name for name, got in ((f"{D.IMPAIRMENT} (two consecutive years)", impairment),
+                                           (f"{D.LOAN_BOOK} (two consecutive years)", book))
+                    if got is None))
+            elif check == "provision_book_divergent":
+                pg, bg, flagged = quality.provision_book_divergence(
+                    impairment[0].value, impairment[1].value, book[0].value, book[1].value,
+                    lender["provision_book_divergence_max"])
+                r.ran(check, flagged,
+                      f"impairment {pg:+.1%} vs loan book {bg:+.1%}, gap {abs(pg - bg):.2f} vs limit "
+                      f"{lender['provision_book_divergence_max']:.2f} "
+                      f"({impairment[1].period}->{impairment[0].period})",
+                      tuple(f.fact_id for f in (*impairment, *book)))
+            else:
+                rate_now = impairment[0].value / book[0].value if book[0].value else 0.0
+                rate_before = impairment[1].value / book[1].value if book[1].value else 0.0
+                flagged = quality.reserve_suppression_flag(
+                    rate_now, rate_before, lender["reserve_suppression_min_drop"])
+                # Direction is the whole point (ADR-0012): reserves RISING is honest recognition of
+                # stress, and only a material CUT into a book is the fraud tell.
+                r.ran(check, flagged,
+                      f"credit cost {rate_before:.2%} -> {rate_now:.2%} of the book "
+                      f"({'cut' if rate_now < rate_before else 'raised'}); flags only a cut beyond "
+                      f"{lender['reserve_suppression_min_drop']:.2%}",
+                      tuple(f.fact_id for f in (*impairment, *book)))
+
+        elif check in ("gnpa_drift", "provision_coverage_low", "restructured_book_high",
+                       "gain_on_sale_reliant", "held_for_sale_no_reserve"):
+            r.unavailable(check, (_LENDER_NOTE_INPUTS[check],))
+
         else:
-            # A check the playbook selects that this evaluator does not implement must be VISIBLE.
-            # Silently dropping it would let the report imply a check ran when nothing was evaluated.
-            r.unavailable(check, ((f"no evaluator wired for '{check}' in this run "
-                                   "(requires data this pipeline does not yet ingest)"),))
+            # A check the playbook selects that this evaluator does not implement must be VISIBLE, and
+            # must not read like a disclosure the company failed to make (ADR-0050). The registry names
+            # what each one specifically needs; an unregistered check gets a blunter message and fails
+            # the coverage test, which is how a newly-added-but-unwired check announces itself.
+            need = UNIMPLEMENTED_CHECKS.get(check)
+            r.unavailable(check, ((f"{NOT_IMPLEMENTED_PREFIX}: {need}" if need else
+                                   f"{NOT_IMPLEMENTED_PREFIX}, and '{check}' is not even declared in "
+                                   "UNIMPLEMENTED_CHECKS — this is a wiring bug, not a fact about the "
+                                   "company"),))
 
     for check in playbook.suppressed:
         models = ", ".join(m.value for m in playbook.models) or "no detected model"

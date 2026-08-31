@@ -68,6 +68,14 @@ playbooks:
       - receivables_divergent
       - inventory_divergent
       - ageing_cwip
+      # ADR-0050: under Ind AS 7 a lender's loan disbursement and collection ARE its operating
+      # activity, so CFO/PAT measures BOOK GROWTH, not earnings conversion. CreditAccess Grameen
+      # returns +2.12 in FY25 (book shrank 3.3%) and -3.27 in FY24 (book grew) — same company, same
+      # accounting, opposite verdicts, and the cumulative form is a SEVERE flag, so every GROWING
+      # lender would be flagged for growing. A lender-appropriate earnings-quality measure is a
+      # golden-set calibration question; asserting this one is simply wrong.
+      - cumulative_cfo_pat
+      - cfo_pat
     priority_notes:
       - ecl_impairment
       - loans_advances
@@ -83,6 +91,8 @@ playbooks:
       - high_accruals
       - receivables_divergent
       - inventory_divergent
+      - cumulative_cfo_pat            # ADR-0050, as LENDER: deposits and advances are operating flows
+      - cfo_pat
     priority_notes:
       - ecl_impairment
       - investments

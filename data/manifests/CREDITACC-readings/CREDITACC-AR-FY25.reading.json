@@ -1,0 +1,490 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "consolidated",
+   "period": "FY25",
+   "pages": [
+    138
+   ],
+   "heading_quote": "Consolidated Balance Sheet  Consolidated Statement of Profit and Loss\n  as at March 31, 2025",
+   "unit_quote": "Hin crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY25",
+     "label_quote": "As at As at  For the year ended\n  March 31, 2025",
+     "end": "2025-03-31"
+    },
+    {
+     "period": "FY24",
+     "label_quote": "March 31, 2025  March 31, 2024",
+     "end": "2024-03-31"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY25",
+     "value_printed": "1,271.49",
+     "page": 138,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY25",
+     "value_printed": "171.47",
+     "page": 138,
+     "row_label": "Bank balance other than cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Loans",
+     "period": "FY25",
+     "value_printed": "24,274.45",
+     "page": 138,
+     "row_label": "Loans"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY25",
+     "value_printed": "43.58",
+     "page": 138,
+     "row_label": "Property, plant and equipment"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY25",
+     "value_printed": "27,802.45",
+     "page": 138,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY25",
+     "value_printed": "27,802.45",
+     "page": 138,
+     "row_label": "Total liabilities and equity"
+    },
+    {
+     "metric": "balance_sheet:Debt Securities",
+     "period": "FY25",
+     "value_printed": "1,541.75",
+     "page": 138,
+     "row_label": "Debt securities"
+    },
+    {
+     "metric": "balance_sheet:Borrowings (Other than Debt Securities)",
+     "period": "FY25",
+     "value_printed": "18,878.73",
+     "page": 138,
+     "row_label": "Borrowings (other than debt securities)"
+    },
+    {
+     "metric": "balance_sheet:Subordinated Liabilities",
+     "period": "FY25",
+     "value_printed": "25.29",
+     "page": 138,
+     "row_label": "Subordinated liabilities"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY25",
+     "value_printed": "159.72",
+     "page": 138,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY25",
+     "value_printed": "6,796.25",
+     "page": 138,
+     "row_label": "Other equity"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY24",
+     "value_printed": "1,107.29",
+     "page": 138,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY24",
+     "value_printed": "206.62",
+     "page": 138,
+     "row_label": "Bank balance other than cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Loans",
+     "period": "FY24",
+     "value_printed": "25,104.99",
+     "page": 138,
+     "row_label": "Loans"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY24",
+     "value_printed": "32.08",
+     "page": 138,
+     "row_label": "Property, plant and equipment"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY24",
+     "value_printed": "28,870.83",
+     "page": 138,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY24",
+     "value_printed": "28,870.83",
+     "page": 138,
+     "row_label": "Total liabilities and equity"
+    },
+    {
+     "metric": "balance_sheet:Debt Securities",
+     "period": "FY24",
+     "value_printed": "2,042.12",
+     "page": 138,
+     "row_label": "Debt securities"
+    },
+    {
+     "metric": "balance_sheet:Borrowings (Other than Debt Securities)",
+     "period": "FY24",
+     "value_printed": "19,773.65",
+     "page": 138,
+     "row_label": "Borrowings (other than debt securities)"
+    },
+    {
+     "metric": "balance_sheet:Subordinated Liabilities",
+     "period": "FY24",
+     "value_printed": "25.24",
+     "page": 138,
+     "row_label": "Subordinated liabilities"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY24",
+     "value_printed": "159.38",
+     "page": 138,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY24",
+     "value_printed": "6,410.60",
+     "page": 138,
+     "row_label": "Other equity"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "consolidated",
+   "period": "FY25",
+   "pages": [
+    138
+   ],
+   "heading_quote": "Consolidated Statement of Profit and Loss\n  as at March 31, 2025  for the year ended March 31, 2025",
+   "unit_quote": "H in crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY25",
+     "label_quote": "For the year ended March 31, 2025",
+     "months": 12,
+     "end": "2025-03-31"
+    },
+    {
+     "period": "FY24",
+     "label_quote": "For the year ended March 31, 2025  March 31, 2024",
+     "months": 12,
+     "end": "2024-03-31"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Interest Income",
+     "period": "FY25",
+     "value_printed": "5,546.76",
+     "page": 138,
+     "row_label": "Interest income"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY25",
+     "value_printed": "5,752.33",
+     "page": 138,
+     "row_label": "Total revenue from operations (I)"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY25",
+     "value_printed": "3.81",
+     "page": 138,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY25",
+     "value_printed": "5,756.14",
+     "page": 138,
+     "row_label": "Total income (I+II)"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY25",
+     "value_printed": "1,947.56",
+     "page": 138,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Impairment on Financial Instruments",
+     "period": "FY25",
+     "value_printed": "1,929.51",
+     "page": 138,
+     "row_label": "Impairment on financial instruments"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY25",
+     "value_printed": "730.36",
+     "page": 138,
+     "row_label": "Employee benefit expenses"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY25",
+     "value_printed": "62.22",
+     "page": 138,
+     "row_label": "Depreciation and amortization expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY25",
+     "value_printed": "376.52",
+     "page": 138,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY25",
+     "value_printed": "5,047.27",
+     "page": 138,
+     "row_label": "Total expenses (IV)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY25",
+     "value_printed": "708.87",
+     "page": 138,
+     "row_label": "Profit before tax (III-IV)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY25",
+     "value_printed": "177.47",
+     "page": 138,
+     "row_label": "Total tax expense (VI)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY25",
+     "value_printed": "531.40",
+     "page": 138,
+     "row_label": "Profit for the year (V-VI)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY25",
+     "value_printed": "33.32",
+     "page": 138,
+     "row_label": "Basic (in H)"
+    },
+    {
+     "metric": "pnl:Interest Income",
+     "period": "FY24",
+     "value_printed": "4,900.11",
+     "page": 138,
+     "row_label": "Interest income"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY24",
+     "value_printed": "5,166.67",
+     "page": 138,
+     "row_label": "Total revenue from operations (I)"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY24",
+     "value_printed": "5.98",
+     "page": 138,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY24",
+     "value_printed": "5,172.65",
+     "page": 138,
+     "row_label": "Total income (I+II)"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY24",
+     "value_printed": "1,732.44",
+     "page": 138,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Impairment on Financial Instruments",
+     "period": "FY24",
+     "value_printed": "451.77",
+     "page": 138,
+     "row_label": "Impairment on financial instruments"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY24",
+     "value_printed": "669.43",
+     "page": 138,
+     "row_label": "Employee benefit expenses"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY24",
+     "value_printed": "51.15",
+     "page": 138,
+     "row_label": "Depreciation and amortization expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY24",
+     "value_printed": "324.78",
+     "page": 138,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY24",
+     "value_printed": "3,233.47",
+     "page": 138,
+     "row_label": "Total expenses (IV)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY24",
+     "value_printed": "1,939.18",
+     "page": 138,
+     "row_label": "Profit before tax (III-IV)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY24",
+     "value_printed": "493.25",
+     "page": 138,
+     "row_label": "Total tax expense (VI)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY24",
+     "value_printed": "1,445.93",
+     "page": 138,
+     "row_label": "Profit for the year (V-VI)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY24",
+     "value_printed": "90.88",
+     "page": 138,
+     "row_label": "Basic (in H)"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "consolidated",
+   "period": "FY25",
+   "pages": [
+    139,
+    140
+   ],
+   "heading_quote": "Consolidated Statement of cash flows for the year ended March 31, 2025",
+   "unit_quote": "H in crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2025",
+     "months": 12,
+     "end": "2025-03-31"
+    },
+    {
+     "period": "FY24",
+     "label_quote": "March 31, 2024",
+     "months": 12,
+     "end": "2024-03-31"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY25",
+     "value_printed": "1,125.24",
+     "page": 139,
+     "row_label": "Net cash flows generated from/ (used in) operating activities (A)"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY24",
+     "value_printed": "(4,733.78)",
+     "page": 139,
+     "row_label": "Net cash flows generated from/ (used in) operating activities (A)"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY25",
+     "value_printed": "708.34",
+     "page": 139,
+     "row_label": "Net cash flows generated from/ (used in) investing activities (B)"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY24",
+     "value_printed": "(994.20)",
+     "page": 139,
+     "row_label": "Net cash flows generated from/ (used in) investing activities (B)"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY25",
+     "value_printed": "(1,669.38)",
+     "page": 140,
+     "row_label": "Net cash flows (used in)/ generated from financing activities (C )"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY24",
+     "value_printed": "5,493.86",
+     "page": 140,
+     "row_label": "Net cash flows (used in)/ generated from financing activities (C )"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY25",
+     "value_printed": "164.20",
+     "page": 140,
+     "row_label": "Net increase/ (decrease) in cash and cash equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY24",
+     "value_printed": "(234.12)",
+     "page": 140,
+     "row_label": "Net increase/ (decrease) in cash and cash equivalents (A+B+C)"
+    }
+   ]
+  }
+ ]
+}

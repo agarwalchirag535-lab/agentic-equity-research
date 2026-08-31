@@ -95,7 +95,13 @@ def test_lender_playbook_suppresses_invalid_checks():
     for invalid in ("beneish_manipulator", "receivables_divergent", "inventory_divergent",
                     "high_accruals", "ageing_cwip"):
         assert not pb.runs(invalid), invalid
-    assert pb.runs("cumulative_cfo_pat")           # universal floor still applies
+    # ADR-0050: cash conversion is suppressed for a lender too. Under Ind AS 7 loan disbursement and
+    # collection ARE the operating activity, so CFO/PAT measures book growth rather than earnings
+    # conversion — CreditAccess reads +2.12 when its book shrank and -3.27 when it grew. Left
+    # applicable, the cumulative form is a SEVERE flag and every growing lender is a fraud.
+    for measures_book_growth in ("cumulative_cfo_pat", "cfo_pat"):
+        assert not pb.runs(measures_book_growth), measures_book_growth
+    assert pb.runs("other_income_heavy")           # the universal floor still applies where it is valid
 
 
 def test_manufacturer_playbook_runs_the_stock_flow_checks():

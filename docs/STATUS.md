@@ -6,7 +6,7 @@
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0044). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0054). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -29,7 +29,7 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 744 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 773 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -634,6 +634,82 @@ moved >2% across the window, asking the bonus-vs-issuance question instead), and
 — labelling a verified-both-sides contradiction `re_presented` rather than confessing to an
 extraction error the V-checks prove we did not make. First real restatement-radar catch: 49 quiet
 revisions, led by FY15 revenue 578.89 → 525.87 (₹53cr of discounts renetted).
+
+**The parallel line's version of the same day (merged, ADR-0054).** A sibling session independently
+built the end-date half — same `facts.period_end` idea, a declaration-only V3c, and a REFUSAL of every
+window rate across a moved year-end. The merge (§6g) kept the trunk implementation (derive-from-words
+V3c that refuses an *unestablishable* close; the CAGR exponent corrected to the true elapsed years
+rather than refused) and ported the sibling's `fiscal_close_month()/.fiscal_calendar_change()` helpers
+as narratable facts. Its ADRs are renumbered 0051–0053 in DECISIONS.
+
+**The affirm answer, finally.** On the trunk's six-filing store Symphony's `cumulative_cfo_pat` reads
+**0.79 (PASS)** over FY12-FY18 (the sibling's four-filing run read 0.71 over FY14-FY18) against the
+**0.56 SEVERE** the two-year window gave before the floor: *HARD_FAIL -> REVIEW -> cumulative PASS*.
+It still returns REVIEW on single-year `cfo_pat` 0.55 and `high_accruals` 0.126, which is the treasury
+effect held for golden-set calibration rather than fixed by moving a threshold on one observation.
+
+## 6e. The CreditAccess run (2026-08-31) — the lender path was asserted, not built
+
+The first lender's filing the firm has ever read (CreditAccess Grameen FY25, `as_of 2025-12-31`). Full
+autopsy in **ADR-0050**. The headline: `quality.py` has carried seven lender checks since ADR-0002/0012
+and `VALIDATION_TIER0.md` has been cited as proof the firm handles lenders — but the **pipeline could
+not read a lender at all**, broken in three independent places: no lender line items in the reading
+vocabulary, `statement_shape` never computing `loan_book_to_assets` (so LENDER was undetectable however
+plainly a filing said so, making the whole ADR-0002 branch unreachable), and **no evaluator for any of
+the seven checks** in `checks.py`.
+
+All three are now built. The payoff: **the pipeline independently reproduced the hand-computed
+VALIDATION_TIER0 verdict** from the audited statements with no figure typed in — provision-book
+divergence FLAG (impairment +327.1% vs book -3.3%, gap 3.30), reserve-suppression PASS (1.80% -> 7.95%,
+raised, so correctly NOT the fraud tell), gain-on-sale UNAVAILABLE, screen **REVIEW**. LENDER detected at
+a loan book **87% of assets**, and the five ADR-0002 suppressions appeared as NOT_APPLICABLE on a real
+filing for the first time. The five note-level checks now name the specific note that would answer them,
+so "we cannot read this yet" never reads like "the company did not disclose it".
+
+**The defect the run found:** `cumulative_cfo_pat`/`cfo_pat` were UNIVERSAL and therefore applied to
+lenders. Under Ind AS 7 loan disbursement and collection ARE a lender's operating activity, so CFO/PAT
+measures BOOK GROWTH: CreditAccess reads **+2.12 in FY25 (book shrank 3.3%)** and **-3.27 in FY24 (book
+grew)** — same company, same accounting, opposite verdicts — and the cumulative form is a SEVERE flag, so
+**every growing lender would be flagged for growing**. Both are now suppressed for LENDER and BANK. A
+lender-appropriate replacement measure is a golden-set calibration question, recorded rather than invented.
+
+**Also worth knowing:** the verifier caught three of *my own* transcription errors (a column-label quote
+absent from the page, four cash-flow rows attributed to the wrong page) before anything reached the store.
+
+## 6f. "We could not look" is not "they did not disclose" (2026-08-31, ADR-0051)
+
+Generalising ADR-0050 found four more unwired checks (SERVICES_IT, EPC_INFRA, REAL_ESTATE) — and then
+something worse. `unavailable_share` counted every unrunnable check alike and the ladder turned it into
+**INSUFFICIENT_DISCLOSURE** reasoning *"the inputs are public by law, so the gap is the finding"*. On
+CreditAccess Grameen, **67% of the playbook was unavailable and 0% of it was the company's doing** — the
+firm was about to accuse a compliant lender of withholding information it publishes in full. Two notes
+rungs had the same defect, firing off a `NotesReview` whose `scanned` flag was False.
+
+Fixed: `CheckRecord.gap` (defaulting to CAPABILITY — blaming ourselves is the safe direction),
+`disclosure_gap_share` split from `unavailable_share`, the notes rungs gated on `scanned`, and a new
+verdict **`INSUFFICIENT_EVIDENCE`** for "we could not look hard enough to judge". That last one is
+load-bearing: removing the false accusation alone made the screener-only run return
+`QUALITY_WRONG_PRICE` — a business judgment off 40% of a playbook — so the fix had to prevent a false
+thesis as well as a false accusation. CreditAccess now reads *"67% ... for want of this firm's own reach
+rather than the company's disclosure — no judgment about the business is supportable yet"*.
+
+`tests/pipeline/test_check_coverage.py` guards the wiring class behaviourally (verified by unwiring a
+lender check and watching it fail). The four unimplemented checks are **declared** in
+`UNIMPLEMENTED_CHECKS`, not built: an evaluator gets wired when a company that needs it is run, so it is
+validated against a document rather than an expectation.
+
+## 6g. The second branch divergence, merged (2026-08-31, ADR-0054)
+
+Two autonomous sessions ran the same priority function from the ADR-0048 base and independently built
+first-class periods, collided on ADR numbers for the second time, and independently transcribed the
+same Symphony FY15 filing. The merge kept the trunk's period machinery (stricter V3c, exponent
+correction over refusal — the one analytical disagreement, argued out in ADR-0054), landed the
+sibling's lender path (ADR-0052) and gap-kind verdict fix (ADR-0053) intact, and turned the double
+transcription into a free audit: **48 of 50 shared figures agree to the digit**; both disagreements
+were one semantic mapping (balance-sheet "Cash and Bank Balances" is NOT cash-and-cash-equivalents —
+the cash-flow statement's own closing row is). Process fix, operational: **one session owns the
+trunk.** All readings re-verified against their sha256-pinned PDFs under the merged verifier: 0
+violations, every stored fact dated.
 
 ## 7. Suggested next step
 

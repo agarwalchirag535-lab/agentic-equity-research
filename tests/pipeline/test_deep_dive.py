@@ -260,6 +260,6 @@ def test_write_false_returns_the_full_result_without_touching_disk(store, tmp_pa
         store, "DRYRUN", AS_OF, answers=clean_answers("DRYRUN"),
         reports_root=tmp_path, write=False)
     assert result.published is False and result.markdown_path is None
-    assert result.report.verdict.value == "INSUFFICIENT_DISCLOSURE"   # screener-only run
+    assert result.report.verdict.value == "INSUFFICIENT_EVIDENCE"     # screener-only: OUR gap
     assert result.publication_violations == ()                        # it *would* have shipped
     assert list(tmp_path.iterdir()) == []

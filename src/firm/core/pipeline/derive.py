@@ -87,6 +87,13 @@ MATERIALS = "pnl:Cost of Materials Consumed"
 #: stock-in-trade, so a cost base of materials alone put inventory days at 315 against a true ~75 and
 #: payable days at 231 against ~68 — turnover ratios wrong by 4x on a company doing nothing unusual.
 PURCHASES_STOCK_IN_TRADE = "pnl:Purchases of Stock-in-Trade"
+#: A lender's statements name different things. The loan book is the asset base (not a receivable), the
+#: credit cost is an expense line, and interest is revenue rather than a financing charge. Without these
+#: the shape detector could never see a lender at all, so `detect_models` never returned LENDER and the
+#: whole ADR-0002 branch — suppression included — was unreachable from a real filing.
+LOAN_BOOK = "balance_sheet:Loans"
+IMPAIRMENT = "pnl:Impairment on Financial Instruments"
+INTEREST_INCOME_PNL = "pnl:Interest Income"
 INVENTORY_CHANGE = "pnl:Changes in Inventories"
 EMPLOYEE_COST = "pnl:Employee Benefits"
 OTHER_EXPENSES = "pnl:Other Expenses"
@@ -130,7 +137,7 @@ READ_METRICS: tuple[str, ...] = (
     CASH, RECEIVABLES, INVENTORY,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
     TOTAL_INCOME, MATERIALS, PURCHASES_STOCK_IN_TRADE, INVENTORY_CHANGE, EMPLOYEE_COST, OTHER_EXPENSES,
-    TOTAL_EXPENSES,
+    TOTAL_EXPENSES, LOAN_BOOK, IMPAIRMENT, INTEREST_INCOME_PNL,
     TOTAL_TAX, OTHER_BANK, PAYABLES, CFF, CAPEX, DIVIDEND_PAID, INTEREST_PAID, INTEREST_INCOME,
     *BALANCE_SHEET_REMAINDER,
 )
@@ -189,6 +196,33 @@ class CompanyFacts:
         return tuple(
             f.fact_id for metric in self.series for f in self.series[metric].values()
         )
+
+    def fiscal_close_month(self, period: str) -> int | None:
+        """The month this company closed `period` in, when a source stated it; None otherwise.
+
+        Read from the facts, never inferred from the label — inferring a March close is the assumption
+        the field exists to stop making (ADR-0049)."""
+        months = {
+            f.period_end.month
+            for metric in self.series
+            for p, f in self.series[metric].items()
+            if p == period and f.period_end is not None
+        }
+        return months.pop() if len(months) == 1 else None
+
+    def fiscal_calendar_change(self, first: str, last: str) -> tuple[int, int] | None:
+        """`(from_month, to_month)` when the company moved its year-end between two periods, else None.
+
+        Symphony closed on 30 June through FY15 and on 31 March from FY17. The window CAGRs stay
+        computable across the change — their exponent is the true elapsed years between the stated
+        closes (ADR-0049/0054), not the label count — but the change itself is a fact a report should
+        narrate, and this reads it off the facts. Only periods whose close month is actually known
+        participate: an unstated close is unknown, never assumed to agree."""
+        window = [p for p in self.periods if first <= p <= last]
+        months = [m for m in (self.fiscal_close_month(p) for p in window) if m is not None]
+        if len(set(months)) <= 1:
+            return None
+        return months[0], months[-1]
 
 
 def load_company_facts(
@@ -417,6 +451,11 @@ def derive_metrics(
         span = label_span  # a single readable year has no window; every CAGR stays underivable
 
     # ---- growth + margins -----------------------------------------------------------------------
+    # A moved year-end does NOT refuse the window CAGRs (ADR-0054, resolving the two lines' one
+    # disagreement): both endpoint flows are used exactly as filed, each covers every season once, and
+    # `span` above already carries the true elapsed years between the stated closes — only the clock is
+    # corrected, no figure is estimated. The change itself remains a narratable fact via
+    # `facts.fiscal_calendar_change`.
     if (got := b.need("revenue_cagr", (SALES, f0), (SALES, fN))) is not None:
         b.add("revenue_cagr", _cagr(got[0].value, got[1].value, span),
               f"({SALES} {fN} / {SALES} {f0})^(1/{span}) - 1", got)

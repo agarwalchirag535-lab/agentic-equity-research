@@ -129,13 +129,18 @@ def test_forensic_agent_cannot_narrate_past_a_deterministic_hard_fail(store):
 
 
 # ---- 4. INSUFFICIENT_DISCLOSURE --------------------------------------------------------------------
-def test_screener_only_run_publishes_the_opacity_as_the_finding(store, tmp_path):
-    """No annual report walked → most of the playbook cannot run → the gap IS the finding (ADR-0014)."""
+def test_screener_only_run_publishes_the_gap_as_the_finding_and_names_whose_it_is(store, tmp_path):
+    """No annual report walked → most of the playbook cannot run → the gap IS the finding (ADR-0014),
+    and since ADR-0051 the report says WHOSE gap: nothing was read, so it is the firm's own reach that
+    fell short, not the company's disclosure. Publishing this as INSUFFICIENT_DISCLOSURE accused a
+    company of withholding an annual report it had in fact filed."""
     result = _run(store, "OPAQUE", clean_series(roic_boost=1.6),
                   answers=clean_answers("OPAQUE"), filing=None, tmp_path=tmp_path)
 
-    assert result.report.verdict is Verdict.INSUFFICIENT_DISCLOSURE, result.decision.rationale
+    assert result.report.verdict is Verdict.INSUFFICIENT_EVIDENCE, result.decision.rationale
+    assert "this firm's own reach" in result.decision.rationale
     assert result.evaluation.unavailable_share > 0.34
+    assert result.evaluation.disclosure_gap_share == 0.0     # the company is accused of nothing
     assert result.notes.notes_total == 0 and result.notes.coverage == 0.0
     # every UNAVAILABLE carries a reason (P1) and is republished as an explicit gap
     unavailable = [r for r in result.report.checklist.records
@@ -340,7 +345,9 @@ def test_point_in_time_hides_a_filing_published_after_as_of(store):
     # receivables input does not exist before the filing publishes.
     early_outcomes = {r.name: r.outcome for r in early.evaluation.records}
     assert early_outcomes["receivables_divergent"] is CheckOutcome.UNAVAILABLE
-    assert early.report.verdict is Verdict.INSUFFICIENT_DISCLOSURE
+    # ADR-0051: nothing was readable as-of this date, so the shortfall is the firm's reach, not the
+    # company's silence — the filing simply had not been published yet.
+    assert early.report.verdict is Verdict.INSUFFICIENT_EVIDENCE
 
     # ... and as-of a date after dissemination the same filing IS read.
     later = run_deep_dive(

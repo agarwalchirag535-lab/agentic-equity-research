@@ -1630,3 +1630,231 @@ debt-free company prints no borrowings row to transcribe — absence-means-zero 
 verifier cannot yet check); (c) `detect_models` returns nothing for Symphony, so only the universal
 playbook ran; (d) bonus-vs-issuance stays open until a corporate-action source exists. All are
 capability gaps and none moved a verdict.
+
+### ADR-0051 — When a company closes its books is read, never assumed (parallel line; committed as "ADR-0049" in `7545c68`)
+
+**Date** 2026-08-31 · **Status** superseded by ADR-0049 + ADR-0054 (the branch merge) · **Completes** the open item ADR-0048 named
+
+**Context.** ADR-0048 fixed the *length* half of "a period label is not a period" and named the other
+half as open: Symphony Ltd closed on **30 June** through FY15 and on **31 March** from FY17, so `FY15`
+means a different twelve months for it than for almost every other Indian company. `FY{YY}` silently
+assumed a March close for everyone. The damage is narrower than the stub's — it does not manufacture a
+forensic flag — but it is real: a growth rate across the change compares windows that do not line up
+(Symphony FY14→FY18 is four years and nine months of trading wearing a five-year label), `resolve_by`
+dates a criterion against the wrong filing, and a peer comparison across differing year-ends compares
+different twelve-month windows while looking perfectly ordinary.
+
+**Decision.** The period end becomes a stored, verified property of a fact.
+
+* `facts.period_end` (ISO date, `''` when the source did not state it) with an `ALTER TABLE` migration,
+  so a store written before the column is still readable and its facts honestly say "unknown".
+* `ProposedColumn.ends`, verified by **V3c**: the declared end must be a date the column label or the
+  statement heading actually *names* — month and year, spelled ("30th June, 2015") or numeric
+  ("30/06/2015", matched as a whole date so a stray `06` elsewhere in a quote cannot vouch for a June
+  close) — and its year must agree with the column's own FY label.
+* `CompanyFacts.fiscal_close_month()` / `.fiscal_calendar_change()` read the calendar off the facts.
+  **Only periods whose close month is actually known participate**: an unstated close is unknown, never
+  assumed to agree, so a fact set with no end dates can never fabricate a change.
+* `derive_metrics` refuses every rate-of-change metric spanning a moved year-end — `revenue_cagr`,
+  `pat_cagr`, `eps_cagr`, `expense_cagr`, `dilution_drag`, `opm_delta_window` — with the reason naming
+  both months. Single-period metrics (days ratios, margins, single-year conversion) are untouched,
+  because a ratio of two figures from the *same* statement does not care when the year ended.
+
+**Why refuse rather than adjust.** The same reasoning as the stub: annualising or pro-rating is
+estimating a number that would carry a conclusion. A refusal with the reason printed is an honest gap
+that the report already knows how to publish.
+
+**Result on real filings.** Symphony FY14/FY15 register with `2014-06-30`/`2015-06-30` and FY17/FY18
+with March ends; `fiscal_calendar_change('FY14','FY18')` returns `(6, 3)` and all four growth metrics
+are refused, naming the June→March move. Every single-period metric still computes. All seven prior
+readings (PC Jeweller FY13–FY18, Alkyl Amines FY26) re-verify with zero violations and keep their
+CAGRs — their end dates are simply unstated, which the calendar logic treats as unknown.
+
+**And the affirm answer the run was after.** With the fuller, calendar-aware window,
+`cumulative_cfo_pat` reads **0.71 — a PASS** over FY14–FY18, against the **0.56 SEVERE** the two-year
+window produced before ADR-0048's floor. The arc is the case for both ADRs in one line: *HARD_FAIL
+(false positive) → REVIEW (window guard) → cumulative PASS (honest window)*. More correct data moved
+the verdict toward the truth, and the guards prevented a confident wrong answer in the meantime.
+Symphony still returns **REVIEW** on single-year `cfo_pat` 0.55 and `high_accruals` 0.126 — the treasury
+effect recorded as a calibration lesson for the golden set, deliberately not fixed by moving a
+threshold on one observation.
+
+**Open, and worth stating.** Refusing a CAGR across a calendar change is the safe answer, not the best
+one: a growth rate over the longest sub-window with a *consistent* calendar (Symphony FY17→FY18) is
+computable and would be more useful than nothing. Left for when a real run needs it.
+
+---
+
+### ADR-0052 — The lender path was asserted, not built; and cash conversion is not an earnings-quality test for a lender (committed as "ADR-0050" in `bc8f3c4`)
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0002/0012 · **Source** the CreditAccess
+Grameen FY25 run — the first lender's filing the firm has ever read
+
+**Context.** `quality.py` has carried seven lender checks since ADR-0002/0012, `config/forensic_playbooks.yaml`
+has selected them by business model, and `VALIDATION_TIER0.md` has been cited as evidence the firm works
+on lenders. All of that was true of the *check functions*. The *pipeline* could not read a lender at all,
+in three independent places:
+
+1. the reading vocabulary had no loan book, no credit-cost line, no lender borrowings family;
+2. `statement_shape` never computed `loan_book_to_assets` or `interest_income_to_revenue`, so
+   `detect_models` could not return LENDER however plainly a filing said so — the entire ADR-0002
+   branch, suppression included, was unreachable from a real document;
+3. `checks.py` had **no evaluator for any of the seven**, so each fell through to the
+   "no evaluator wired for this check" branch.
+
+The honest reading of the old state: the firm reported lender checks as UNAVAILABLE and could never have
+done otherwise.
+
+**Decision — build the path.** Lender line items in the reading vocabulary
+(`balance_sheet:Loans`, `pnl:Impairment on Financial Instruments`, `pnl:Interest Income`, and the
+`Debt Securities` / `Borrowings (other than debt securities)` / `Subordinated Liabilities` family, which
+compose into `balance_sheet:Borrowings` — the composition rule generalised to N parts and ordered so the
+three-part lender form is tried before the current/non-current one). `statement_shape` computes the two
+lender ratios. `checks.py` evaluates the two checks whose inputs are on the **face** of the statements —
+`provision_book_divergent` and `reserve_suppression`, both needing only the credit-cost line and the loan
+book — and gives the other five a **specific** reason naming the note that would answer them, because
+"we cannot read this yet" and "the company did not disclose it" are different findings and only one is
+about the company.
+
+**Result: the pipeline independently reproduced the hand-computed verdict.** Reading the audited
+consolidated statements, with no figure typed in:
+
+| `VALIDATION_TIER0` (hand-fed, investor presentation) | this run (read from the AR) |
+|---|---|
+| provision divergence gap 3.30 ≫ 0.50 → FLAG | impairment **+327.1%** vs book **−3.3%**, gap **3.30** → FLAG |
+| reserve suppression: rate rose → no flag | **1.80% → 7.95%** (raised) → PASS |
+| gain-on-sale → UNAVAILABLE | UNAVAILABLE, naming the revenue note |
+| **REVIEW** | **REVIEW** |
+
+The small differences are a real and worth-recording sourcing choice: `VALIDATION_TIER0` used gross loan
+portfolio (25,948 → 25,948/26,714, −2.9%) from the presentation; the pipeline uses **net loans from the
+audited balance sheet** (24,274.45 → 25,104.99, −3.3%). The audited figure is the better source and the
+conclusion is identical. LENDER was detected at a loan book **87% of assets**, and the five ADR-0002
+suppressions appeared as NOT_APPLICABLE on a real filing for the first time.
+
+**And the defect the run found.** `cumulative_cfo_pat` and `cfo_pat` were UNIVERSAL, so they applied to
+lenders. Under Ind AS 7 a lender's loan disbursement and collection **are** its operating activity, so
+CFO/PAT measures book growth, not earnings conversion. CreditAccess reads:
+
+* FY25: CFO 1,125.24 / PAT 531.40 = **+2.12** — a comfortable PASS, and only because the book *shrank* 3.3%;
+* FY24: CFO −4,733.78 / PAT 1,445.93 = **−3.27** — far below the 0.70 floor, on a lender doing nothing
+  but growing.
+
+Same company, same accounting, opposite verdicts, decided entirely by the direction of the book — and
+`cumulative_cfo_pat_low` is a **SEVERE** flag, so *every growing lender* would be flagged for growing.
+Both are now suppressed for LENDER and BANK, which is ADR-0002's own reasoning ("Beneish and accruals are
+invalid for a lender") applied to the check that had escaped it. A lender-appropriate earnings-quality
+measure is a golden-set calibration question and is recorded as such rather than invented here.
+
+**A note on the verifier.** Three of my own transcription errors were caught before anything reached the
+store: a column-label quote that did not appear on the page, and four cash-flow rows I attributed to the
+wrong page. The propose/verify split is doing its job on its author, which is the strongest evidence it
+will do it on a model.
+
+---
+
+### ADR-0053 — "We could not look" is not "they did not disclose" (committed as "ADR-0051" in `d04dac7`)
+
+**Date** 2026-08-31 · **Status** accepted · **Extends ADR-0022's rule from line items to checks and to
+the verdict ladder** · **Found by** generalising ADR-0050
+
+**Context.** ADR-0050's lesson was that a capability can look finished at every layer and be unreachable
+from a real document. Generalising it, an audit found four more checks a playbook can select with no
+evaluator (`contract_asset_divergent`, `guarantees_heavy`, `capitalised_cost_heavy`,
+`adjusted_ebitda_gap`) — covering SERVICES_IT, EPC_INFRA and REAL_ESTATE. But the audit surfaced
+something worse than the wiring gap.
+
+**The prohibited failure, live.** `CheckEvaluation.unavailable_share` counted every unrunnable check
+alike, and the verdict ladder turned that share into `INSUFFICIENT_DISCLOSURE` with the rationale *"the
+inputs are public by law, so the gap is the finding"*. On CreditAccess Grameen — a lender that discloses
+its asset quality in full — **67% of the playbook was unavailable and 0% of it was the company's doing**:
+every one of those checks needs a note this firm does not read. The report would have accused a
+compliant company of withholding public information. `GapKind`'s own docstring forbids exactly this
+("otherwise the firm rejects every business it cannot yet read and calls that rigour"); the distinction
+had been applied to line-item questions since ADR-0022 and never to checks.
+
+Two further rungs had the same defect: notes coverage and substantive share both produced
+`INSUFFICIENT_DISCLOSURE` from a `NotesReview` whose `scanned` flag was **False** — "0% of 0 notes carry
+a substantive disposition" is a sentence about a filing nobody opened.
+
+**Decision.**
+
+1. `CheckRecord.gap: GapKind`, and `_Recorder.unavailable(..., gap=GapKind.CAPABILITY)` — **CAPABILITY
+   is the default**, so a caller must state positively that it looked in the right place before the
+   company can be held responsible. The reason's wording follows the classification: a report never says
+   "not disclosed" about a note it never opened.
+2. `disclosure_gap_share` (verdict-moving) is split from `unavailable_share` (confidence-moving, and
+   still counting both kinds — whoever the gap belongs to, the firm knows less for it).
+3. `INSUFFICIENT_DISCLOSURE` requires the **disclosure** share to breach the ceiling, and names the
+   checks. The notes rungs are gated on `scanned`.
+4. A new verdict, **`INSUFFICIENT_EVIDENCE`**, for the case the split exposes. Removing the false
+   accusation alone would have replaced it with a false *thesis*: the screener-only regression run
+   promptly returned `QUALITY_WRONG_PRICE` — a business judgment off a playbook that ran 40% and never
+   opened a filing. The new rung sits after the disclosure rungs (a genuinely opaque company is still
+   reported as opaque) and before every rung that asserts anything about the business.
+
+**Result.** CreditAccess moves from `INSUFFICIENT_DISCLOSURE` to `INSUFFICIENT_EVIDENCE`: *"67% of the
+applicable playbook could not be evaluated, and 67% of it for want of this firm's own reach rather than
+the company's disclosure — no judgment about the business is supportable yet"*. That sentence is true;
+the one it replaces was false about the company and true about us. The screener-only path — which
+STATUS §6b had already caught empirically on Alkyl Amines ("INSUFFICIENT_DISCLOSURE — the opacity was
+ours") and worked around by improving extraction — is now correct by construction rather than by luck.
+
+**And the guard.** `tests/pipeline/test_check_coverage.py` runs the real evaluator over every model's
+real playbook and asserts each selectable check either has an evaluator or is declared in
+`UNIMPLEMENTED_CHECKS` with what it specifically needs. It is behavioural, not textual, so a refactor of
+the dispatch cannot fool it; it was verified by unwiring a lender check and watching it fail. The four
+unimplemented checks are declared rather than built: the lender path is the pattern — wire an evaluator
+when a company that needs it is actually run, so it is validated against a document instead of an
+expectation.
+
+### ADR-0054 — The second branch divergence, and what the merge kept from each line
+
+**Date** 2026-08-31 · **Status** accepted · **Records** the merge of
+`claude/equity-research-architecture-3600e7` (`7545c68`..`d04dac7`) into the trunk at `0f68c24`
+
+**What happened.** Two autonomous sessions ran the same priority function from the same ADR-0048 base
+and independently built the same top item — periods as first-class objects — converging on the same
+`facts.period_end` column, colliding on ADR numbers for the second time (both minted an ADR-0049 and
+an ADR-0050), and independently hand-transcribing the same Symphony FY15 annual report. The first
+divergence (recorded under the ADR-0036–0038 collision) was an accident of a gitignored `reports/`
+directory; this one was structural: two loops, one backlog, no shared coordination point. The process
+fix is operational — one session owns the trunk — and this ADR is the numbering record:
+`7545c68`'s "ADR-0049" is filed here as **ADR-0051**, `bc8f3c4`'s "ADR-0050" as **ADR-0052**,
+`d04dac7`'s "ADR-0051" as **ADR-0053**.
+
+**What the merge kept, and why.**
+
+* **Periods: the trunk implementation (ADR-0049) stands.** Both lines verify the close against the
+  filing's words; the trunk's V3c additionally *derives* it (declared → column words → heading, each
+  filtered to the column's own calendar year) and **refuses a column whose close cannot be established
+  at all** — the sibling's V3c checked only closes the proposer volunteered, so an undeclared column
+  silently stored an unknown close. The sibling's `Period` storage type (`''`-sentinel string) gave way
+  to the trunk's typed `date | None`.
+* **The one analytical disagreement, resolved for correction over refusal.** Across the June→March
+  change the sibling refused every window growth rate ("the windows do not line up"); the trunk
+  computes them with the exponent set to the true elapsed years between the stated closes (5.7496 for
+  FY12→FY18) and prints that exponent in the formula. Refusal was argued from the estimation ban, but
+  no figure is estimated: both endpoint flows are used exactly as filed and each covers every season
+  exactly once — only the *clock* is corrected, from a label count the filings contradict to the count
+  they state. Refusing would discard a well-defined answer the company's own filings support.
+* **The sibling's lender path lands intact (ADR-0052)** — vocabulary, three-part composed borrowings
+  (tried before the current/non-current pair), shape-detector inputs, playbook branch, CreditAccess
+  reading — re-keyed to the trunk's `end`/typed-date reading layer.
+* **The sibling's verdict fix lands intact (ADR-0053)** — a check whose inputs the firm merely could
+  not read reports the firm's gap, never the company's non-disclosure. The trunk's own Symphony run
+  had printed the symptom it fixes.
+* **The Symphony FY15 double-transcription became a free audit.** 48 of 50 shared figures agree to the
+  digit across two blind readings of the same PDF. Both disagreements are ONE semantic choice: the
+  sibling mapped the balance sheet's "Cash and Bank Balances" row to `Cash Equivalents`; the trunk
+  takes the cash-flow statement's own "Cash & Cash Equivalents at the end of the year" row. The
+  balance-sheet row includes earmarked accounts and, in FY16, ₹24.00cr of fixed deposits — the FY16
+  gap is ₹46.48cr printed against ₹18.21cr of true C&CE, which would corrupt the cash-yield check.
+  The trunk mapping stands; the trap ("a vocabulary row is the row the filing MEANS, not the row that
+  sounds like it") is the lesson worth keeping.
+
+**Residue.** The sibling's `fiscal_close_month`/`fiscal_calendar_change` helpers and its refusal tests
+were adapted to the trunk semantics rather than dropped — the calendar-change *fact* still matters for
+narration even where the rate is computable. The trunk's ADR-0050 dilution-drag guard and the
+sibling's ADR-0053 gap-kind fix overlap in spirit (both stop a firm-side gap reading as a company-side
+finding); neither subsumes the other.

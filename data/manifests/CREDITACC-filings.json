@@ -1,0 +1,19 @@
+{
+  "ticker": "CREDITACC",
+  "company_name": "CreditAccess Grameen Limited",
+  "source": "https://api.bseindia.com/BseIndiaAPI/api/AnnualReport_New/w?scripcode=541770",
+  "retrieved_at": "2026-08-31",
+  "filings": [
+    {
+      "file": "CREDITACC-AR-FY25.pdf",
+      "period": "FY25",
+      "prior_period": "FY24",
+      "source_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/525e765e-fd33-4753-b5f3-b7598cf1c916.pdf",
+      "published_at": "2025-07-05",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "09d9871e03ff2617bc1a831e155efc2493bd51d8373495682ca737cea584084f",
+      "bytes": 11565377
+    }
+  ]
+}

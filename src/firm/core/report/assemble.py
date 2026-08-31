@@ -107,19 +107,44 @@ def choose_verdict(
             f"at or above severity {min_severity.name}: {names}"
         ))
 
-    unavailable = evaluation.unavailable_share
-    if unavailable > float(policy["max_unavailable_share"]):
+    # ONLY the company's own non-disclosure may produce this verdict (ADR-0051). The share of checks we
+    # simply cannot run yet is our limitation: it lowers confidence and is printed as ours, but it must
+    # never be published as an accusation. CreditAccess Grameen — a lender that discloses its asset
+    # quality in full — was headed for INSUFFICIENT_DISCLOSURE over notes this firm does not read, with
+    # the rationale "the inputs are public by law, so the gap is the finding". That sentence would have
+    # been false about the company and true about us.
+    undisclosed = evaluation.disclosure_gap_share
+    if undisclosed > float(policy["max_unavailable_share"]):
+        names = ", ".join(r.name for r in evaluation.applicable
+                          if r.gap is GapKind.DISCLOSURE) or "unnamed"
         return VerdictDecision(Verdict.INSUFFICIENT_DISCLOSURE, (
-            f"{unavailable:.0%} of the applicable playbook could not be evaluated (ceiling "
+            f"{undisclosed:.0%} of the applicable playbook was looked for and not disclosed (ceiling "
             f"{float(policy['max_unavailable_share']):.0%}) — the inputs are public by law, so the gap "
-            "is the finding"
+            f"is the finding: {names}"
         ))
-    if notes.coverage < 1.0:
+    # Same rule for the notes (ADR-0051). Notes we never opened are not notes the company withheld: if
+    # no filing was walked at all, `scanned` is False and this rung has nothing to say about the company.
+    if notes.scanned and notes.coverage < 1.0:
         return VerdictDecision(Verdict.INSUFFICIENT_DISCLOSURE, (
             f"notes-to-accounts coverage {notes.coverage:.0%} < 100% "
             f"(undispositioned: {list(notes.undispositioned) or 'unlisted'})"
         ))
-    if notes.substantive_share < float(policy["min_note_review_share"]):
+    # Also gated on `scanned` (ADR-0051): "0% of 0 notes carry a substantive disposition" is a sentence
+    # about a filing nobody opened, and publishing it as the company's opacity is the same false claim.
+    # Before judging the business at all: did the firm actually look at enough of it? This rung is about
+    # US and says so (ADR-0051). It sits after the disclosure rungs so a company that IS opaque is still
+    # reported as opaque, and before every rung that asserts something about the business, so a thesis is
+    # never published off a playbook that barely ran.
+    if evaluation.unavailable_share > float(policy["max_unavailable_share"]):
+        mine = ", ".join(r.name for r in evaluation.applicable if r.gap is GapKind.CAPABILITY)
+        return VerdictDecision(Verdict.INSUFFICIENT_EVIDENCE, (
+            f"{evaluation.unavailable_share:.0%} of the applicable playbook could not be evaluated "
+            f"(ceiling {float(policy['max_unavailable_share']):.0%}), and "
+            f"{evaluation.capability_gap_share:.0%} of it for want of this firm's own reach rather than "
+            f"the company's disclosure — no judgment about the business is supportable yet: {mine}"
+        ))
+
+    if notes.scanned and notes.substantive_share < float(policy["min_note_review_share"]):
         return VerdictDecision(Verdict.INSUFFICIENT_DISCLOSURE, (
             f"only {notes.substantive_share:.0%} of {notes.notes_total} notes carry a substantive "
             f"disposition (floor {float(policy['min_note_review_share']):.0%}); the rest are 'unknown', "
