@@ -1,0 +1,31 @@
+{
+  "ticker": "CREDITACC",
+  "company_name": "CreditAccess Grameen Limited",
+  "source": "https://www.creditaccessgrameen.in/investors/annual-reports/",
+  "retrieved_at": "2026-08-30",
+  "filings": [
+    {
+      "file": "CREDITACC-AR-FY26.pdf",
+      "period": "FY26",
+      "prior_period": "FY25",
+      "source_url": "https://www.creditaccessgrameen.in/wp-content/uploads/2026/06/CreditAccess-Grameen_Annual-Report_FY-2025-26.pdf",
+      "published_at": "2026-06-01",
+      "published_at_basis": "upload-path",
+      "grade": "A",
+      "sha256": "aa11dd76d9d0cb0b9c935cfe230cbe4546f510eabc3ceefa5869a880492a4b94",
+      "bytes": 16342607
+    },
+    {
+      "file": "CREDITACC-AR-FY25.pdf",
+      "period": "FY25",
+      "prior_period": "FY24",
+      "source_url": "https://www.creditaccessgrameen.in/wp-content/uploads/2025/09/CreditAccess-Grameen_Annual-Report_FY-2024-25.pdf",
+      "published_at": "2025-09-01",
+      "published_at_basis": "upload-path",
+      "grade": "A",
+      "sha256": "dde67a899f09f9fc7b87edfa904ef9afd00b6f11da75948c82bdb62d35762a9b",
+      "bytes": 11383634
+    }
+  ],
+  "note": "Golden-set copy: only filings present in data/bronze, hashed from the bytes held. Cases pin their own inputs so unrelated data work cannot change what a case measures."
+}

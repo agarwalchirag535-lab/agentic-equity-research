@@ -1,0 +1,45 @@
+case_id: ALKYLAMINE-FY26
+ticker: ALKYLAMINE
+as_of: 2026-08-30
+label: clean
+negative_class: easy
+manifest: evals/manifests/ALKYLAMINE.json
+human_signed_off: false
+
+# THE FLOOR CHECK. A clean manufacturer in a clean year must come out clean, and this case is also the
+# control that every extraction change is measured against: ten filings, 100 grade-A facts, and the
+# geometry rewrite (ADR-0053) changed none of their values.
+verified_facts:
+  - metric: pnl:Sales
+    period: FY26
+    value: 153585.79
+    unit: INR_lakh
+    locator: FY26 AR p.87 l.7, Statement of Profit and Loss, Revenue from Operations
+    # `filing_page`, not cross_filing_overlap: FY26 is the newest filing, so no later report restates it
+    # and there is no second document to agree. Overlap evidence is only available for a closed year.
+    method: filing_page
+    source: read from the audited Statement of Profit and Loss
+  - metric: balance_sheet:Trade Payables
+    period: FY26
+    value: 15120.76
+    unit: INR_lakh
+    locator: FY26 AR p.86 l.49-50, Schedule III split across two rows
+    method: arithmetic_identity
+    source: >-
+      1,550.29 + 13,570.47 lakh = 15,120.76 lakh. The two mandated sub-rows sum to the total the filing
+      never prints; reading only the first gives Rs 15.50cr (ADR-0053)
+  - metric: balance_sheet:Cash Equivalents
+    period: FY26
+    value: 9415.34
+    unit: INR_lakh
+    locator: FY26 AR p.86 l.23
+    method: filing_page
+    source: read from the balance sheet at the stated line
+
+expectation:
+  screen_at_worst: PASS
+  screen_at_best: PASS
+  must_not_flag: [cash_interest_inconsistent, ageing_cwip, disclosure_gap]
+  rationale: >-
+    A profitable, self-funded specialty chemicals manufacturer with no governance event. If this does not
+    come out PASS, the floor is broken and no other case means anything.

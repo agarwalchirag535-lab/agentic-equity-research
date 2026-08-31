@@ -1,0 +1,36 @@
+case_id: ALKYLAMINE-FY19
+ticker: ALKYLAMINE
+as_of: 2019-06-30
+label: clean
+negative_class: easy
+manifest: evals/manifests/ALKYLAMINE.json
+human_signed_off: false
+
+# THE DEEPEST REPLAY THE SET GOES. Two filings available, both pre-Ind AS 109 in substance and both
+# pre-amendment. It exists to hold the point-in-time floor: the further back a case sits, the more
+# obligations it does NOT have, and the more ways there are to charge it for them anyway. Key Audit
+# Matters is the sharpest of them — SA 701 reaches listed entities only from the year ended March 2019,
+# so the FY2018 filing owes none.
+verified_facts:
+  # CORRECTED after the set's first run. The value first written here was Rs 731.87cr, asserted from
+  # recollection while claiming cross_filing_overlap as the method. It is the FY19 figure, not FY18, and
+  # the pipeline was right. The harness caught it on the run it was added, which is the single best
+  # argument for the method field existing at all: a fact whose provenance is "someone was fairly sure"
+  # is not evidence, and labelling it as though it were is how a golden set starts lying.
+  - metric: pnl:Sales
+    period: FY18
+    value: 62482.67
+    unit: INR_lakh
+    locator: FY19 AR p.57 l.7 comparative column; stated as current year by the FY18 AR
+    method: cross_filing_overlap
+    source: >-
+      crosscheck_overlaps over the FY17-FY26 chain reports FY18 Sales asserted identically by
+      AACL-AR-FY18.pdf and AACL-AR-FY19.pdf
+
+expectation:
+  screen_at_worst: REVIEW
+  screen_at_best: PASS
+  must_not_flag: [disclosure_gap]
+  rationale: >-
+    A FY2018 filing owes no Key Audit Matters section and none of the 2021 Schedule III rows. Anything
+    the firm reports absent here is the firm's own anachronism, not the company's opacity.

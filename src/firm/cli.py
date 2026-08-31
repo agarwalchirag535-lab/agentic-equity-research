@@ -668,6 +668,58 @@ def packets(
                f"python -m firm deep-dive --ticker {ticker} --as-of {run_date} --answers {out_dir}")
 
 
+@app.command("eval")
+def eval_golden(
+    cases: str = typer.Option("evals/golden_set", "--cases", help="directory of golden-set case files"),
+    bronze: str = typer.Option("data/bronze", "--bronze"),
+    case: list[str] = typer.Option([], "--case", help="run only these case ids; repeatable"),
+) -> None:
+    """Phase 6: replay the golden set and report EXTRACTION and JUDGMENT failures separately.
+
+    Not part of `make test`, deliberately (docs/GOLDEN_SET.md §7): it needs the filings and takes minutes,
+    and a slow default suite stops being run. Exits non-zero if any case REGRESSES — a case recorded as
+    failing with an open question does not block, and a recorded failure that starts passing DOES,
+    because a stale red case is how a calibration debt gets quietly forgotten.
+    """
+    from firm.core.eval.run import run_golden_set
+
+    report = run_golden_set(cases, bronze=bronze, only=tuple(case))
+    typer.echo(report.render())
+    if report.regressions:
+        raise typer.Exit(code=1)
+
+
+@app.command("register")
+def register(
+    since: str = typer.Option(..., "--since", help="start date, YYYY-MM-DD"),
+    until: str = typer.Option(..., "--until", help="end date, YYYY-MM-DD"),
+    kind: list[str] = typer.Option(["auditor_resignation"], "--kind", help="repeatable"),
+    out: str = typer.Option("evals/golden_set/_register.jsonl", "--out"),
+) -> None:
+    """Enumerate adverse governance events from BSE's announcement register (golden set, ADR-0057).
+
+    A COMPLETE enumeration for the window, not a search and not a memory: the golden set's positives have
+    to come from a register, or the selection quietly picks the famous cases everybody already knows.
+    Writes one JSON object per company-event; the caller filters to the universe and records exclusions.
+    """
+    import json as _json
+    import time
+    from pathlib import Path as _Path
+
+    from firm.adapters.india.register import adverse_events, deduplicate, fetch_url
+
+    def polite(url: str) -> str:
+        time.sleep(0.25)   # one request per BSE month-window; do not hammer a public endpoint
+        return fetch_url(url)
+
+    events = deduplicate(adverse_events(
+        date.fromisoformat(since), date.fromisoformat(until), kinds=tuple(kind), fetch=polite))
+    path = _Path(out)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(_json.dumps(e.as_dict()) for e in events) + "\n")
+    typer.echo(f"{len(events)} distinct company-event(s) {since}..{until} -> {path}")
+
+
 @app.command("run")
 def run(ticker: str = typer.Option(..., "--ticker"), as_of: str = typer.Option(..., "--as-of")) -> None:
     """Run the full pipeline for a ticker as-of a date. Not implemented until Phase 3."""

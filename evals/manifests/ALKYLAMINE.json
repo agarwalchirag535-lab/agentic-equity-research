@@ -1,0 +1,119 @@
+{
+  "ticker": "ALKYLAMINE",
+  "company_name": "Alkyl Amines Chemicals Limited",
+  "source": "https://alkylamines.com/investors-type/financials/",
+  "retrieved_at": "2026-07-30",
+  "filings": [
+    {
+      "file": "AACL-AR-FY26.pdf",
+      "period": "FY26",
+      "prior_period": "FY25",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2026/06/Annual-Report-FY-2025-26.pdf",
+      "published_at": "2026-06-01",
+      "published_at_basis": "upload-path",
+      "grade": "A",
+      "sha256": "93472b225f14f1bdd177526fff25adb2c372b718fa194f2c48080a6152747e93",
+      "bytes": 2010143
+    },
+    {
+      "file": "AACL-AR-FY25.pdf",
+      "period": "FY25",
+      "prior_period": "FY24",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2025/06/Annual-Report-FY-2024-25.pdf",
+      "published_at": "2025-06-01",
+      "published_at_basis": "upload-path",
+      "grade": "A",
+      "sha256": "f78248002e965bb65156af5b5609990662c3f5f73e5762ceaa7995b3e974c6be",
+      "bytes": 5076819
+    },
+    {
+      "file": "AACL-AR-FY24.pdf",
+      "period": "FY24",
+      "prior_period": "FY23",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2024/06/Annual-Report-FY-2023-2024.pdf",
+      "published_at": "2024-06-01",
+      "published_at_basis": "upload-path",
+      "grade": "A",
+      "sha256": "8eb73b0bc4923d5e01b1d0e90c83f6b4b8db26e58e6af59a228a4408dad82a1e",
+      "bytes": 5523328
+    },
+    {
+      "file": "AACL-AR-FY23.pdf",
+      "period": "FY23",
+      "prior_period": "FY22",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2023/06/Annual-Report-FY-2022-2023.pdf",
+      "published_at": "2023-06-01",
+      "published_at_basis": "upload-path",
+      "grade": "A",
+      "sha256": "15ca88b6d32b5afb7d6cf7b52988dd05fd016db22ae16bec5d7a3814d2f77f94",
+      "bytes": 7874199
+    },
+    {
+      "file": "AACL-AR-FY22.pdf",
+      "period": "FY22",
+      "prior_period": "FY21",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/07/Annual-Report-FY-2021-2022.pdf",
+      "published_at": "2022-07-01",
+      "published_at_basis": "upload-path",
+      "grade": "A",
+      "sha256": "cda1919cdb103f87fa7b249968d8e8acf72e7975c351fd2318f4ae93199e64a8",
+      "bytes": 4839525
+    },
+    {
+      "file": "AACL-AR-FY21.pdf",
+      "period": "FY21",
+      "prior_period": "FY20",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Annual-Report-FY-2020-21.pdf",
+      "published_at": "2021-08-31",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "7009f5b196eb3edb235a627dfd5559997db5919707b650a2c28212e6add0a484",
+      "bytes": 1938523
+    },
+    {
+      "file": "AACL-AR-FY20.pdf",
+      "period": "FY20",
+      "prior_period": "FY19",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Annual-Report-FY-2019-20.pdf",
+      "published_at": "2020-08-31",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "1d9fbf37314b1f5be96a7d19139a459867562686f8cd1342efd2d647e91d562b",
+      "bytes": 3435360
+    },
+    {
+      "file": "AACL-AR-FY19.pdf",
+      "period": "FY19",
+      "prior_period": "FY18",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Annual-Report-FY-2018-19.pdf",
+      "published_at": "2019-08-31",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "12d52769c8e5df57f38e71e913fb93ed39338adb38ada407dbcd9a8c2b873fd1",
+      "bytes": 1461286
+    },
+    {
+      "file": "AACL-AR-FY18.pdf",
+      "period": "FY18",
+      "prior_period": "FY17",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Annual-Report-FY-2017-18_compressed.pdf",
+      "published_at": "2018-08-31",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "797b7a4f2c1f94f1d60bc42adbb79dc1b27533c992ea472eb0a06237efa470b1",
+      "bytes": 1356070
+    },
+    {
+      "file": "AACL-AR-FY17.pdf",
+      "period": "FY17",
+      "prior_period": "FY16",
+      "source_url": "https://alkylamines.com/wp-content/uploads/2022/03/Annual-Report-FY-2016-17_compressed.pdf",
+      "published_at": "2017-08-31",
+      "published_at_basis": "statutory-proxy",
+      "grade": "A",
+      "sha256": "598f46e540f74d5d7dc0c57d2c5e0911f3e5f2fc070cffc4310c81fbcf47c137",
+      "bytes": 2367145
+    }
+  ],
+  "note": "Golden-set copy: only filings present in data/bronze, hashed from the bytes held. Cases pin their own inputs so unrelated data work cannot change what a case measures."
+}

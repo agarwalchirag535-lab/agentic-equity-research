@@ -1992,3 +1992,45 @@ owner's instruction) and minted "ADR-0052" a second time. Filed here as ADR-0056
 adapted to the trunk's typed `end` field. The reconciliation gate composes with the trunk verifier
 unchanged: V3c dates a note's columns like any table's, and the note's basis is proven by the tie to
 the face rather than claimed by a heading.
+
+### ADR-0057 — The golden set lands on the trunk, and its first run maps what the trunk cannot do
+
+**Date** 2026-08-31 · **Status** accepted · **Ports** the eval work of a THIRD parallel line
+(`claude/geometry-anchored-pdf-extraction-47ba81`, its "ADR-0059..0064") · **Extends** ADR-0054's
+process record
+
+**The third line.** A third session had diverged from the pre-ADR-0046 base (`c9863ab`) and built,
+among 8.6k insertions: geometry-anchored PDF extraction, a third lender implementation, a
+point-in-time disclosure rulebook, and — the part ported here — the golden set: `firm eval` /
+`firm register`, `core/eval/{golden,run}.py`, seven cases with human-verified facts and
+pre-registered verdict bands, and `docs/GOLDEN_SET.md`. Its design survived its own first contact:
+wave 1 caught five facts fabricated by the case author (the `method` field made them checkable), and
+wave 2's register check caught an invented citation URL. The two-assertion scoring — EXTRACTION
+(verified facts reproduced) and JUDGMENT (verdict in band) scored apart — is what makes improving an
+extractor distinguishable from improving calibration.
+
+**What was ported and how.** The eval core, register adapter, cases, manifests and design doc land
+almost verbatim; `deterministic.py` (their ADR-0060 insight — one deterministic sequence, three
+callers) was REWRITTEN against the trunk pipeline (detect_models/build_playbook, walker AND
+ADR-0055 reading routes, both quarantines) rather than ported, because their version called their
+own classify/screen APIs. All 17 pinned PDFs were re-fetched and hash-verified; five manifest
+`source_url`s were directory stubs that could not reproduce their own pins — repaired with the BSE
+archive URLs that do, since a pin without a reproducing URL is provenance theatre.
+
+**The first trunk run, unvarnished:** 4 of 7 in band (three clean ALKYLAMINE years, plus FY23 as the
+pre-existing CAL-1 threshold question). Three failures, recorded with tracking ids rather than
+weakened bands:
+* **PORT-1** (CREDITACC-FY26, FIVESTAR-FY26): the RBI IRACP asset-quality table extraction exists
+  only on the unported third line; the trunk's ADR-0056 note-reading covers staging under different
+  ids and different filings. The lender screen-calibration fixes on that line are likewise unported.
+* **PORT-2** (PCJEWELLER-FY21): the FY19-FY21 filings yield ZERO facts through the trunk row-locator
+  — the sibling's geometry extraction read them; an ADR-0046 verified reading would too.
+* **EVAL-1**: exposed by PORT-2 — the bare forensic screen returns PASS on an empty read. The
+  verdict ladder above it refuses honestly (INSUFFICIENT_*), but the screen alone overclaims, and
+  the eval scores the screen. A screen-level insufficiency guard is an open design question, not a
+  patch to apply blind.
+
+**What was NOT ported, deliberately — the owner's call, not the loop's.** The third line's
+geometry-anchored extraction and its lender/classify implementation overlap the trunk's chosen
+propose→verify architecture and the ADR-0052/0056 lender path. Merging three lender implementations
+silently is how ADR-0054 happened. The branch stays intact for that decision.

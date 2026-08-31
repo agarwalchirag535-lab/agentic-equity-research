@@ -1,0 +1,31 @@
+{
+  "ticker": "FIVESTAR",
+  "company_name": "Five-Star Business Finance Limited",
+  "source": "https://api.bseindia.com/BseIndiaAPI/api/AnnualReport_New/w?scripcode=543663",
+  "retrieved_at": "2026-08-30",
+  "filings": [
+    {
+      "file": "FIVESTAR-AR-FY26.pdf",
+      "period": "FY26",
+      "prior_period": "FY25",
+      "source_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/5593c913-451a-415a-abdd-956e2d185679.pdf",
+      "published_at": "2026-08-06",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "8bf10e472ddaedd5a80f4aea9f1c6b0b7e16a5862c07d6c3cc19fdaa4ffe001f",
+      "bytes": 10166612
+    },
+    {
+      "file": "FIVESTAR-AR-FY25.pdf",
+      "period": "FY25",
+      "prior_period": "FY24",
+      "source_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/6c3b9be2-1044-45e2-8f03-a79f629ff441.pdf",
+      "published_at": "2025-08-18",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "3c3815171ff8cfaeb6ebda6cfd821389bb764e4e13ba8da9143e0ceda80e33db",
+      "bytes": 5965174
+    }
+  ],
+  "note": "Golden-set copy: only filings present in data/bronze, hashed from the bytes held. Cases pin their own inputs so unrelated data work cannot change what a case measures."
+}

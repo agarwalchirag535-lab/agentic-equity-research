@@ -1,0 +1,59 @@
+case_id: FIVESTAR-FY26
+ticker: FIVESTAR
+as_of: 2026-08-30
+label: clean
+negative_class: hard_model_mismatch
+manifest: evals/manifests/FIVESTAR.json
+human_signed_off: false
+known_failure: >-
+  PORT-1 (ADR-0057) — same IRACP extraction gap as CREDITACC-FY26; gnpa_drift cannot fire without the staging series.
+
+# HARD IN TWO WAYS AT ONCE. The book is 99.98% secured, so an unsecured-book provision floor reads its
+# collateral as under-provisioning (ADR-0058); and its asset quality genuinely deteriorated, so the case
+# also pins that a real deterioration must REVIEW rather than be excused. Together they were a HARD_FAIL.
+verified_facts:
+  - metric: balance_sheet:Gross NPA
+    period: FY26
+    value: 44609.68
+    unit: INR_lakh
+    locator: p.231 l.19 "Subtotal for NPA" (RBI Ind AS 109 / IRACP table)
+    method: independent_filing
+    source: >-
+      Reg 52(4) Annexure I to the Q4 FY26 results states Gross Stage 3 Assets Ratio 3.37%; 446.10 /
+      13,227.94 = 3.372%. BSE announcement 2026-04-28, 5a296d58-10fd-4f08-9b1c-3db6ffa2062c.pdf
+  - metric: balance_sheet:Gross Advances
+    period: FY26
+    value: 1322794.13
+    unit: INR_lakh
+    locator: p.231 l.20 "Total"
+    method: arithmetic_identity
+    source: >-
+      13,227.94 - 243.17 = 12,984.78, the Loans line on the face of the balance sheet (p.155). This
+      identity is also what established the page's SCALE, which it declares nowhere (ADR-0057)
+  - metric: balance_sheet:Loan Loss Allowance
+    period: FY26
+    value: 24316.52
+    unit: INR_lakh
+    locator: p.231 l.20
+    method: arithmetic_identity
+    source: same identity against the balance sheet's net Loans
+  - metric: balance_sheet:NPA Provisions
+    period: FY26
+    value: 18468.01
+    unit: INR_lakh
+    locator: p.231 l.19
+    method: independent_filing
+    source: >-
+      Reg 52(4) Annexure I states Net Stage 3 Assets Ratio 2.00%; (446.10 - 184.68) / (13,227.94 -
+      184.68) = 2.004%, which the company computed independently of this firm
+
+expectation:
+  screen_at_worst: REVIEW
+  screen_at_best: REVIEW
+  must_flag: [gnpa_drift]
+  must_not_flag: [provision_coverage_low]
+  rationale: >-
+    Gross Stage 3 rose 1.79% to 3.37% — the company states both figures itself — so gnpa_drift is a real
+    finding and must fire. provision_coverage_low must NOT: 41.4% coverage on a book 99.98% secured on
+    tangible assets is collateral doing the work, and no lender discloses the value of security held
+    against stage-3 loans, so the number that would matter cannot be computed at all.

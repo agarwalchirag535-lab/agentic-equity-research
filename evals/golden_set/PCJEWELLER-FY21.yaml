@@ -1,0 +1,101 @@
+case_id: PCJEWELLER-FY21
+ticker: PCJEWELLER
+as_of: 2022-08-15
+label: adverse
+manifest: evals/manifests/PCJEWELLER.json
+human_signed_off: false
+known_failure: >-
+  PORT-2 + EVAL-1 (ADR-0057) — the FY19-FY21 PC Jeweller filings yield zero facts through the trunk row-locator (the sibling's geometry extraction read them; a verified reading would too). The empty read also exposed EVAL-1: the bare screen returns PASS with no facts — only the verdict ladder above it refuses — so a screen-level insufficiency guard is an open question.
+
+# THE FIRST POSITIVE. Selected from a register, not from memory (ADR-0062): every "Resignation of
+# Statutory Auditors" announcement filed with BSE over 24 months — 404 distinct company-events — filtered
+# to the universe band (73 survived, 331 exclusions recorded in _excluded.jsonl), then the resignation
+# letters of the largest candidates were READ. Exactly one of the twelve largest was genuinely adverse.
+#
+# `adverse`, not `fraud`: no authority has found misstatement here. What is established is that the
+# statutory auditor resigned mid-term citing, in its own letter, "outstanding balance in payment of our
+# remuneration/ dues". A company that has stopped paying its auditor is a governance event; it is not an
+# adjudicated finding, and the label says which.
+label_event:
+  kind: auditor_resignation
+  date: 2023-08-15
+  source: https://www.bseindia.com/xml-data/corpfiling/AttachHis/4494ef61-5631-4618-8c14-aa5c83df593b.pdf
+  summary: >-
+    M/s Arun K. Agarwal & Associates resigned as statutory auditors mid-term (appointed to hold office
+    until the 20th AGM in 2025), stating in their letter of 14 August 2023 that "considering the cost,
+    time and efforts involved in execution of the assignment and outstanding balance in payment of our
+    remuneration/ dues, it is not economically viable to continue as statutory auditors".
+lead_months: 12
+
+# as_of is 12 months before the event, and the FY2022 annual report was not authorised until
+# 2022-09-06 — AFTER as_of — so the run rests on FY2019, FY2020 and FY2021 only. That is Law 3 doing
+# its job: the case asks what was knowable in August 2022, not what is knowable now.
+verified_facts:
+  - metric: pnl:Sales
+    period: FY21
+    value: 2669.34
+    unit: INR_cr
+    locator: FY21 AR p.67 l.7, Standalone Statement of Profit and Loss, "Revenue from operations"
+    method: filing_page
+    source: read from the audited statement; the page declares "(₹ in crore)"
+  - metric: pnl:Other Income
+    period: FY21
+    value: 30.67
+    unit: INR_cr
+    locator: FY21 AR p.67 l.8
+    method: filing_page
+    source: read from the audited statement
+  - metric: pnl:Profit before tax
+    period: FY21
+    value: 4.41
+    unit: INR_cr
+    locator: FY21 AR p.67 l.20, "profit before tax (3-4)"
+    method: filing_page
+    source: >-
+      the pair that carries the finding: other income of 30.67 against a pre-tax profit of 4.41 means
+      the operating business lost money and the profit is not the business
+  - metric: pnl:Net Profit
+    period: FY21
+    value: 60.84
+    unit: INR_cr
+    locator: FY21 AR p.67 l.25, "profit/(loss) for the year (5-6)"
+    method: filing_page
+    source: >-
+      the row whose LABEL defeated the reader until ADR-0063 — "profit/(loss) for the year" matched
+      neither 'profit for the year' nor 'profit after tax', so the company had no net profit in the fact
+      base, no last_period, no business model and six of seven checks unavailable
+  - metric: balance_sheet:Total Assets
+    period: FY20
+    value: 7881.57
+    unit: INR_cr
+    locator: FY20 AR balance sheet; restated as the FY21 AR's comparative column
+    method: cross_filing_overlap
+    source: crosscheck_overlaps reports it asserted identically by the FY20 and FY21 filings
+  - metric: pnl:Sales
+    period: FY20
+    value: 4938.59
+    unit: INR_cr
+    locator: FY20 AR Statement of Profit and Loss; FY21 AR comparative column
+    method: cross_filing_overlap
+    source: >-
+      crosscheck_overlaps reports it asserted identically by the FY20 and FY21 filings. Against FY21's
+      2,669.34 this is a 46% revenue decline in one year
+
+expectation:
+  screen_at_worst: HARD_FAIL
+  screen_at_best: REVIEW
+  must_flag: [other_income_heavy]
+  rationale: >-
+    THE CLAIM THIS CASE MAKES IS THAT THE FIRM MUST NOT CLEAR THIS COMPANY. From filings available in
+    August 2022: revenue falling 43% a year, pre-tax profit of ₹4.41cr against other income of ₹30.67cr
+    (695% of PBT — the operating business is loss-making), and interest cover of 0.93x, meaning operating
+    profit does not cover the interest bill. A year later the statutory auditor resigned over unpaid
+    dues. PASS is not an acceptable answer; REVIEW with `other_income_heavy` firing is.
+notes: >-
+  RECORDED COVERAGE GAP, not a defect: no business model matches. PC Jeweller is an inventory-heavy
+  jeweller — 74% of assets in inventory, 0.4% in property/plant, asset turnover 0.34x — which fits
+  neither MANUFACTURER (needs PPE >= 20% of assets), TRADER (needs turnover >= 2.0x and gross margin
+  <= 6%), nor REALESTATE. Only the universal playbook runs, and the firm SAYS so rather than guessing a
+  model. Four universal checks are UNAVAILABLE because the cash-flow statement rows this filing prints
+  are not all read. A retail/jewellery playbook would be the honest fix; this case is where its absence
+  becomes measurable.

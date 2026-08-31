@@ -1,0 +1,75 @@
+case_id: CREDITACC-FY26
+ticker: CREDITACC
+as_of: 2026-08-30
+label: clean
+negative_class: hard_recovery
+manifest: evals/manifests/CREDITACC.json
+human_signed_off: false
+known_failure: >-
+  PORT-1 (ADR-0057) — the RBI IRACP asset-quality table extraction lives on the unported third line; the trunk reads staging via notes:Stage 3 (ADR-0056) under different metric ids and has no FY26 reading. Closes when the asset-quality inputs reach the trunk.
+
+# HARD BECAUSE THE METRICS ARE IMPROVING OFF A BAD YEAR. The provision rate was cut 1.27pp while the book
+# grew 13.5% — the Sezzle signature read on its own — and the only thing that separates it from
+# suppression is that stress was FALLING at the same time (ADR-0052). A checker missing that half flags
+# the lender that fixed its book.
+verified_facts:
+  - metric: balance_sheet:Gross NPA
+    period: FY26
+    value: 922.25
+    unit: INR_cr
+    locator: p.129 l.92 (RBI Ind AS 109 / IRACP table)
+    method: arithmetic_identity
+    source: >-
+      the row prints gross 922.25, allowance 606.66 and net 316.62 adjacently and the filing's own
+      identity gross - allowance = net holds on it
+  - metric: balance_sheet:Gross Advances
+    period: FY26
+    value: 29038.31
+    unit: INR_cr
+    locator: p.129 l.105
+    method: arithmetic_identity
+    source: >-
+      29,038.31 - 1,115.58 = 27,922.73, which is the Loans line on the face of the balance sheet (p.94),
+      read by a different extractor from a different page
+  - metric: balance_sheet:Loan Loss Allowance
+    period: FY26
+    value: 1115.58
+    unit: INR_cr
+    locator: p.129
+    method: arithmetic_identity
+    source: same identity against the balance sheet's net Loans
+  # THE ONE THAT WAS WRONG FOR MONTHS (ADR-0054). Asserted here from two independent documents so the
+  # regression cannot come back: the FY25 report's own table, and the FY26 report's comparative column.
+  - metric: balance_sheet:Gross Advances
+    period: FY25
+    value: 25583.08
+    unit: INR_cr
+    locator: FY25 AR p.123 l.55; restated in FY26 AR note 22 (Loans) comparative column
+    method: cross_filing_overlap
+    source: two filings published a year apart assert it identically
+  - metric: balance_sheet:Loan Loss Allowance
+    period: FY25
+    value: 1308.63
+    unit: INR_cr
+    locator: FY25 AR p.123 l.55; FY26 AR note 22 comparative column
+    method: cross_filing_overlap
+    source: >-
+      the year-crossing bug produced 503.41 here, which is the FY24 figure — the overlap is what makes
+      that irrecoverable
+  - metric: pnl:Net Profit
+    period: FY26
+    value: 777.64
+    unit: INR_cr
+    locator: Reg 52(4) Annexure I to the Q4 FY26 results, item 9 "Net profit after tax"
+    method: independent_filing
+    source: BSE announcement 2026-05-08, daff6b53-500b-41aa-91ce-61c32019ecfc.pdf
+
+expectation:
+  screen_at_worst: REVIEW
+  screen_at_best: REVIEW
+  must_not_flag: [reserve_suppression, provision_book_divergent, gnpa_drift]
+  rationale: >-
+    Gross NPA fell 4.79% to 3.18% and provision coverage is 65.8%, both confirmed by the company's own
+    Reg 52(4) annexure (Gross Stage III 3.17%, provision coverage 65.40%). A provision-rate cut into an
+    improving book is not suppression. REVIEW rather than PASS is expected and correct: disclosure_gap
+    still fires on undisclosed_income, which the firm has not resolved.

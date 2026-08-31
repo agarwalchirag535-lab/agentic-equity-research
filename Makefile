@@ -33,3 +33,6 @@ gate:
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache **/__pycache__ .coverage
+
+eval:  ## replay the golden set (needs the filings in bronze; not part of `make test` on purpose)
+	$(PY) -m firm eval

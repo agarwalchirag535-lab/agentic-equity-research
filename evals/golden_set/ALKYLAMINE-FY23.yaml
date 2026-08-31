@@ -1,0 +1,58 @@
+case_id: ALKYLAMINE-FY23
+ticker: ALKYLAMINE
+as_of: 2023-06-30
+label: clean
+negative_class: hard_cyclical
+manifest: evals/manifests/ALKYLAMINE.json
+human_signed_off: false
+known_failure: >-
+  CAL-1 (docs/GOLDEN_SET.md §6) — cash_interest_inconsistent fires SEVERE at 2.55% against a
+  provisional 2.60% floor, producing HARD_FAIL. Recorded rather than resolved: moving the
+  threshold because a company we believe is honest failed it is the one move the invariants
+  forbid. When this case starts passing the harness says so, and the question closes.
+
+# CAL-1 (docs/GOLDEN_SET.md §6). THIS CASE IS EXPECTED TO FAIL TODAY, AND THAT IS WHY IT IS HERE.
+#
+# The same company that comes out PASS in FY26 comes out HARD_FAIL when replayed at FY23, on
+# cash_interest_inconsistent firing SEVERE at an implied cash yield of 2.55% against a 2.60% floor —
+# 39.2% of risk-free against a band set at 40%. FY23 was a demand and margin downturn: no restatement, no
+# auditor change, no regulatory action, and the company is still solvent and self-funded three years on.
+#
+# The expectation is written from that record, NOT from what the system currently outputs. Recording a
+# failing expectation is the point of a golden set: it converts an argument about a threshold into a
+# regression that either closes or stays visible. Nobody should move cash_yield_floor_ratio until this
+# case, and negatives like it, say what the right value is.
+verified_facts:
+  # Both values CORRECTED after the first run; see ALKYLAMINE-FY19.
+  - metric: pnl:Sales
+    period: FY23
+    value: 168233.60
+    unit: INR_lakh
+    locator: FY23 AR p.87 l.6 (1,68,233.60 lakh)
+    method: filing_page
+    # DELIBERATELY NOT cross_filing_overlap. The FY24 report restates FY23 revenue as 1,683.05cr — a
+    # Rs 0.72cr reclassification, 0.04%, which crosscheck_overlaps reports as a disagreement. The two
+    # documents do not assert the same number, so claiming they do would be false; the FY23 filing's own
+    # statement is the right baseline for a case frozen at as_of 2023-06-30, which is before the
+    # restatement existed.
+    source: read from the audited Statement of Profit and Loss at the stated line
+  - metric: balance_sheet:CWIP
+    period: FY23
+    value: 35201.04
+    unit: INR_lakh
+    locator: FY23 AR p.86 l.10 (35,201.04 lakh)
+    method: cross_filing_overlap
+    source: >-
+      crosscheck_overlaps reports FY23 CWIP asserted identically by AACL-AR-FY23.pdf and
+      AACL-AR-FY24.pdf. The plant under construction is why ageing_cwip fires, and it commissioned —
+      which is what makes this a negative rather than a finding
+
+expectation:
+  screen_at_worst: REVIEW
+  screen_at_best: PASS
+  must_not_flag: [cash_interest_inconsistent]
+  rationale: >-
+    A cyclical downturn in a chemicals business is not a forensic finding. A cash yield 0.05pp below a
+    provisional band, on a company mid-capex holding working balances, cannot support "is the cash real?"
+    at SEVERE — the strongest accusation the deterministic screen can make. ageing_cwip at MEDIUM is
+    defensible on its own and REVIEW is an acceptable outcome; HARD_FAIL is not.

@@ -1,0 +1,43 @@
+case_id: ALKYLAMINE-FY21
+ticker: ALKYLAMINE
+as_of: 2021-06-30
+label: clean
+negative_class: hard_capex
+manifest: evals/manifests/ALKYLAMINE.json
+human_signed_off: false
+
+# HARD BECAUSE THE COMPANY IS BUILDING. A large CWIP block that has not yet commissioned is the
+# siphoning signature and also what every expanding manufacturer's balance sheet looks like. It is also a
+# PRE-MANDATE year — the 2021 Schedule III amendment does not reach a filing for the year ended March
+# 2020 — which is what ADR-0059 fixed and what this case pins.
+verified_facts:
+  # Both values CORRECTED after the first run; see ALKYLAMINE-FY19 for what went wrong and why it is
+  # recorded rather than quietly fixed.
+  - metric: balance_sheet:CWIP
+    period: FY20
+    value: 4488.06
+    unit: INR_lakh
+    locator: FY21 AR p.57 l.9 comparative column (4,488.06 lakh)
+    method: cross_filing_overlap
+    source: >-
+      crosscheck_overlaps reports FY20 CWIP asserted identically by AACL-AR-FY20.pdf and
+      AACL-AR-FY21.pdf
+  - metric: pnl:Sales
+    period: FY20
+    value: 99287.76
+    unit: INR_lakh
+    locator: FY21 AR p.58 l.6 comparative column (99,287.76 lakh)
+    method: cross_filing_overlap
+    source: >-
+      crosscheck_overlaps reports FY20 Sales asserted identically by AACL-AR-FY20.pdf and
+      AACL-AR-FY21.pdf
+
+expectation:
+  screen_at_worst: REVIEW
+  screen_at_best: PASS
+  must_not_flag: [disclosure_gap]
+  rationale: >-
+    The FY2020 filing owes no benami-property, crypto-currency, CWIP-ageing or ratios disclosure — the
+    amendment that created them applies to years commencing on or after 1 April 2021. Before ADR-0059
+    this case flagged disclosure_gap on five rules that did not exist, which is the single defect that
+    would have poisoned every pre-2022 case in the golden set.

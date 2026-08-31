@@ -6,7 +6,7 @@
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0056). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0057). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -27,7 +27,7 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 3 — full roster + orchestrator | ✅ **complete — acceptance run published 2026-08-01 (§6b)**: 9 of 9 agents staffed and rendered, every data prerequisite satisfiable (ADR-0030–0044) |
 | 4 — judgment tier | ⚠️ prompts exist as markdown; numeric fields now registered null-only (ADR-0043) so wiring cannot open a Law-1 hole; **needs the owner's explicit go per CLAUDE.md build order** |
 | 5 — memory loop | ⚠️ half-built (see §3) |
-| 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
+| 6 — evaluation / golden set | ⚠️ **harness live (ADR-0057)**: `firm eval`, 7 cases, 4 in band; PORT-1/PORT-2/EVAL-1/CAL-1 open |
 
 **Tests:** 790 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
@@ -751,6 +751,18 @@ HIGH flag, while every corroborating check says honest recognition (credit-cost 
 7.95%, coverage 107%). ADR-0012 encoded that distinction and the screen respects it — **the ladder reads
 flags, not the pattern of flags**. That is a golden-set question, not a one-observation threshold change.
 
+
+## 6j. The golden set is live on the trunk (2026-08-31, ADR-0057)
+
+Ported from a THIRD parallel line (geometry-anchored-pdf-extraction — 11 commits, never merged; its
+remainder is an owner decision). `firm eval` / `make eval`: seven cases, two assertions each
+(extraction and judgment, scored apart), labels as external dated events, positives traceable to a
+BSE register enumeration. First trunk run: 4/7 in band; three failures RECORDED with tracking ids —
+PORT-1 (IRACP asset-quality extraction unported: both lender cases), PORT-2 (PCJ FY19-21 unreadable
+by the trunk row-locator), EVAL-1 (the bare screen returns PASS on an empty read; only the ladder
+refuses). All 17 case PDFs re-fetched against their sha256 pins; five stub source_urls repaired with
+URLs that reproduce the pins. `deterministic.py` now holds the ONE deterministic sequence the eval
+replays — the same one deep-dive and packets should be refactored onto (their ADR-0060 lesson).
 
 ## 7. Suggested next step
 

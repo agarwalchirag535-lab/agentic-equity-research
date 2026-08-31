@@ -1,0 +1,42 @@
+{
+  "ticker": "PCJEWELLER",
+  "company_name": "PC Jeweller Limited",
+  "source": "https://api.bseindia.com/BseIndiaAPI/api/AnnualReport_New/w?scripcode=534809",
+  "retrieved_at": "2026-08-30",
+  "note": "Golden-set case PCJEWELLER-FY21. Only reports published on or before the case's as_of.",
+  "filings": [
+    {
+      "file": "PCJEWELLER-AR-FY19.pdf",
+      "period": "FY19",
+      "prior_period": "FY18",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090319.pdf",
+      "published_at": "2019-09-06",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "150977aa91988483dd9c9a4bd7bef08e9f10d1931378dc516aec9b0e6d882c92",
+      "bytes": 8350565
+    },
+    {
+      "file": "PCJEWELLER-AR-FY20.pdf",
+      "period": "FY20",
+      "prior_period": "FY19",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090320.pdf",
+      "published_at": "2020-07-16",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "ed12f1ee94403c6ff8b91de66ca2f5aef23371a3c3764864f9af4f4fbb509db3",
+      "bytes": 2210734
+    },
+    {
+      "file": "PCJEWELLER-AR-FY21.pdf",
+      "period": "FY21",
+      "prior_period": "FY20",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/72375534809.pdf",
+      "published_at": "2021-09-08",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "7ef3454f6506a1231ecf95c91a16f5a7866fd87c323ae6521bfb32f549e5e5b1",
+      "bytes": 2043430
+    }
+  ]
+}
