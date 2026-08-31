@@ -1,0 +1,63 @@
+{
+  "ticker": "PCJEWELLER",
+  "company_name": "PC Jeweller Limited",
+  "source": "https://api.bseindia.com/BseIndiaAPI/api/AnnualReport_New/w?scripcode=534809",
+  "retrieved_at": "2026-08-31",
+  "filings": [
+    {
+      "file": "PCJ-AR-FY13.pdf",
+      "period": "FY13",
+      "prior_period": null,
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090313.pdf",
+      "published_at": "2013-12-17",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "56d9428e13a690f666a615fc28da1db1138d39d7a9b39db3ecde71324feba269",
+      "bytes": 9299530
+    },
+    {
+      "file": "PCJ-AR-FY14.pdf",
+      "period": "FY14",
+      "prior_period": "FY13",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090314.pdf",
+      "published_at": "2014-10-28",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "812df8d4260588fbe2da2b949cfbee0efb881306beac1b45f45e264a16e632cc",
+      "bytes": 8438701
+    },
+    {
+      "file": "PCJ-AR-FY15.pdf",
+      "period": "FY15",
+      "prior_period": "FY14",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090315.pdf",
+      "published_at": "2015-08-22",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "c15d3431d08596f79b0c57675f2266b53ffc19fc54b61931c08ef46a3d48324a",
+      "bytes": 4502100
+    },
+    {
+      "file": "PCJ-AR-FY16.pdf",
+      "period": "FY16",
+      "prior_period": "FY15",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090316.pdf",
+      "published_at": "2016-09-24",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "24e6df7fdde133180e86b5331519c7ef1b7265eb9fe025f5b956603ded106af6",
+      "bytes": 2821311
+    },
+    {
+      "file": "PCJ-AR-FY17.pdf",
+      "period": "FY17",
+      "prior_period": "FY16",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090317.pdf",
+      "published_at": "2017-09-09",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "2f800d63cc04fe5633d80194261f041c0f0474bde7068a7579d8c6191ba3a809",
+      "bytes": 5003309
+    }
+  ]
+}

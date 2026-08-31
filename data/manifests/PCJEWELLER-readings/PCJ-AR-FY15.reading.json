@@ -1,0 +1,465 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "consolidated",
+   "period": "FY15",
+   "pages": [
+    116
+   ],
+   "heading_quote": "Consolidated Balance Sheet as at 31 March 2015",
+   "unit_quote": "I in lacs  I in lacs",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY15",
+     "label_quote": "As at\n  31 March 2015"
+    },
+    {
+     "period": "FY14",
+     "label_quote": "31 March 2014"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY15",
+     "value_printed": "17,910.00",
+     "page": 116,
+     "row_label": "Share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY15",
+     "value_printed": "1,81,146.94",
+     "page": 116,
+     "row_label": "Reser ves and surplus"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY15",
+     "value_printed": "40.69",
+     "page": 116,
+     "row_label": "Long ter m borrowings"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY15",
+     "value_printed": "68,100.04",
+     "page": 116,
+     "row_label": "Short ter m borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables",
+     "period": "FY15",
+     "value_printed": "1,82,152.72",
+     "page": 116,
+     "row_label": "Trade payables"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY15",
+     "value_printed": "8,961.70",
+     "page": 116,
+     "row_label": "Tangible assets"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY15",
+     "value_printed": "3,22,985.23",
+     "page": 116,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY15",
+     "value_printed": "78,042.20",
+     "page": 116,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY15",
+     "value_printed": "28,399.67",
+     "page": 116,
+     "row_label": "Cash and bank balances"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY15",
+     "value_printed": "4,72,397.26",
+     "page": 116,
+     "row_label": "Assets total"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY15",
+     "value_printed": "4,72,397.26",
+     "page": 116,
+     "row_label": "Equity and liabilities total"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY14",
+     "value_printed": "17,910.00",
+     "page": 116,
+     "row_label": "Share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY14",
+     "value_printed": "1,50,313.76",
+     "page": 116,
+     "row_label": "Reser ves and surplus"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY14",
+     "value_printed": "41.31",
+     "page": 116,
+     "row_label": "Long ter m borrowings"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY14",
+     "value_printed": "1,00,299.43",
+     "page": 116,
+     "row_label": "Short ter m borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables",
+     "period": "FY14",
+     "value_printed": "1,28,412.15",
+     "page": 116,
+     "row_label": "Trade payables"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY14",
+     "value_printed": "8,393.04",
+     "page": 116,
+     "row_label": "Tangible assets"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY14",
+     "value_printed": "2,37,712.90",
+     "page": 116,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY14",
+     "value_printed": "62,322.17",
+     "page": 116,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY14",
+     "value_printed": "33,011.30",
+     "page": 116,
+     "row_label": "Cash and bank balances"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY14",
+     "value_printed": "4,23,253.33",
+     "page": 116,
+     "row_label": "Assets total"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY14",
+     "value_printed": "4,23,253.33",
+     "page": 116,
+     "row_label": "Equity and liabilities total"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "consolidated",
+   "period": "FY15",
+   "pages": [
+    117
+   ],
+   "heading_quote": "Consolidated Statement of  Profit and Loss for the year ended 31 March 2015",
+   "unit_quote": "I in lacs  I in lacs",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY15",
+     "label_quote": "Year ended\n  31 March 2015"
+    },
+    {
+     "period": "FY14",
+     "label_quote": "31 March 2014"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Sales",
+     "period": "FY15",
+     "value_printed": "6,36,128.34",
+     "page": 117,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY15",
+     "value_printed": "5,921.22",
+     "page": 117,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY15",
+     "value_printed": "6,41,762.48",
+     "page": 117,
+     "row_label": "Cost of  materials consumed"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY15",
+     "value_printed": "(1,02,601.10)",
+     "page": 117,
+     "row_label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY15",
+     "value_printed": "5,572.52",
+     "page": 117,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY15",
+     "value_printed": "22,094.80",
+     "page": 117,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY15",
+     "value_printed": "2,302.33",
+     "page": 117,
+     "row_label": "Depreciation and amortisation expense"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY15",
+     "value_printed": "18,669.88",
+     "page": 117,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY15",
+     "value_printed": "5,88,097.29",
+     "page": 117,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY15",
+     "value_printed": "53,952.27",
+     "page": 117,
+     "row_label": "Profit before tax"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY15",
+     "value_printed": "16,109.10",
+     "page": 117,
+     "row_label": "Total - tax expense"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY15",
+     "value_printed": "37,843.17",
+     "page": 117,
+     "row_label": "Profit for the year"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY15",
+     "value_printed": "21.13",
+     "page": 117,
+     "row_label": "Basic and diluted EPS"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY14",
+     "value_printed": "5,32,482.91",
+     "page": 117,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY14",
+     "value_printed": "4,723.54",
+     "page": 117,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY14",
+     "value_printed": "4,49,967.96",
+     "page": 117,
+     "row_label": "Cost of  materials consumed"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY14",
+     "value_printed": "(2,266.83)",
+     "page": 117,
+     "row_label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY14",
+     "value_printed": "4,474.06",
+     "page": 117,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY14",
+     "value_printed": "14,709.52",
+     "page": 117,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY14",
+     "value_printed": "1,231.80",
+     "page": 117,
+     "row_label": "Depreciation and amortisation expense"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY14",
+     "value_printed": "21,035.26",
+     "page": 117,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY14",
+     "value_printed": "4,90,269.64",
+     "page": 117,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY14",
+     "value_printed": "46,936.81",
+     "page": 117,
+     "row_label": "Profit before tax"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY14",
+     "value_printed": "11,306.94",
+     "page": 117,
+     "row_label": "Total - tax expense"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY14",
+     "value_printed": "35,629.87",
+     "page": 117,
+     "row_label": "Profit for the year"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY14",
+     "value_printed": "19.89",
+     "page": 117,
+     "row_label": "Basic and diluted EPS"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "consolidated",
+   "period": "FY15",
+   "pages": [
+    118
+   ],
+   "heading_quote": "Consolidated Cash F low Statement for the year ended 31 March 2015",
+   "unit_quote": "I in lacs  I in lacs",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY15",
+     "label_quote": "As at\n  31 March 2015"
+    },
+    {
+     "period": "FY14",
+     "label_quote": "31 March 2014"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY15",
+     "value_printed": "33,376.92",
+     "page": 118,
+     "row_label": "Net cash generated from/(used in) operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY14",
+     "value_printed": "(78,591.54)",
+     "page": 118,
+     "row_label": "Net cash generated from/(used in) operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY15",
+     "value_printed": "21,307.45",
+     "page": 118,
+     "row_label": "Net cash generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY14",
+     "value_printed": "24,618.20",
+     "page": 118,
+     "row_label": "Net cash generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY15",
+     "value_printed": "(56,578.28)",
+     "page": 118,
+     "row_label": "Net cash (used in)/ generated from financing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY14",
+     "value_printed": "57,102.20",
+     "page": 118,
+     "row_label": "Net cash (used in)/ generated from financing activities"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY15",
+     "value_printed": "(1,893.91)",
+     "page": 118,
+     "row_label": "Net (decrease)/ increase in cash and cash equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY14",
+     "value_printed": "3,128.86",
+     "page": 118,
+     "row_label": "Net (decrease)/ increase in cash and cash equivalents (A+B+C)"
+    }
+   ]
+  }
+ ]
+}

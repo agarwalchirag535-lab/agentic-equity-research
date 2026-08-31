@@ -29,6 +29,12 @@ detection:
 
 playbooks:
   # The floor: runs on every company, including ones no model matched.
+  #
+  # The stock-flow divergences are SPEC §5 UNIVERSAL tells, not model plays — learned on PC Jeweller
+  # (point-in-time 2017): a jewellery retailer is inventory-heavy but PPE-light, matched no model, and
+  # the receivables check that its fraud pattern turns on never ran. Any company holding receivables or
+  # inventory can inflate through them; the models that legitimately hold neither (LENDER, BANK) already
+  # suppress these, and suppression always wins, so ADR-0002 is intact.
   UNIVERSAL:
     applies:
       - cumulative_cfo_pat
@@ -38,6 +44,9 @@ playbooks:
       - disclosure_gap
       - other_income_heavy
       - promoter_lending
+      - receivables_divergent
+      - inventory_divergent
+      - high_accruals
     priority_notes:
       - related_party
       - contingent_liabilities

@@ -1,0 +1,465 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "consolidated",
+   "period": "FY16",
+   "pages": [
+    48
+   ],
+   "heading_quote": "ConsoliDA  teD  B Al  AnCe sHeet  ConsoliDA  teD  st  AteMent of Profit AnD  l  oss\n  as at 31 March 2016",
+   "unit_quote": "Rs. in crores  Rs. in crores",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY16",
+     "label_quote": "31 March 2016"
+    },
+    {
+     "period": "FY15",
+     "label_quote": "31 March 2015"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY16",
+     "value_printed": "179.10",
+     "page": 48,
+     "row_label": "Share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY16",
+     "value_printed": "2,147.26",
+     "page": 48,
+     "row_label": "Reserves and surplus"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY16",
+     "value_printed": "58.23",
+     "page": 48,
+     "row_label": "Long term borrowings"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY16",
+     "value_printed": "881.93",
+     "page": 48,
+     "row_label": "Short term borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables",
+     "period": "FY16",
+     "value_printed": "2,184.47",
+     "page": 48,
+     "row_label": "Total outstanding dues of creditors other than micro enterprises and medium enterprises"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY16",
+     "value_printed": "90.11",
+     "page": 48,
+     "row_label": "Tangible assets"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY16",
+     "value_printed": "3,872.19",
+     "page": 48,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY16",
+     "value_printed": "976.00",
+     "page": 48,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY16",
+     "value_printed": "336.76",
+     "page": 48,
+     "row_label": "Cash and bank balances"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY16",
+     "value_printed": "5,762.34",
+     "page": 48,
+     "row_label": "Assets total"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY16",
+     "value_printed": "5,762.34",
+     "page": 48,
+     "row_label": "Equity and liabilities total"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY15",
+     "value_printed": "179.10",
+     "page": 48,
+     "row_label": "Share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY15",
+     "value_printed": "1,811.47",
+     "page": 48,
+     "row_label": "Reserves and surplus"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY15",
+     "value_printed": "0.41",
+     "page": 48,
+     "row_label": "Long term borrowings"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY15",
+     "value_printed": "681.00",
+     "page": 48,
+     "row_label": "Short term borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables",
+     "period": "FY15",
+     "value_printed": "1,821.53",
+     "page": 48,
+     "row_label": "Total outstanding dues of creditors other than micro enterprises and medium enterprises"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY15",
+     "value_printed": "89.62",
+     "page": 48,
+     "row_label": "Tangible assets"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY15",
+     "value_printed": "3,229.85",
+     "page": 48,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY15",
+     "value_printed": "780.42",
+     "page": 48,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY15",
+     "value_printed": "284.00",
+     "page": 48,
+     "row_label": "Cash and bank balances"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY15",
+     "value_printed": "4,723.97",
+     "page": 48,
+     "row_label": "Assets total"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY15",
+     "value_printed": "4,723.97",
+     "page": 48,
+     "row_label": "Equity and liabilities total"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "consolidated",
+   "period": "FY16",
+   "pages": [
+    48
+   ],
+   "heading_quote": "ConsoliDA  teD  st  AteMent of Profit AnD  l  oss\n  as at 31 March 2016  for the year ended 31 March 2016",
+   "unit_quote": "Rs. in crores  Rs. in crores",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY16",
+     "label_quote": "31 March 2016"
+    },
+    {
+     "period": "FY15",
+     "label_quote": "31 March 2015"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Sales",
+     "period": "FY16",
+     "value_printed": "7,330.18",
+     "page": 48,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY16",
+     "value_printed": "48.70",
+     "page": 48,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY16",
+     "value_printed": "6,714.74",
+     "page": 48,
+     "row_label": "Cost of materials consumed"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY16",
+     "value_printed": "-406.55",
+     "page": 48,
+     "row_label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY16",
+     "value_printed": "72.12",
+     "page": 48,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY16",
+     "value_printed": "214.95",
+     "page": 48,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY16",
+     "value_printed": "22.66",
+     "page": 48,
+     "row_label": "Depreciation and amortisation expense"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY16",
+     "value_printed": "220.29",
+     "page": 48,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY16",
+     "value_printed": "6,842.37",
+     "page": 48,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY16",
+     "value_printed": "536.51",
+     "page": 48,
+     "row_label": "Profit before tax"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY16",
+     "value_printed": "136.85",
+     "page": 48,
+     "row_label": "Total - tax expense"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY16",
+     "value_printed": "399.66",
+     "page": 48,
+     "row_label": "Profit for the year"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY16",
+     "value_printed": "22.32",
+     "page": 48,
+     "row_label": "Basic EPS"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY15",
+     "value_printed": "6,361.28",
+     "page": 48,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY15",
+     "value_printed": "59.21",
+     "page": 48,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY15",
+     "value_printed": "6,417.63",
+     "page": 48,
+     "row_label": "Cost of materials consumed"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY15",
+     "value_printed": "-1,026.01",
+     "page": 48,
+     "row_label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY15",
+     "value_printed": "55.73",
+     "page": 48,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY15",
+     "value_printed": "219.89",
+     "page": 48,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY15",
+     "value_printed": "23.02",
+     "page": 48,
+     "row_label": "Depreciation and amortisation expense"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY15",
+     "value_printed": "187.75",
+     "page": 48,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY15",
+     "value_printed": "5,880.97",
+     "page": 48,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY15",
+     "value_printed": "539.52",
+     "page": 48,
+     "row_label": "Profit before tax"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY15",
+     "value_printed": "161.09",
+     "page": 48,
+     "row_label": "Total - tax expense"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY15",
+     "value_printed": "378.43",
+     "page": 48,
+     "row_label": "Profit for the year"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY15",
+     "value_printed": "21.13",
+     "page": 48,
+     "row_label": "Basic EPS"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "consolidated",
+   "period": "FY16",
+   "pages": [
+    49
+   ],
+   "heading_quote": "ConsoliDA  teD  C  AsH  flow st  AteMent  Summar y of significant accounting policies and other explanator y\n  for the year ended 31 March 2016",
+   "unit_quote": "Rs. in crores  Rs. in crores",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY16",
+     "label_quote": "31 March 2016"
+    },
+    {
+     "period": "FY15",
+     "label_quote": "31 March 2015"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY16",
+     "value_printed": "15.55",
+     "page": 49,
+     "row_label": "Net cash generated from operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY15",
+     "value_printed": "332.74",
+     "page": 49,
+     "row_label": "Net cash generated from operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY16",
+     "value_printed": "(25.06)",
+     "page": 49,
+     "row_label": "Net cash (used in)/generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY15",
+     "value_printed": "213.08",
+     "page": 49,
+     "row_label": "Net cash (used in)/generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY16",
+     "value_printed": "16.82",
+     "page": 49,
+     "row_label": "Net cash generated from/(used in) financing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY15",
+     "value_printed": "(564.76)",
+     "page": 49,
+     "row_label": "Net cash generated from/(used in) financing activities"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY16",
+     "value_printed": "7.31",
+     "page": 49,
+     "row_label": "Net increase/(decrease) in cash and cash equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY15",
+     "value_printed": "(18.94)",
+     "page": 49,
+     "row_label": "Net increase/(decrease) in cash and cash equivalents (A+B+C)"
+    }
+   ]
+  }
+ ]
+}

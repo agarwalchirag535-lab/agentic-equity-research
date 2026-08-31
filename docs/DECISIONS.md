@@ -1311,3 +1311,76 @@ confidence and never the company's verdict.
 was a share of an incomplete denominator. It also puts the reading barely above the 50% floor, which
 makes the note-content readers genuinely load-bearing rather than a nice-to-have: one more note found
 and this report stops publishing.
+
+---
+
+### ADR-0046 — Extraction is reading: an LLM proposes transcriptions, the deterministic layer disposes
+
+**Date** 2026-08-31 · **Status** accepted · **Amends the practice under** Law 1/Law 7 · **Supersedes the
+statement-location role of** the `filing.py` row-locator (which remains as a fallback proposer and for
+notes/CARO/Schedule III scanning)
+
+**Context — the PC Jeweller run (the second real company, and the first known fraud).** FY13–FY17 annual
+reports from the BSE archive, `as_of 2017-12-31`, through the existing walker:
+
+* FY13–FY15 refused wholesale — figures printed in *plain rupees*, a unit the scanner does not know.
+* FY16 yielded 4 P&L rows; no balance sheet; no cash flow.
+* FY17 stored 25 grade-A facts **from the wrong table**: the row-locator matched the Ind AS transition
+  note ("Effect of Ind AS adoption on the balance sheet as at 31 March **2016**"), mapped its
+  `Previous GAAP | adjustment | Ind AS` columns to `FY17 | FY16`, and the store then carried
+  `Total Assets FY16 = −6.41cr` and `Trade Payables FY17 = 3.00cr` (a note reference) — at grade A.
+* The balance-sheet identity defence **passed**, because the transition table balances. Identity
+  reconciliation proves a table is *a* balance sheet, never that it is *the right* balance sheet.
+* The cash-flow statement — the load-bearing statement for this exact fraud — was located in none of the
+  five filings. Every check returned UNAVAILABLE and the deterministic screen returned PASS with zero
+  flags on a company twelve months from collapse; the publication ladder would have converted that to
+  INSUFFICIENT_DISCLOSURE, wrongly charging a company whose filings print every needed row.
+
+**The category error.** Statement *location* ("which of the fifteen balance-sheet-shaped tables in 193
+pages is the audited standalone FY17 balance sheet?") and column *semantics* ("is this column the year,
+the comparative, or a GAAP-transition adjustment?") are reading-comprehension questions. Hand-coded
+patterns answer them wrong with full confidence, and every internal-consistency defence validates the
+wrong answer, because the wrong table is also internally consistent. Each new layout family (pre-2016
+plain-rupee statements, scrambled-case small-caps fonts, transition-note tables) costs another hand fix,
+and n companies × m eras of typography is a fight the firm loses by design.
+
+**Decision.** Split extraction into *proposal* and *verification*:
+
+1. **An LLM (or a human answering a packet — ADR-0010) proposes**: which pages carry each audited
+   statement (standalone and consolidated), quoting the statement heading verbatim; what each figure
+   column means, quoting its label; the unit declaration, quoted; and per required metric a transcription
+   of the printed value **exactly as printed**, with its page and row label. The proposer never computes,
+   never converts units, never nets rows — it transcribes.
+2. **The deterministic layer disposes** (`core/ingest/reading.py`), refusing any proposal that fails:
+   * V1 the heading quote appears on the claimed page;
+   * V2 the unit quote appears on the page and resolves in the unit vocabulary (now including plain ₹);
+   * V3 every column-label quote appears on the page, and the column claimed for a fiscal period names
+     that period's calendar year — the check that kills the transition-note error, whose columns say
+     "Previous GAAP" and "adjustments" and name no year;
+   * V4 every transcribed value appears **verbatim** on the claimed page (whitespace-normalised) — an
+     LLM cannot invent a figure that survives literal search of the page it cited;
+   * V5 the balance sheet satisfies assets = equity + liabilities in the declared unit;
+   * V6 P&L sum ties (total expenses vs its parts) where the rows were transcribed;
+   * V7 cash-flow tie (CFO+CFI+CFF ≈ Δcash) where the rows were transcribed;
+   * V8 the existing cross-filing comparative quarantine (ADR-0036), unchanged, over the verified facts.
+3. Only verified figures reach the fact store, `extractor_version = llm-read@…+verified`, locator carrying
+   page, printed row label and the heading of the statement it came from. A refused proposal is recorded
+   with the violated rule — the honest UNAVAILABLE path, never a silent blank.
+
+**Why this does not breach Law 1.** Law 1 exists so no financial number is *authored* by a model.
+Transcription is not authorship: the figure exists on an audited page, the model's claim is "this printed
+string, on this page, is this metric", and the acceptance test for that claim is literal string search
+plus arithmetic identities plus cross-document ties — all deterministic. The number that enters the store
+is `parse(printed_string) × declared_unit`, computed by the same trusted code as ever. Law 7 is likewise
+intact: proposers read extracted page *text* from bronze, never raw HTML, and agents downstream still see
+gold only.
+
+**Grade.** A verified transcription from an audited annual report is grade A: the grade belongs to the
+document; the verifier is what earns the right to store at all.
+
+**Consequence.** Generality stops being O(hand-written patterns per layout era). The wrong-table failure
+class dies at V3; the fake-note-number-value class dies at V4 (a "3, 5" note reference is not the printed
+figure of the payables row); plain-rupee eras become readable by declaring one more unit, not one more
+parser. The walker's row-locator remains as a zero-cost proposer whose output faces the same verifier,
+and remains authoritative for note enumeration, CARO and Schedule III scanning, which are pattern
+problems, not reading problems.

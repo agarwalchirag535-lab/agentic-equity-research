@@ -163,6 +163,52 @@ class _Recorder:
         self.ran(check, flagged, detail, fact_ids)
 
 
+def _consecutive_pair(facts: CompanyFacts, metric: str):
+    """(current, prior) facts for the two most recent CONSECUTIVE years carrying the metric, or None.
+    Non-adjacent years are refused: a 'growth' spanning a gap is not the year-on-year divergence the
+    stock-flow checks are calibrated for."""
+    usable = [p for p in facts.periods if facts.fact(metric, p) is not None]
+    if len(usable) < 2 or int(usable[-1][2:]) - int(usable[-2][2:]) != 1:
+        return None
+    return facts.fact(metric, usable[-1]), facts.fact(metric, usable[-2])
+
+
+def backfill_external_inputs(ext: ExternalInputs, facts: CompanyFacts) -> ExternalInputs:
+    """Fill store-resolvable inputs the filing walk did not supply.
+
+    Found on PC Jeweller (ADR-0046): the verified reading landed five years of audited receivables,
+    inventory, revenue and cash in the fact store, and the stock-flow checks still reported UNAVAILABLE —
+    they were written to read only the walked filing's rows. A check must not go hungry while its inputs
+    sit resolved and point-in-time-filtered in the store. Walk-supplied values always win (they carry
+    page locators); only a None field is ever filled, and the facts used are added to the check's
+    citation ids so the record still names its evidence.
+    """
+    updates: dict[str, Any] = {}
+    ids: dict[str, tuple[str, ...]] = dict(ext.fact_ids or {})
+    got: dict[str, tuple] = {}
+    for field_name, metric in (("receivables", D.RECEIVABLES), ("inventory", D.INVENTORY),
+                               ("revenue", D.SALES)):
+        if getattr(ext, field_name) is None and (pair := _consecutive_pair(facts, metric)) is not None:
+            got[field_name] = pair
+            updates[field_name] = (pair[0].value, pair[1].value)
+    cash_periods = [p for p in facts.periods if facts.fact(D.CASH, p) is not None]
+    if ext.cash is None and cash_periods:
+        cash_fact = facts.fact(D.CASH, cash_periods[-1])
+        updates["cash"] = cash_fact.value
+        got["cash"] = (cash_fact,)
+    for check, needed in (("receivables_divergent", ("receivables", "revenue")),
+                          ("inventory_divergent", ("inventory", "revenue")),
+                          ("revenue_inflation", ("revenue",)),
+                          ("cash_debt_paradox", ("cash",)),
+                          ("cash_interest_inconsistent", ("cash",))):
+        new_ids = tuple(f.fact_id for n in needed for f in got.get(n, ()))
+        if new_ids:
+            ids[check] = tuple(dict.fromkeys((*ids.get(check, ()), *new_ids)))
+    if not updates:
+        return ext
+    return replace(ext, fact_ids=ids, **updates)
+
+
 def evaluate_checks(
     playbook: Playbook,
     derived: DerivedSet,
@@ -186,7 +232,7 @@ def evaluate_checks(
         from firm.core.config import check_input_thresholds
 
         check_inputs = check_input_thresholds()
-    ext = external or ExternalInputs()
+    ext = backfill_external_inputs(external or ExternalInputs(), facts)
     # Grades of every fact in scope, so each record can report the provenance span it rests on (ADR-0028).
     grades = {
         fact.fact_id: fact.grade

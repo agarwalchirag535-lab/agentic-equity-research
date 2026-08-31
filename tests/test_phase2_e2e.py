@@ -335,14 +335,19 @@ def test_point_in_time_hides_a_filing_published_after_as_of(store):
 
     assert early.notes.notes_total == 0 and early.notes.scanned is False
     assert early.models == ()                                   # inventory unknown -> no model claimed
-    assert "receivables_divergent" not in early.evaluation.expected
+    # Stock-flow checks are UNIVERSAL (PC Jeweller taught this — a company matching no model must still
+    # be asked the receivables question), so the check is EXPECTED but honestly UNAVAILABLE: its
+    # receivables input does not exist before the filing publishes.
+    early_outcomes = {r.name: r.outcome for r in early.evaluation.records}
+    assert early_outcomes["receivables_divergent"] is CheckOutcome.UNAVAILABLE
     assert early.report.verdict is Verdict.INSUFFICIENT_DISCLOSURE
 
     # ... and as-of a date after dissemination the same filing IS read.
     later = run_deep_dive(
         store, "PIT", AS_OF, answers=clean_answers("PIT"), filing=filing_for("PIT"), write=False)
     assert later.notes.notes_total > 0
-    assert "receivables_divergent" in later.evaluation.expected
+    later_outcomes = {r.name: r.outcome for r in later.evaluation.records}
+    assert later_outcomes["receivables_divergent"] is not CheckOutcome.UNAVAILABLE
 
 
 def test_a_published_report_logs_its_kill_criteria_to_the_prediction_ledger(store, tmp_path):

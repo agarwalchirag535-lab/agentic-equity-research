@@ -2,7 +2,7 @@
 
 > **Read this first if you are new to this repo** (new session, new agent, new platform, or the owner
 > after a break). It is the single authoritative answer to *"what is built, what is not, and what
-> should happen next."* Last updated **2026-08-01**.
+> should happen next."* Last updated **2026-08-31**.
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
@@ -503,9 +503,60 @@ report on disk had been produced by a *sibling branch* whose whole-filing extrac
 ours. The citation gate was right and the branch was wrong. Both lines are now merged, and the ADR
 numbering collision that caused (both wrote 0036–0038) is recorded in `DECISIONS.md`.
 
+## 6c. The PC Jeweller point-in-time run (2026-08-31) — first true positive, and the extraction verdict
+
+The owner moved the project to autonomous engineering mode; the first experiment was the one the
+architecture review called for: a known historical fraud, point-in-time. **PC Jeweller, `as_of
+2017-12-31`** — five ARs FY13-FY17 from the BSE archive (real dissemination dates), a month before the
+collapse began.
+
+**The old extraction line failed catastrophically and quietly** (full autopsy in ADR-0046): FY13-FY15
+refused wholesale (plain-rupee units unknown), FY16 gave 4 rows, and FY17 stored 25 grade-A facts **from
+the Ind AS transition note instead of the balance sheet** — `Total Assets FY16 = −6.41cr` at grade A,
+past the identity check (the wrong table also balances). No cash-flow statement was located in any
+filing; every check returned UNAVAILABLE; the raw screen said PASS on a company twelve months from
+collapse — and the published verdict would have blamed the company's disclosure for our unreadability.
+
+**The fix is ADR-0046** — extraction is reading: a proposer (LLM or human packet, ADR-0010) locates
+statements, quotes headings/columns/units verbatim, and transcribes printed values; `core/ingest/reading.py`
+verifies deterministically (heading/year/basis on page · unit in vocabulary · column names its year ·
+**every value found verbatim on its claimed page** · balance-sheet identity · P&L sum tie · CFS legs tie ·
+magnitude plausibility) and registers only what survives. 260 grade-A facts across the five filings,
+zero violations; the cross-filing quarantine (ADR-0036) then caught the one definitional break (I-GAAP
+combined cash-and-bank vs Ind AS split cash, FY16) and, live, a per-share unit bug (EPS lakh-scaled to
+0.21 — now `PER_SHARE_METRICS` never scales).
+
+**The screen fired: `HARD_FAIL`** — SEVERE `cumulative_cfo_pat_low` **ΣCFO/ΣPAT 0.24** (FY12-FY17) +
+HIGH `receivables_divergent` **+57.6% vs revenue +16.1%**, all inputs grade A with page locators. Two
+generalisations came out of observing the run, both landed:
+- **Stock-flow divergence is UNIVERSAL** (config change + ADR note in `forensic_playbooks.yaml`): the
+  jewellery retailer matched no business model (inventory-heavy, PPE-light) and the receivables check
+  never ran. LENDER/BANK still suppress it (ADR-0002 intact).
+- **`backfill_external_inputs` in `core/pipeline/checks.py`**: checks read the point-in-time fact store
+  when the filing walk did not supply their inputs — five years of audited receivables sat in the store
+  while the check reported UNAVAILABLE.
+
+**Still open from this run:** interest-income breakout (cash-yield check), notes/Schedule III/CARO walk
+for PCJ (the walker's note scanning still applies), `promoter_lending` inputs, no model matched (a
+RETAIL shape is a calibration question for the golden set), and the run has not yet been taken through
+agent narration to a published REJECT report — the dual-verdict directive wants that report to exist.
+
 ## 7. Suggested next step
 
-Updated 2026-08-01, in order:
+Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):
+
+1. **Publish the PC Jeweller REJECT report** — take the verified facts through `run_deep_dive` with
+   narration to a published dual-verdict FAIL report; this exercises the verdict ladder + publication
+   gates on a HARD_FAIL for the first time and seeds the golden set (n=1).
+2. **Wire ADR-0046 reading into the CLI** (`firm read-packets` / `deep-dive --readings`) so the packet
+   path works for any company without driving Python by hand; then a compounder and a boring company
+   point-in-time (golden set n=3, three business shapes).
+3. **Note-level reads for PCJ-class inputs** (interest income on cash, Schedule III promoter rows) via
+   the same propose/verify pattern — NOT more hand-coded note parsers.
+4. **Re-run ALKYLAMINE through the reading path** and diff against the walker's facts — the two
+   extraction lines cross-validate each other before the walker's numeric role is retired.
+
+The old list, for reference:
 
 1. ~~Re-run ALKYLAMINE at `--phase 3`~~ **DONE 2026-08-01** — see §6b. Nine agents narrated,
    `sector_analyst` for the first time; guidance, ownership, peer and filing citations all reach the page.

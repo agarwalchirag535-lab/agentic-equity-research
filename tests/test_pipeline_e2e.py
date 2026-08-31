@@ -237,7 +237,9 @@ def test_full_chain_flags_manipulated_company(tmp_path):
     assert models == [BusinessModel.TRADER]
     pb = build_playbook(models, model_playbooks())
     assert pb.runs("revenue_inflation") and pb.runs("receivables_divergent")
-    assert not pb.runs("inventory_divergent")                   # not in the trader playbook
+    # inventory_divergent is UNIVERSAL since the PC Jeweller run (a trader holds inventory too);
+    # only models that legitimately hold none (LENDER/BANK/SERVICES_IT) suppress it.
+    assert pb.runs("inventory_divergent")
 
     verdict = forensic_screen(
         SectorClass.NON_FINANCIAL,
