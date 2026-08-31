@@ -58,6 +58,17 @@
       "grade": "A",
       "sha256": "2f800d63cc04fe5633d80194261f041c0f0474bde7068a7579d8c6191ba3a809",
       "bytes": 5003309
+    },
+    {
+      "file": "PCJ-AR-FY18.pdf",
+      "period": "FY18",
+      "prior_period": "FY17",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/534809/5348090318.pdf",
+      "published_at": "2018-10-03",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "9515ee8ac5f0a3654c773706df5898198ba6e6ee21d586aabdd9481d61fe9817",
+      "bytes": 5186496
     }
   ]
 }

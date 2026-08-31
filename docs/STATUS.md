@@ -549,9 +549,17 @@ row-locator cannot re-poison a store a verified reading populated.
 business model matched (a RETAIL/jewellery shape is a golden-set calibration question);
 `cash_debt_paradox` reads cash-equivalents only while PCJ's encumbered-cash story lives in Other Bank
 Balances (₹780cr); CARO triage is era-blind (2016 vs 2020 clause numbering); feasibility gate cannot
-run without Operating Profit (compose it on the reading path); prediction resolver still never invoked
-— PCJ's FY18 filing is now the perfect resolution target (`resolver.py` + the FY18 AR would score the
-three logged predictions).
+run without Operating Profit (compose it on the reading path); ~~prediction resolver still never invoked~~
+**RESOLVED 2026-08-31 — the memory loop closed for the first time.** `resolve_due()`
+(core/monitoring/resolver.py, point-in-time, idempotent, tested) scored the three PCJ predictions
+against the FY18 AR (read via ADR-0046, 45 verified facts) at as-of 2018-10-27: `cum_cfo_pat >= 0.7`
+**BROKEN** (actual 0.34, load-bearing), `cfo_pat_latest >= 1.62` **BROKEN** (actual 0.67 — the one
+good year reversed immediately), `accrual_ratio_latest <= 0.1` **HELD** (0.02). Brier 0.224.
+`memory/lessons.jsonl` now exists with the first three lessons: accrual ratios are weak kill criteria
+for payables-funded frauds; per-criterion probabilities are needed (broadcasting report confidence
+miscalibrates); CFS comparative restatements are a signal (FY18 restated FY17 CFO +5% and the restated
+column fails the V7 tie). Also caught: the FY18 bonus issue halves comparative EPS and the quarantine
+cannot distinguish that from a misread (per-share restatement handling is open).
 
 ## 7. Suggested next step
 
