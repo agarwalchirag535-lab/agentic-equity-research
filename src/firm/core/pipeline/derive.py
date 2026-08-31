@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 from firm.core.compute import quality, ratios
 from firm.core.compute import roic as RO
@@ -81,6 +81,11 @@ CFI = "cashflow:Cash from Investing Activity"
 #: per year" is unanswered for want of exactly these.
 TOTAL_INCOME = "pnl:Total Income"
 MATERIALS = "pnl:Cost of Materials Consumed"
+#: Goods bought finished and resold. For an outsourced-manufacturing or trading model this IS most of
+#: the cost of goods: Symphony Ltd consumes Rs 93.9cr of materials and purchases Rs 293.1cr of
+#: stock-in-trade, so a cost base of materials alone put inventory days at 315 against a true ~75 and
+#: payable days at 231 against ~68 — turnover ratios wrong by 4x on a company doing nothing unusual.
+PURCHASES_STOCK_IN_TRADE = "pnl:Purchases of Stock-in-Trade"
 INVENTORY_CHANGE = "pnl:Changes in Inventories"
 EMPLOYEE_COST = "pnl:Employee Benefits"
 OTHER_EXPENSES = "pnl:Other Expenses"
@@ -123,7 +128,8 @@ READ_METRICS: tuple[str, ...] = (
     CFO, FCF, BORROWINGS, EQUITY_CAPITAL, RESERVES, CWIP, FIXED_ASSETS, TOTAL_ASSETS,
     CASH, RECEIVABLES, INVENTORY,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
-    TOTAL_INCOME, MATERIALS, INVENTORY_CHANGE, EMPLOYEE_COST, OTHER_EXPENSES, TOTAL_EXPENSES,
+    TOTAL_INCOME, MATERIALS, PURCHASES_STOCK_IN_TRADE, INVENTORY_CHANGE, EMPLOYEE_COST, OTHER_EXPENSES,
+    TOTAL_EXPENSES,
     TOTAL_TAX, OTHER_BANK, PAYABLES, CFF, CAPEX, DIVIDEND_PAID, INTEREST_PAID, INTEREST_INCOME,
     *BALANCE_SHEET_REMAINDER,
 )
@@ -359,12 +365,20 @@ def _cum(
     return b.values.get(metric)
 
 
-def derive_metrics(facts: CompanyFacts) -> DerivedSet:
+def derive_metrics(facts: CompanyFacts, *, forensic: Mapping[str, Any] | None = None) -> DerivedSet:
     """Compute every derived metric the Phase-2 report and checks need, keeping provenance on each.
 
     Nothing is estimated: a metric whose inputs are absent lands in `missing`, which the report renders
     as `UNAVAILABLE` with the reason. This is the mechanism behind owner directive 3 (zero hallucination).
+
+    `forensic` is the `config/thresholds.yaml:forensic` block; it is read here only for the minimum
+    window a cumulative ratio needs. Injectable so a test can state the window it means.
     """
+    if forensic is None:
+        from firm.core.config import forensic_thresholds_raw
+
+        forensic = forensic_thresholds_raw()
+    thresholds = forensic
     b = _Builder(facts)
     with_core = [p for p in facts.periods if facts.fact(SALES, p) and facts.fact(PAT, p)]
     if not with_core:
@@ -395,7 +409,16 @@ def derive_metrics(facts: CompanyFacts) -> DerivedSet:
 
     # ---- cash reality (ADR-0006) ----------------------------------------------------------------
     cash_periods = [p for p in with_core if facts.fact(CFO, p) and facts.fact(PAT, p)]
-    if cash_periods:
+    # A cumulative ratio over too short a window is not the multi-year claim the check is calibrated for
+    # (see config). Refusing it here rather than in the check keeps every consumer honest at once.
+    min_periods = int(thresholds.get("cumulative_cfo_pat_min_periods", 1)) if thresholds else 1
+    if cash_periods and len(cash_periods) < min_periods:
+        b.missing["cum_cfo_pat"] = ((
+            f"only {len(cash_periods)} annual period(s) carry both CFO and PAT ({cash_periods[0]}-"
+            f"{cash_periods[-1]}); a cumulative cash-conversion claim needs at least {min_periods}, so "
+            "the window is too short to support one"
+        ),)
+    elif cash_periods:
         inputs = [facts.fact(CFO, p) for p in cash_periods] + [facts.fact(PAT, p) for p in cash_periods]
         pat_sum = sum(facts.value(PAT, p) for p in cash_periods)
         b.add("cum_cfo_pat",
@@ -657,15 +680,23 @@ def _working_capital_days(b: _Builder, facts: CompanyFacts, periods: Sequence[st
     latest = periods[-1]
     prior = periods[-2] if len(periods) >= 2 else None
 
-    def cogs(period: str) -> tuple[float, tuple[Fact, ...]] | None:
-        materials, change = facts.fact(MATERIALS, period), facts.fact(INVENTORY_CHANGE, period)
-        if materials is None:
+    def cogs(period: str) -> tuple[float, tuple[Fact, ...], str] | None:
+        """The cost base a turnover ratio divides by: what the goods sold actually cost.
+
+        Materials consumed PLUS goods purchased for resale, plus the change in finished stock. Omitting
+        purchases is only harmless for a company that makes everything it sells; for one that outsources
+        manufacturing it understates the cost base several-fold and inflates every days-ratio built on
+        it. The formula string names exactly the lines summed, so a reader can redo it from the page.
+        """
+        materials = facts.fact(MATERIALS, period)
+        purchases = facts.fact(PURCHASES_STOCK_IN_TRADE, period)
+        change = facts.fact(INVENTORY_CHANGE, period)
+        if materials is None and purchases is None:
             return None
-        # The change in FG/WIP is a real expense line but a small one; a filing that omits it (or whose
-        # row could not be read) still supports a defensible cost base from materials alone.
-        total = materials.value + (change.value if change is not None else 0.0)
-        inputs = (materials,) if change is None else (materials, change)
-        return (total, inputs) if total > 0 else None
+        parts = [f for f in (materials, purchases, change) if f is not None]
+        names = " + ".join(f.metric.removeprefix("pnl:") for f in parts)
+        total = sum(f.value for f in parts)
+        return (total, tuple(parts), names) if total > 0 else None
 
     def days(metric: str, balance_metric: str, period: str, use_cogs: bool) -> Derivation | None:
         balance = facts.fact(balance_metric, period)
@@ -675,10 +706,13 @@ def _working_capital_days(b: _Builder, facts: CompanyFacts, periods: Sequence[st
         if use_cogs:
             base = cogs(period)
             if base is None:
-                b.missing.setdefault(metric, (f"{MATERIALS} {period} (cost base for a turnover ratio)",))
+                b.missing.setdefault(metric, ((
+                    f"{MATERIALS} or {PURCHASES_STOCK_IN_TRADE} {period} (cost base for a turnover "
+                    "ratio)"
+                ),))
                 return None
-            denominator, extra = base
-            formula = f"{balance_metric} {period} / (Materials + Δ FG/WIP) {period} x 365"
+            denominator, extra, names = base
+            formula = f"{balance_metric} {period} / ({names}) {period} x 365"
         else:
             sales = facts.fact(SALES, period)
             if sales is None or sales.value <= 0:

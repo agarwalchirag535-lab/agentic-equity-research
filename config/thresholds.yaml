@@ -11,6 +11,12 @@ multibagger:
 forensic:
   # SPEC §5 + ADR-0006. Single-value refs; PLAN OQ#3 may promote some to dated series.
   cfo_pat_min: 0.70             # single-year CFO/PAT below this = quality flag
+  # A cumulative cash-conversion claim is a claim about a CYCLE. Below this many annual periods the
+  # ratio is noise wearing a decade's authority: Symphony Ltd, a clean compounder, produced ΣCFO/ΣPAT
+  # 0.56 over the two years readable from one filing and the screen returned SEVERE — a false positive
+  # generated entirely by window length. Below the floor the metric is not derived and the check reports
+  # UNAVAILABLE with the reason, which is what "insufficient history" should look like.
+  cumulative_cfo_pat_min_periods: 3
   cumulative_cfo_pat_min: 0.70  # Σ CFO / Σ PAT over history below this = earnings not converting to cash
   beneish_m_threshold: -1.78    # M-score above this = elevated manipulation probability (NON-financials only)
   sloan_accrual_flag: 0.10      # |accruals / avg assets| above this = low earnings quality

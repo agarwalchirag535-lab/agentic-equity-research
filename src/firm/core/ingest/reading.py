@@ -68,9 +68,48 @@ VERIFICATION_ONLY = frozenset({VERIFY_TOTAL_EQ_LIAB, VERIFY_NET_CHANGE_IN_CASH})
 
 #: Rows that make up "total expenses" for the one-sided V6 sum check.
 _PNL_EXPENSE_PARTS = (
-    "pnl:Cost of Materials Consumed", "pnl:Changes in Inventories", "pnl:Employee Benefits",
-    "pnl:Interest", "pnl:Depreciation", "pnl:Other Expenses",
+    "pnl:Cost of Materials Consumed", "pnl:Purchases of Stock-in-Trade", "pnl:Changes in Inventories",
+    "pnl:Employee Benefits", "pnl:Interest", "pnl:Depreciation", "pnl:Other Expenses",
 )
+
+#: Metric families that are FLOWS (measured over a period) rather than STOCKS (measured at an instant).
+#: The distinction is what makes a stub period safe to read: a nine-month P&L is not an annual P&L, but
+#: the balance sheet closing it is a perfectly ordinary balance sheet.
+FLOW_PREFIXES = ("pnl:", "cashflow:")
+
+#: How a filing states a period's length in its own words. Symphony changed its year-end from June to
+#: March and filed a NINE-MONTH transition period labelled "Nine months ended 31/03/2016"; the firm read
+#: it as FY16 and would have compared it to twelve-month years on both sides — revenue "fell 23%" when it
+#: grew 2.7%, and receivable days inflated 33%. A period label is not a period.
+_MONTH_WORDS: Mapping[str, int] = {
+    "twelve": 12, "eleven": 11, "ten": 10, "nine": 9, "eight": 8, "seven": 7,
+    "six": 6, "five": 5, "four": 4, "three": 3, "two": 2, "one": 1,
+}
+_MONTHS_WORD = re.compile(
+    rf"\b({'|'.join(_MONTH_WORDS)})\s+months?\b", re.IGNORECASE)
+_MONTHS_DIGIT = re.compile(r"\b(\d{1,2})\s+months?\b", re.IGNORECASE)
+_FULL_YEAR = re.compile(r"\byear\s+ended", re.IGNORECASE)
+
+
+def months_stated(text: str) -> int | None:
+    """The period length the text states UNAMBIGUOUSLY in its own words, else None.
+
+    'Nine months ended 31/03/2016' -> 9 · 'for the year ended 31 March 2018' -> 12 · 'As at 31/03/2018'
+    -> None (a balance-sheet column states an instant, not a length, and correctly so).
+
+    None is also the answer when the text states TWO different lengths, which is not a corner case: a
+    transition filing prints its header across two lines ("Year ended  Nine months ended" / "31/03/2017
+    31/03/2016"), so any quote long enough to carry a column's year may also carry its neighbour's
+    length. Contradicting the proposer requires an unambiguous contradiction; where the words are
+    ambiguous the declared `months` stands and the reader can check the locator."""
+    found = {_MONTH_WORDS[m.group(1).lower()] for m in _MONTHS_WORD.finditer(text)}
+    found |= {int(m.group(1)) for m in _MONTHS_DIGIT.finditer(text)}
+    if not found and _FULL_YEAR.search(text):
+        found = {12}
+    elif found and _FULL_YEAR.search(text):
+        found |= {12}
+    return found.pop() if len(found) == 1 else None
+
 
 _NIL = re.compile(r"^(?:[-–—]|NIL)$", re.IGNORECASE)
 _YEAR = re.compile(r"(20\d{2}|19\d{2})")
@@ -95,6 +134,10 @@ class ProposedColumn:
 
     period: str | None          # 'FY17' | None
     label_quote: str            # verbatim from the page, e.g. 'year ended 31 march 2017'
+    #: Months this column covers, when the proposer states it. None means "read it from the words":
+    #: the column label first, then the statement heading. A flow column whose length cannot be
+    #: established either way is refused rather than assumed to be a year (V3b).
+    months: int | None = None
 
 
 @dataclass(frozen=True)
@@ -135,6 +178,9 @@ class VerifiedFigure:
     row_label: str
     value_printed: str
     unit: str                   # the DECLARED unit, kept so a reader can re-derive from the page
+    #: Months the figure's period covers — 12 for an ordinary year, 9 for a transition stub, None for a
+    #: stock figure (a balance sheet states an instant, not a length).
+    period_months: int | None = None
 
 
 @dataclass(frozen=True)
@@ -215,11 +261,34 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
                                     f"unit declaration {stmt.unit_quote!r} not found on pages {stmt.pages}"))
 
     # V3 — every period column's label exists on the page and names that period's calendar year.
+    # V3b — and, for a FLOW statement, its length is established and agrees with the filing's own words.
+    is_flow = stmt.statement in ("pnl", "cashflow")
+    heading_months = months_stated(stmt.heading_quote)
     declared_periods: set[str] = set()
+    months_by_period: dict[str, int] = {}
     for col in stmt.columns:
         if col.period is None:
             continue
         declared_periods.add(col.period)
+        if is_flow:
+            # Precedence: what the proposer declared, then the column's own words, then the heading's.
+            # The column beats the heading because a transition filing says "year ended" at the top and
+            # "Nine months ended" over the stub column — which is exactly the case this rule exists for.
+            stated = months_stated(col.label_quote)
+            effective = col.months if col.months is not None else (
+                stated if stated is not None else heading_months)
+            if effective is None:
+                violations.append(Violation(
+                    "V3b_period_length", name,
+                    f"column {col.label_quote!r} ({col.period}): neither the column nor the heading "
+                    "states a period length, so it cannot be assumed to be a year — declare `months`"))
+            else:
+                if col.months is not None and stated is not None and stated != col.months:
+                    violations.append(Violation(
+                        "V3b_period_length", name,
+                        f"column {col.label_quote!r} declares {col.months} months but its own words say "
+                        f"{stated}"))
+                months_by_period[col.period] = effective
         col_year = _fy_year(col.period)
         if col_year is None:
             violations.append(Violation("V3_column", name, f"unparseable period {col.period!r}"))
@@ -267,7 +336,7 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
             continue
         by_metric[(fig.metric, fig.period)] = crore
         verified.append(VerifiedFigure(fig.metric, fig.period, crore, fig.page, fig.row_label,
-                                       printed, stmt.unit))
+                                       printed, stmt.unit, months_by_period.get(fig.period)))
 
     # V5 — the balance sheet balances, for every period figures were actually transcribed for. A period
     # whose column was declared but not transcribed is simply absent — declaring the table's shape
@@ -347,19 +416,29 @@ def register_reading(
     sha256: str = "",
     grade: str = "A",
     preferred_basis: str = "consolidated",
-) -> tuple[str, ...]:
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Store every verified figure of ONE basis as locator-bound facts.
 
     One basis per filing, because the store keys a metric-period to a single series (PLAN assumption 1:
     consolidated is the default; standalone only when consolidated was not verified). Verification-only
-    rows are never stored. Returns the fact ids written.
+    rows are never stored.
+
+    A FLOW figure from a period that is not twelve months is **not stored** (and is returned in
+    `skipped_stub_flows` so the caller can publish the reason). Symphony's nine-month transition period
+    is why: stored as if it were a year, it made revenue "fall 23%" when it grew 2.7%, inflated
+    receivable days 33%, and would have fired `receivables_divergent` on a clean compounder. Annualising
+    it would be estimating a number that carries a forensic conclusion, which owner directive 3 forbids;
+    a hole the checks report as UNAVAILABLE is the honest alternative. STOCK figures from the same
+    filing are stored normally — a balance sheet closing a stub period is an ordinary balance sheet.
+
+    Returns `(fact_ids, skipped_stub_flows)`.
     """
     chosen = [s for s in reading.statements if s.verified and s.basis == preferred_basis]
     if not chosen:
         fallback = "standalone" if preferred_basis == "consolidated" else "consolidated"
         chosen = [s for s in reading.statements if s.verified and s.basis == fallback]
     if not chosen:
-        return ()
+        return (), ()
 
     store.add_document(Document(
         doc_id=reading.doc_id, source_url=source_url, sha256=sha256,
@@ -367,6 +446,7 @@ def register_reading(
         grade=grade, extractor_version="llm-read@1.0.0+verified",
     ))
     fact_ids: list[str] = []
+    skipped: list[str] = []
 
     def write(metric: str, period: str, value: float, locator: str) -> None:
         fact_id = f"{reading.doc_id}:{metric}:{period}"
@@ -378,6 +458,12 @@ def register_reading(
     for stmt in chosen:
         for fig in stmt.figures:
             if fig.metric in VERIFICATION_ONLY:
+                continue
+            if (fig.metric.startswith(FLOW_PREFIXES) and fig.period_months is not None
+                    and fig.period_months != 12):
+                skipped.append(
+                    f"{fig.metric} {fig.period}: the filing reports it over {fig.period_months} months, "
+                    "not a year — not comparable with annual figures, and not annualised")
                 continue
             write(fig.metric, fig.period, fig.value_crore,
                   f"p.{fig.page} '{fig.row_label}' (as printed: {fig.value_printed} {fig.unit}; "
@@ -403,7 +489,7 @@ def register_reading(
                               f"p.{a.page} '{a.row_label}' + p.{b.page} '{b.row_label}' "
                               f"(composed: {a.value_printed} + {b.value_printed} {a.unit}; "
                               f"{stmt.basis})")
-    return tuple(fact_ids)
+    return tuple(fact_ids), tuple(skipped)
 
 
 # --------------------------------------------------------------------------------------------------
@@ -536,6 +622,9 @@ READING_VOCABULARY: Mapping[str, str] = {
     "pnl:Sales": "revenue from operations (exclude other income)",
     "pnl:Other Income": "other income",
     "pnl:Cost of Materials Consumed": "cost of materials consumed",
+    "pnl:Purchases of Stock-in-Trade": "purchases of stock-in-trade / traded goods — material for an "
+                                       "outsourced-manufacturing model, where most cost of goods is "
+                                       "bought finished rather than made",
     "pnl:Changes in Inventories": "changes in inventories of finished goods / WIP / stock-in-trade",
     "pnl:Employee Benefits": "employee benefits expense",
     "pnl:Interest": "finance costs",

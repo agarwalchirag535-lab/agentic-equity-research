@@ -23,6 +23,12 @@ def load_thresholds() -> dict[str, Any]:
     return load_yaml("thresholds.yaml")
 
 
+def forensic_thresholds_raw() -> dict:
+    """The whole `forensic` config block, for callers that need keys the typed struct does not carry
+    (the cumulative-window floor, for one). The typed `forensic_thresholds()` stays the screen's input."""
+    return dict(load_thresholds()["forensic"])
+
+
 def forensic_thresholds() -> ForensicThresholds:
     f = load_thresholds()["forensic"]
     return ForensicThresholds(

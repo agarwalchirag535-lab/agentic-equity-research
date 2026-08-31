@@ -1434,3 +1434,84 @@ narration-tier input, not a deterministic flag, and is noted on the report only 
 `cash_debt_paradox` check reads `Cash Equivalents` alone while the encumbered-cash story of this era
 lives in `Other Bank Balances`; and the FY16-and-earlier combined "cash and bank balances" mapping to
 `Cash Equivalents` is a definitional boundary the quarantine currently resolves by refusing FY16 cash.
+
+---
+
+### ADR-0048 — A period label is not a period, and a cost base is not one line
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0046 · **Source** the Symphony Ltd
+affirm-side run (the first company chosen to test FALSE POSITIVES rather than to catch a fraud)
+
+**Context.** Symphony Ltd (BSE 517385) was picked deliberately as a hard clean case: a genuine
+compounder, but asset-light with outsourced manufacturing and a large treasury book — several
+superficial trip-hazards. It surfaced three defects, none of which any prior company could have shown.
+
+**1. A stub period read as a year (severity: false positive AND false negative).**
+Symphony moved its year-end from June to March and filed a **nine-month transition period** to
+31 Mar 2016, saying so in its own report: *"the current financial year ended on March 31, 2017
+(12 months) figures are not comparable with figures of previous financial year (9 months) ended on
+March 31, 2016."* The firm had no concept of period length. Read as FY16, the stub produces:
+
+| | as the firm would compute | like-for-like |
+|---|---|---|
+| revenue growth into FY16 | **−23.0%** | +2.7% |
+| revenue growth into FY17 | +72.4% | +29.3% |
+| receivables-vs-revenue gap FY17 | −60.8% (masked) | −17.7% |
+| receivable days on a 9-month base | 42.9 | 32.1 |
+
+A run as-of 2016 would have fired `receivables_divergent` on a clean compounder — revenue "collapsing"
+against flat receivables — and a run as-of 2017 masks a gap in the other direction. One defect, both
+error directions.
+
+**Decision.** Period length becomes part of a reading's claim. `ProposedColumn.months`, verified by
+**V3b**: for a FLOW statement the length must be established — declared, or stated by the column's own
+words, or by the statement heading, in that precedence (the column beats the heading precisely because
+a transition filing says "year ended" at the top and "Nine months ended" over the stub column) — and a
+declaration the filing's own unambiguous words contradict is refused. `months_stated()` returns None
+when a quote states two different lengths, which is not a corner case: split header rows mean a quote
+long enough to carry a column's year may also carry its neighbour's length, and contradicting the
+proposer requires an unambiguous contradiction.
+
+Registration then **refuses to store a flow figure from a non-twelve-month period**, returning it in
+`skipped_stub_flows` so the caller publishes the reason. Stocks from the same filing store normally:
+**stocks are dated, flows are periodic**, and a balance sheet closing a stub period is an ordinary
+balance sheet. Annualising was rejected — it is estimating a number that would carry a forensic
+conclusion (owner directive 3); a hole the checks report as UNAVAILABLE is the honest alternative.
+
+All seven pre-existing readings (PC Jeweller FY13–FY18, Alkyl Amines FY26) re-verify unchanged, every
+flow period correctly inferred as 12 from the filings' own words, with no manual annotation.
+
+**2. The cost base omitted goods bought for resale (severity: 4x wrong ratios).**
+`cogs()` was materials-consumed plus the FG/WIP change. Symphony consumes ₹93.9cr of materials and
+**purchases ₹293.1cr of stock-in-trade** — it outsources manufacturing, so most cost of goods is bought
+finished. Inventory days read **315 against a true 75**, payable days 231 against 55, and the cash
+conversion cycle 112 against 48. Not a Symphony quirk: it is wrong for every outsourced-manufacturing,
+trading or franchise model. `pnl:Purchases of Stock-in-Trade` is now in the reading vocabulary, in
+`READ_METRICS`, in the V6 sum check and in `cogs()`, whose formula string names every line summed.
+`material_cost_ratio` is deliberately unchanged — it is correctly named and correctly computed; it is
+simply not the whole cost base for such a model, which the cost-structure narration must say.
+
+**3. A cumulative ratio fired SEVERE on a two-year window (severity: false positive).**
+`cumulative_cfo_pat` computed over however many periods existed. On the two years readable from one
+Symphony filing it returned 0.56 against a 0.70 floor → SEVERE → `HARD_FAIL` → the verdict ladder
+short-circuits to FORENSIC_CAUTION *before* the insufficient-history rung it would otherwise have hit.
+A user pointing the tool at any company with two readable years got a fraud flag.
+
+**Decision.** `report.criteria`-style policy again: `forensic.cumulative_cfo_pat_min_periods` (3,
+provisional). Below the floor the metric is **not derived** and the check reports UNAVAILABLE naming
+the window — refusing at the derivation keeps every consumer honest at once rather than patching the
+screen. On Symphony the screen went **HARD_FAIL → REVIEW**.
+
+**Consequence, and the honest residue.** Symphony still returns `REVIEW` on `cfo_pat_low` (0.55) and
+`high_accruals` (0.126). That is *probably* not fraud either: roughly a fifth of its pre-tax profit is
+treasury income, which the indirect-method cash flow classifies under investing, so a treasury-heavy
+company systematically converts below 1.0. That is a calibration question, and changing a forensic
+threshold on a single observation is exactly the overfitting the golden set exists to prevent — so it
+is recorded in `memory/lessons.jsonl` and left to Phase 6, not fixed here.
+
+**Still open, named rather than fixed:** Symphony's FY13–FY15 filings report **June** year-ends, so the
+`FY{YY}` label silently assumes a March close for every company. Within one company the labels stay
+self-consistent, but a CAGR spanning the June→March discontinuity is wrong, `resolve_by` computes the
+wrong filing date, and a peer comparison across differing year-ends compares different twelve-month
+windows. The real fix is periods as first-class objects `(start, end, months)`; this ADR delivers the
+`months` half, which is the half that was producing false positives.

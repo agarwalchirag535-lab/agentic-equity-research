@@ -581,6 +581,40 @@ FY14/FY15 filings quietly revised each other's CFO/CFF. NOTE the succession: thi
 removed FY17 EPS — see the per-share open item; quarantine deletion is extraction-trust semantics, not
 point-in-time semantics, which is documented and acceptable but worth remembering).
 
+## 6d. The Symphony run (2026-08-31) — the affirm side, and three defects a fraud could not have shown
+
+The first company chosen to test **false positives** rather than to catch a fraud: Symphony Ltd
+(BSE 517385), `as_of 2018-12-31` — a genuine compounder, deliberately picked as a hard clean case
+(asset-light, outsourced manufacturing, large treasury book). Full autopsy in **ADR-0048**. It found:
+
+1. **A nine-month transition period read as a year.** Symphony moved its year-end June -> March and
+   filed a 9-month stub to 31 Mar 2016, saying in its own report that the periods "are not comparable".
+   The firm had no concept of period length: revenue growth reads -23.0% where it was +2.7% (as-of 2016)
+   and +72.4% where it was +29.3% (as-of 2017), receivable days inflate 33%, and a 2016 run would have
+   fired `receivables_divergent` **on a clean compounder**. Fixed: `ProposedColumn.months` + **V3b**
+   (established from the column's words, then the heading; an unambiguous contradiction is refused), and
+   registration refuses to store FLOW figures from a non-12-month period — stocks store normally, since
+   *stocks are dated and flows are periodic*. Annualising was rejected as estimation. All seven prior
+   readings re-verify unchanged with 12 months inferred from the filings' own words.
+2. **The cost base omitted goods bought for resale.** Symphony consumes Rs 93.9cr of materials and
+   *purchases* Rs 293.1cr of stock-in-trade. Inventory days read **315 against a true 75**, payable days
+   231 vs 55, CCC 112 vs 48 — wrong for every outsourced-manufacturing, trading or franchise model.
+   Fixed in `cogs()` + `READ_METRICS` + the V6 sum check.
+3. **A cumulative ratio fired SEVERE on a two-year window.** `cumulative_cfo_pat` 0.56 over the two
+   years readable from one filing -> SEVERE -> HARD_FAIL, and the ladder short-circuits *above* the
+   insufficient-history rung. Any company with two readable years got a fraud flag. Fixed with
+   `forensic.cumulative_cfo_pat_min_periods` (3, provisional), refused at the derivation so every
+   consumer is honest at once. **Screen went HARD_FAIL -> REVIEW.**
+
+**The honest residue:** Symphony still returns REVIEW (`cfo_pat_low` 0.55, `high_accruals` 0.126).
+Probably not fraud either — ~20% of its PBT is treasury income, which the indirect-method cash flow puts
+under investing, so treasury-heavy companies systematically convert below 1.0. Changing a threshold on
+one observation is the overfitting the golden set exists to prevent, so it is a lesson
+(`memory/lessons.jsonl`), not a code change. **Also open:** Symphony's FY13-FY15 report **June**
+year-ends — the `FY{YY}` label assumes a March close for every company. Periods as first-class objects
+`(start, end, months)` is the real fix; ADR-0048 delivers the `months` half, the half producing false
+positives.
+
 ## 7. Suggested next step
 
 Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):

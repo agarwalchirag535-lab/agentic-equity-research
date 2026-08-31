@@ -85,12 +85,13 @@ def test_a_faithful_transcription_verifies_and_registers():
     reading = verify_statement(_bs_statement(), [BS_PAGE])
     assert reading.verified, reading.violations
     store = FactStore(":memory:")
-    ids = register_reading(
+    ids, skipped = register_reading(
         store, "PCJEWELLER",
         FilingReading("AR-FY17-x.pdf", (reading,)),
         source_url="https://example.test", published_at=date(2017, 9, 9),
         preferred_basis="standalone",
     )
+    assert skipped == ()
     assert "AR-FY17-x.pdf:balance_sheet:Trade Receivables:FY17" in ids
     fact = store.query_fact("PCJEWELLER", "balance_sheet:Trade Receivables", "FY17", date(2018, 1, 1))
     assert fact is not None and fact.value == pytest.approx(1183.83)
@@ -241,8 +242,8 @@ def test_basis_must_match_the_heading():
 def test_register_prefers_consolidated_and_falls_back_to_standalone():
     reading = verify_statement(_bs_statement(), [BS_PAGE])
     store = FactStore(":memory:")
-    ids = register_reading(store, "PCJEWELLER", FilingReading("AR-FY17-x.pdf", (reading,)),
-                           source_url="u", published_at=date(2017, 9, 9))
+    ids, _ = register_reading(store, "PCJEWELLER", FilingReading("AR-FY17-x.pdf", (reading,)),
+                              source_url="u", published_at=date(2017, 9, 9))
     assert ids  # consolidated absent -> the verified standalone statement is registered
     assert store.query_fact("PCJEWELLER", "balance_sheet:Total Assets", "FY17", date(2018, 1, 1))
 
@@ -251,9 +252,9 @@ def test_a_refused_statement_registers_nothing():
     stmt = _bs_statement(heading_quote="not on the page at all 2017")
     reading = verify_statement(stmt, [BS_PAGE])
     store = FactStore(":memory:")
-    ids = register_reading(store, "PCJEWELLER", FilingReading("AR-FY17-x.pdf", (reading,)),
-                           source_url="u", published_at=date(2017, 9, 9),
-                           preferred_basis="standalone")
+    ids, _ = register_reading(store, "PCJEWELLER", FilingReading("AR-FY17-x.pdf", (reading,)),
+                              source_url="u", published_at=date(2017, 9, 9),
+                              preferred_basis="standalone")
     assert ids == ()
 
 
@@ -374,3 +375,118 @@ def test_related_party_reading_verifies_the_printed_remuneration():
         categories=("remuneration",), kmp_remuneration_printed="9.99", remuneration_page=3,
     ), NOTE_PAGES)
     assert any(x.rule == "V4_value" for x in bad)
+
+
+# The Symphony transition filing, in miniature: a twelve-month year beside a NINE-MONTH stub, which is
+# how a company that moves its year-end reports. Read as if both were years, revenue "grew 72%" when it
+# grew 29%, and a run one year earlier would have fired receivables_divergent on a clean compounder.
+STUB_PNL_PAGE = """\
+Consolidated Statement of Profit and Loss  for the year ended 31st March, 2017
+  (H in Lacs)
+  Particulars  Note  Year ended 31/03/2017  Nine months ended 31/03/2016
+  I  Revenue from Operations  20  76,802.90  44,554.65
+  VII  Profit for the year  16,559.64  11,836.51
+"""
+
+
+def _stub_pnl(**overrides) -> ProposedStatement:
+    base = {
+        "statement": "pnl", "basis": "consolidated", "period": "FY17", "pages": (1,),
+        "heading_quote": "Consolidated Statement of Profit and Loss  for the year ended 31st March, 2017",
+        "unit_quote": "(H in Lacs)", "unit": "INR_lakh",
+        "columns": (
+            ProposedColumn(period="FY17", label_quote="Year ended 31/03/2017", months=12),
+            ProposedColumn(period="FY16", label_quote="Nine months ended 31/03/2016", months=9),
+        ),
+        "figures": (
+            ProposedFigure("pnl:Sales", "FY17", "76,802.90", 1, "Revenue from Operations"),
+            ProposedFigure("pnl:Sales", "FY16", "44,554.65", 1, "Revenue from Operations"),
+            ProposedFigure("pnl:Net Profit", "FY17", "16,559.64", 1, "Profit for the year"),
+        ),
+    }
+    base.update(overrides)
+    return ProposedStatement(**base)
+
+
+def test_a_stub_period_verifies_but_its_flow_figures_are_never_stored():
+    reading = verify_statement(_stub_pnl(), [STUB_PNL_PAGE])
+    assert reading.verified, reading.violations
+    months = {(f.metric, f.period): f.period_months for f in reading.figures}
+    assert months[("pnl:Sales", "FY17")] == 12
+    assert months[("pnl:Sales", "FY16")] == 9
+
+    store = FactStore(":memory:")
+    ids, skipped = register_reading(store, "SYMPHONY", FilingReading("AR-FY17-x.pdf", (reading,)),
+                                    source_url="u", published_at=date(2017, 7, 8))
+    assert "AR-FY17-x.pdf:pnl:Sales:FY17" in ids
+    assert not any(":FY16" in i for i in ids)          # the stub's flows never enter the store
+    assert len(skipped) == 1 and "9 months" in skipped[0] and "not annualised" in skipped[0]
+    assert store.query_fact("SYMPHONY", "pnl:Sales", "FY16", date(2018, 1, 1)) is None
+
+
+def test_a_stub_periods_stock_figures_are_stored_normally():
+    """A balance sheet closing a nine-month period is an ordinary balance sheet: stocks are dated,
+    flows are periodic, and only flows are damaged by a period-length change."""
+    page = ("Consolidated Balance Sheet as at 31st March, 2016\n(H in Lacs)\n"
+            "As at  31/03/2016\nTrade receivables  4,686.91\n"
+            "TOTAL ASSETS  43,035.70\nTotal Equity and Liabilities  43,035.70\n")
+    stmt = ProposedStatement(
+        statement="balance_sheet", basis="consolidated", period="FY16", pages=(1,),
+        heading_quote="Consolidated Balance Sheet as at 31st March, 2016",
+        unit_quote="(H in Lacs)", unit="INR_lakh",
+        columns=(ProposedColumn(period="FY16", label_quote="As at  31/03/2016"),),
+        figures=(
+            ProposedFigure("balance_sheet:Trade Receivables", "FY16", "4,686.91", 1, "Trade receivables"),
+            ProposedFigure("balance_sheet:Total Assets", "FY16", "43,035.70", 1, "TOTAL ASSETS"),
+            ProposedFigure(VERIFY_TOTAL_EQ_LIAB, "FY16", "43,035.70", 1, "Total Equity and Liabilities"),
+        ),
+    )
+    reading = verify_statement(stmt, [page])
+    assert reading.verified, reading.violations
+    store = FactStore(":memory:")
+    ids, skipped = register_reading(store, "SYMPHONY", FilingReading("AR-FY16-x.pdf", (reading,)),
+                                    source_url="u", published_at=date(2016, 9, 1))
+    assert skipped == () and any("Trade Receivables:FY16" in i for i in ids)
+
+
+def test_a_declared_length_that_contradicts_the_filing_is_refused():
+    """The failure this rule exists to stop: calling the nine-month column a year."""
+    stmt = _stub_pnl(columns=(
+        ProposedColumn(period="FY17", label_quote="Year ended 31/03/2017", months=12),
+        ProposedColumn(period="FY16", label_quote="Nine months ended 31/03/2016", months=12),  # the lie
+    ))
+    violations = verify_statement(stmt, [STUB_PNL_PAGE]).violations
+    assert any(v.rule == "V3b_period_length" and "words say 9" in v.detail for v in violations)
+
+
+def test_a_flow_column_of_unstated_length_is_refused_not_assumed_to_be_a_year():
+    stmt = _stub_pnl(
+        heading_quote="Consolidated Statement of Profit and Loss",   # heading states no length either
+        columns=(ProposedColumn(period="FY17", label_quote="Particulars 2017", months=None),),
+        figures=(ProposedFigure("pnl:Sales", "FY17", "76,802.90", 1, "Revenue from Operations"),),
+    )
+    page = STUB_PNL_PAGE.replace(
+        "Consolidated Statement of Profit and Loss  for the year ended 31st March, 2017",
+        "Consolidated Statement of Profit and Loss 2017").replace(
+        "Particulars  Note  Year ended 31/03/2017  Nine months ended 31/03/2016",
+        "Particulars 2017")
+    violations = verify_statement(stmt, [page]).violations
+    assert any(v.rule == "V3b_period_length" and "cannot be assumed" in v.detail for v in violations)
+
+
+def test_the_heading_supplies_the_length_when_a_column_label_does_not():
+    """Real filings label cash-flow columns 'As at' even though they are periods; the heading says
+    'for the year ended' and that is what the length comes from."""
+    page = ("Consolidated Cash Flow Statement for the year ended March 31, 2014\n`  `\n"
+            "As at\n  March 31, 2014\nNet cash generated  5,200,092,868\n")
+    stmt = ProposedStatement(
+        statement="cashflow", basis="consolidated", period="FY14", pages=(1,),
+        heading_quote="Consolidated Cash Flow Statement for the year ended March 31, 2014",
+        unit_quote="`  `", unit="INR",
+        columns=(ProposedColumn(period="FY14", label_quote="As at\n  March 31, 2014"),),
+        figures=(ProposedFigure("cashflow:Cash from Operating Activity", "FY14", "5,200,092,868", 1,
+                                "Net cash generated"),),
+    )
+    reading = verify_statement(stmt, [page])
+    assert reading.verified, reading.violations
+    assert reading.figures[0].period_months == 12
