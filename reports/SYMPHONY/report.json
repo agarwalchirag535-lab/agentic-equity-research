@@ -4,7 +4,7 @@
     "financial_statement_analyst": "1.0.0",
     "forensic_accountant": "1.0.0"
   },
-  "anti_thesis": "**business_analyst (disconfirming search):** Looked for signs the growth was bought rather than earned: receivable and inventory growth both trail revenue growth (the stock-flow checks pass), the programme is self-funded at 1.57 [fact:derived:self_funding_ratio], and no borrowing base appears. What I could NOT disconfirm is concentration risk \u2014 customer, channel or vendor concentration is simply not disclosed in the rows read here, so its absence from this narrative is a gap, not evidence of diversification.\n\n**financial_statement_analyst (disconfirming search):** Tried to break the 'cash is fine' reading: the sharpest attack is the latest year at 0.55 [fact:derived:cfo_pat_latest] with accruals at 0.126 [fact:derived:accrual_ratio_latest]. Against it stand the cumulative 0.79 [fact:derived:cum_cfo_pat], receivables moving 3.2 [fact:derived:receivable_days_delta] days, and inventory growth trailing revenue growth in the stock-flow checks \u2014 the fraud shapes that make a conversion gap sinister are absent. What survives is a real, unresolved classification question, named above.\n\n**forensic_accountant (disconfirming search):** Hunted for the fraud shape directly: profit rising with cash flat (absent \u2014 cumulative 0.79 [fact:derived:cum_cfo_pat]), receivables outrunning sales (absent \u2014 the divergence check passes with revenue growing faster), inventory building against demand (absent), a stub period inflating a growth rate (excluded by construction). The two fired flags have a benign arithmetic explanation that the unread interest-received row could confirm or destroy; until it is read, REVIEW is the correct posture and PASS would be overclaiming.\n\n**Checks that fired:** `cfo_pat` \u2014 CFO/PAT 0.55 vs floor 0.70 (CFO FY18 / PAT FY18) (grade A); `high_accruals` \u2014 accruals +0.126 vs limit \u00b10.10 ((PAT - CFO)(FY18) / avg Total Assets) (grade A)\n\n**Not verifiable from the sources read:** 3 of 10 applicable checks could not be evaluated, so the case against this company includes everything we could not look at.",
+  "anti_thesis": "**business_analyst (disconfirming search):** Looked for signs the growth was bought rather than earned: receivable and inventory growth both trail revenue growth (the stock-flow checks pass), the programme is self-funded at 1.57 [fact:derived:self_funding_ratio], and no borrowing base appears. What I could NOT disconfirm is concentration risk \u2014 customer, channel or vendor concentration is simply not disclosed in the rows read here, so its absence from this narrative is a gap, not evidence of diversification.\n\n**financial_statement_analyst (disconfirming search):** Tried to break the 'cash is fine' reading: the sharpest attack is the latest year at 0.55 [fact:derived:cfo_pat_latest] with accruals at 0.126 [fact:derived:accrual_ratio_latest]. Against it stand the cumulative 0.79 [fact:derived:cum_cfo_pat], receivables moving 3.2 [fact:derived:receivable_days_delta] days, and inventory growth trailing revenue growth in the stock-flow checks \u2014 the fraud shapes that make a conversion gap sinister are absent. What survives is a real, unresolved classification question, named above.\n\n**forensic_accountant (disconfirming search):** Hunted for the fraud shape directly: profit rising with cash flat (absent \u2014 cumulative 0.79 [fact:derived:cum_cfo_pat]), receivables outrunning sales (absent \u2014 the divergence check passes with revenue growing faster), inventory building against demand (absent), a stub period inflating a growth rate (excluded by construction). The two fired flags have a benign arithmetic explanation that the unread interest-received row could confirm or destroy; until it is read, REVIEW is the correct posture and PASS would be overclaiming.\n\n**Checks that fired:** `cfo_pat` \u2014 CFO/PAT 0.55 vs floor 0.70 (CFO FY18 / PAT FY18) (grade A); `high_accruals` \u2014 accruals +0.126 vs limit \u00b10.10 ((PAT - CFO)(FY18) / avg Total Assets) (grade A)\n\n**Not verifiable from the sources read:** 2 of 10 applicable checks could not be evaluated, so the case against this company includes everything we could not look at.",
   "as_of": "2018-12-31",
   "business_model_plain": "Designs, brands and distributes air coolers; manufacturing is outsourced to contract vendors, so the company's own capital sits in brand, distribution and a large treasury rather than plant.",
   "checklist": {
@@ -64,12 +64,18 @@
         "reason": ""
       },
       {
-        "detail": "",
-        "fact_ids": [],
-        "gap": "CAPABILITY",
+        "detail": "implied yield on cash and bank balances 13.41% vs floor 2.60% (|Interest Income FY18| / average (Cash + Other Bank Balances), FY17-FY18) (grade A)",
+        "fact_ids": [
+          "SYMPHONY-AR-FY18.pdf:cashflow:Interest Income:FY18",
+          "SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY18",
+          "SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY18",
+          "SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY17",
+          "SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY17"
+        ],
+        "gap": "NONE",
         "name": "cash_interest_inconsistent",
-        "outcome": "UNAVAILABLE",
-        "reason": "this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+        "outcome": "PASS",
+        "reason": ""
       },
       {
         "detail": "",
@@ -151,6 +157,7 @@
   "computed_facts": {
     "accrual_ratio_latest": 0.12585034538138454,
     "cash_conversion_cycle": 48.22614915353128,
+    "cash_yield_latest": 0.13411187735055338,
     "cfo_cum_window": 546.6337,
     "cfo_pat_latest": 0.5549774057629976,
     "cum_cfo_pat": 0.7880239564119585,
@@ -174,8 +181,8 @@
   "confidence": {
     "evidence_count": 20,
     "lowest_grade_relied_on": "A",
-    "rationale": "70% of the applicable playbook was evaluable, 12% of notes carry a substantive disposition, 28% of the line-by-line questions could be answered, and the weakest grade relied on is A (cap 0.90)",
-    "value": 0.25
+    "rationale": "80% of the applicable playbook was evaluable, 12% of notes carry a substantive disposition, 31% of the line-by-line questions could be answered, and the weakest grade relied on is A (cap 0.90)",
+    "value": 0.29
   },
   "disclaimer": "Research artifact only. Not investment advice, not a recommendation to transact, and not an offer to buy or sell any security. Figures are computed deterministically from cited primary sources; anything not disclosed is reported as UNAVAILABLE.",
   "disclosure_backlog": [
@@ -203,7 +210,6 @@
     "related-party note cross-check: is the beneficiary an entity the promoter controls?",
     "PPE note \u2014 additions by asset class, to split the expansion projects from replacement",
     "MD&A or capex-guidance statement naming the expansion projects and their cost",
-    "cash-and-bank note \u2014 the split between current accounts, term deposits and margin money",
     "borrowings note with the interest rate per tranche",
     "cash-and-bank note \u2014 restricted balances, margin money, deposits under lien",
     "tax-reconciliation note (Ind AS 12) \u2014 statutory rate to effective rate, by cause",
@@ -231,6 +237,14 @@
       "fact_id": "derived:cash_conversion_cycle",
       "grade": "A",
       "locator": "inputs SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Receivables:FY18, SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Inventories:FY18, SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18, SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18, SYMPHONY-AR-FY18.pdf:pnl:Changes in Inventories:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Payables:FY18, SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18, SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18, SYMPHONY-AR-FY18.pdf:pnl:Changes in Inventories:FY18",
+      "published_at": "2018-08-31"
+    },
+    "cash_yield_latest": {
+      "doc_id": "derivation:|Interest Income FY18| / average (Cash + Other Bank Balances), FY17-FY18",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:cash_yield_latest",
+      "grade": "A",
+      "locator": "inputs SYMPHONY-AR-FY18.pdf:cashflow:Interest Income:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY17, SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY17",
       "published_at": "2018-08-31"
     },
     "cfo_cum_window": {
@@ -413,7 +427,7 @@
       "threshold": 0.1
     }
   ],
-  "line_item_coverage": 0.28205128205128205,
+  "line_item_coverage": 0.3076923076923077,
   "line_items": [
     {
       "answers": [
@@ -1075,20 +1089,31 @@
     {
       "answers": [
         {
-          "citation": null,
-          "fact_ids": [],
-          "finding": "",
-          "gap": "DISCLOSURE",
-          "metric": "cash_yield_latest",
-          "needs": [
-            "cash-and-bank note \u2014 the split between current accounts, term deposits and margin money"
+          "citation": {
+            "doc_id": "derivation:|Interest Income FY18| / average (Cash + Other Bank Balances), FY17-FY18",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:cash_yield_latest",
+            "grade": "A",
+            "locator": "inputs SYMPHONY-AR-FY18.pdf:cashflow:Interest Income:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY17, SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY17",
+            "published_at": "2018-08-31"
+          },
+          "fact_ids": [
+            "SYMPHONY-AR-FY18.pdf:cashflow:Interest Income:FY18",
+            "SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY18",
+            "SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY18",
+            "SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY17",
+            "SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY17"
           ],
+          "finding": "The reported cash and bank balances yielded 13.4% on the average balance \u2014 above term-deposit rates, so the income is not coming from these balances alone and the composition needs reading.",
+          "gap": "NONE",
+          "metric": "cash_yield_latest",
+          "needs": [],
           "question": "Does the reported cash balance earn a plausible rate of interest?",
           "question_id": "cash_earns_interest",
-          "reason": "the sources read do not disclose: cashflow:Interest Income FY18",
+          "reason": "",
           "severity": "high",
-          "status": "UNANSWERED",
-          "value": null
+          "status": "ANSWERED",
+          "value": 0.13411187735055338
         },
         {
           "citation": null,
@@ -1123,7 +1148,7 @@
           "value": null
         }
       ],
-      "coverage": 0.0,
+      "coverage": 0.3333333333333333,
       "label": "Cash \u2014 whether the balance is real",
       "line_item": "cash",
       "why": "The sharpest single test in the forensic library: cash that exists earns interest at a rate you can compute, and cash that does not exist earns nothing. A company holding a large balance while paying high interest on debt is either badly run or not holding the balance it reports."
@@ -1318,7 +1343,6 @@
     "forensic_accountant: The cash-reality test (interest earned versus cash held) could not be run \u2014 the interest-income row is not in the reading vocabulary. It is the sharpest remaining test and it is the firm's gap, not the company's.",
     "forensic_accountant: The related-party note beyond remuneration is unread in this run; promoter lending cannot be cleared, only not-flagged.",
     "forensic_accountant: Contingent liabilities and the guarantees note are enumerated but not substantively dispositioned in this run.",
-    "cash_interest_inconsistent: this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income)",
     "cash_debt_paradox: this check could not be run on the sources read as-of this run: balance_sheet:Borrowings FY18, balance_sheet:Borrowings FY18",
     "promoter_lending: inputs not disclosed in the sources read as-of this run: loans and advances to promoters/KMP (Schedule III row)"
   ],
@@ -1344,7 +1368,7 @@
       "metric": "checks_unavailable",
       "operator": "<=",
       "resolve_by": "2019-10-27",
-      "statement": "The company discloses the inputs for the checks that could not be run \u2014 `cash_interest_inconsistent`, `cash_debt_paradox`, `promoter_lending` \u2014 in a filing readable as text. For a listed company these are public by law; the gap, not our patience, is what holds the verdict.",
+      "statement": "The company discloses the inputs for the checks that could not be run \u2014 `cash_debt_paradox`, `promoter_lending` \u2014 in a filing readable as text. For a listed company these are public by law; the gap, not our patience, is what holds the verdict.",
       "threshold": 0.0
     }
   ],
@@ -1748,12 +1772,11 @@
       "period": "FY17"
     }
   ],
-  "run_id": "2018-12-31-65e0f6068121",
+  "run_id": "2018-12-31-e2051e41d639",
   "sector_narrative": "",
   "thesis": "Symphony designs and sells air coolers under its own brand and has vendors build them: the money flow is brand price-premium in, vendor invoices and dealer margins out, with the residual compounding at 25.1% [fact:derived:pat_cagr] while revenue compounded 17.7% [fact:derived:revenue_cagr]. The balance sheet's job here is to hold the treasury, not the factories. The honest caveats are that a fifth of pre-tax profit is treasury income at 20.4% [fact:derived:other_income_share] of PBT, and that the questions a brand thesis turns on \u2014 volume versus price, channel concentration, export share \u2014 are asked and unanswered in this run's sources.",
   "ticker": "SYMPHONY",
   "unavailable_items": [
-    "cash_interest_inconsistent: this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income)",
     "cash_debt_paradox: this check could not be run on the sources read as-of this run: balance_sheet:Borrowings FY18, balance_sheet:Borrowings FY18",
     "promoter_lending: inputs not disclosed in the sources read as-of this run: loans and advances to promoters/KMP (Schedule III row)"
   ],

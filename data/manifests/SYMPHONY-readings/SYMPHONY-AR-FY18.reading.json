@@ -487,6 +487,20 @@
      "value_printed": "2,489.32",
      "page": 137,
      "row_label": "Net Increase in Cash & Cash Equivalents (A+B+C)"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY18",
+     "value_printed": "466.25",
+     "page": 137,
+     "row_label": "Interest Received"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY17",
+     "value_printed": "1,478.54",
+     "page": 137,
+     "row_label": "Interest Received"
     }
    ]
   }

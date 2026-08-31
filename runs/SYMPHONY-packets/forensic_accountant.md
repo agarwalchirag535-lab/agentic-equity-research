@@ -364,6 +364,19 @@ a veto.
       ],
       "cite_as": "[fact:derived:other_expense_ratio_delta]",
       "grade": "A"
+    },
+    "cash_yield_latest": {
+      "value": 0.13411187735055338,
+      "formula": "|Interest Income FY18| / average (Cash + Other Bank Balances), FY17-FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:cashflow:Interest Income:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY17",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY17"
+      ],
+      "cite_as": "[fact:derived:cash_yield_latest]",
+      "grade": "A"
     }
   },
   "metrics_unavailable": {
@@ -417,9 +430,6 @@ a veto.
     "capex_to_depreciation": [
       "cashflow:Purchase of PPE and pnl:Depreciation in the same year (the cash-flow capex line comes from the filing, not the screener)"
     ],
-    "cash_yield_latest": [
-      "cashflow:Interest Income FY18"
-    ],
     "net_cash_position": [
       "balance_sheet:Borrowings FY18"
     ],
@@ -462,9 +472,9 @@ a veto.
     },
     {
       "check": "cash_interest_inconsistent",
-      "outcome": "UNAVAILABLE",
-      "detail": "",
-      "reason": "this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+      "outcome": "PASS",
+      "detail": "implied yield on cash and bank balances 13.41% vs floor 2.60% (|Interest Income FY18| / average (Cash + Other Bank Balances), FY17-FY18) (grade A)",
+      "reason": ""
     },
     {
       "check": "cash_debt_paradox",

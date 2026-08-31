@@ -445,6 +445,20 @@
      "value_printed": "770.20",
      "page": 136,
      "row_label": "Cash & Cash Equivalents at the end of the year"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY14",
+     "value_printed": "745.07",
+     "page": 135,
+     "row_label": "Interest Received"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY13",
+     "value_printed": "392.57",
+     "page": 135,
+     "row_label": "Interest Received"
     }
    ]
   }

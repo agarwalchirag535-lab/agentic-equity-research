@@ -1914,3 +1914,15 @@ explanation, but the class — every treasury-heavy clean company earning FORENS
 **Residue:** ROIC and the cash-interest check stay unrunnable through the reading vocabulary (no
 operating-profit/tax/interest-income rows), which caps Symphony's evaluable playbook at 70% and its
 note substantive share at 12% — the report says so on its face.
+
+**Addendum (same day) — the sharpest test came alive.** The residue above said the cash-interest
+check was unrunnable through the reading vocabulary. It was a one-row gap: `cashflow:Interest Income`
+(the investing section's positive "Interest Received" line — not the negative operating add-back) is
+now in the vocabulary and transcribed into all six Symphony readings from their own pages, and
+`backfill_external_inputs` fills it from the store on the same period as the cash balance it divides.
+On the re-run, "is the cash real?" answers **PASS: implied yield 13.41% on average cash-and-bank
+against the 2.60% floor**, five verified inputs cited; unavailable checks fell 30% → 20% and the
+mandated-disclosure scan passes. The verdict stays FORENSIC_CAUTION off single-year `cfo_pat_low` —
+the published report now carries the direct counter-evidence beside the flag, which is exactly the
+shape the golden-set treasury-conversion calibration question needs
+(`reports/SYMPHONY/2018-12-31-e2051e41d639`).

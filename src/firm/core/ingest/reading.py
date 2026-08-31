@@ -776,6 +776,10 @@ READING_VOCABULARY: Mapping[str, str] = {
                                             "(when the filing splits the Schedule III rows)",
     "balance_sheet:Trade Payables (Other)": "trade payables — dues of creditors other than micro and "
                                             "small enterprises",
+    "cashflow:Interest Income": "interest received — the INVESTING section's positive cash row, "
+                                "not the negative add-back in the operating section. The 'is the cash "
+                                "real' test divides this by the cash balance: real deposits earn real "
+                                "interest",
     "cashflow:Cash from Operating Activity": "net cash from operating activities",
     "cashflow:Cash from Investing Activity": "net cash used in / from investing activities",
     "cashflow:Cash from Financing Activity": "net cash from / used in financing activities",

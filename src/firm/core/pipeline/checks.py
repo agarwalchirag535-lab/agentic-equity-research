@@ -281,11 +281,19 @@ def backfill_external_inputs(ext: ExternalInputs, facts: CompanyFacts) -> Extern
         cash_fact = facts.fact(D.CASH, cash_periods[-1])
         updates["cash"] = cash_fact.value
         got["cash"] = (cash_fact,)
+    # The "is the cash real" test's other half (ADR-0055): interest actually received, read from the
+    # cash flow's investing section. Filled from the SAME period as the cash balance it will be divided
+    # by — a yield of one year's interest on another year's balance would be a number, not a measure.
+    if ext.interest_income is None and cash_periods:
+        interest_fact = facts.fact(D.INTEREST_INCOME, cash_periods[-1])
+        if interest_fact is not None:
+            updates["interest_income"] = interest_fact.value
+            got["interest_income"] = (interest_fact,)
     for check, needed in (("receivables_divergent", ("receivables", "revenue")),
                           ("inventory_divergent", ("inventory", "revenue")),
                           ("revenue_inflation", ("revenue",)),
                           ("cash_debt_paradox", ("cash",)),
-                          ("cash_interest_inconsistent", ("cash",))):
+                          ("cash_interest_inconsistent", ("cash", "interest_income"))):
         new_ids = tuple(f.fact_id for n in needed for f in got.get(n, ()))
         if new_ids:
             ids[check] = tuple(dict.fromkeys((*ids.get(check, ()), *new_ids)))

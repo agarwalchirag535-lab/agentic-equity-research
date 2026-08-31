@@ -98,3 +98,25 @@ def test_the_lender_family_is_wired_which_is_why_this_file_exists():
         record = evaluation.record(check)
         assert NOT_IMPLEMENTED_PREFIX not in record.reason, f"{check} regressed to unwired"
         assert record.reason.strip(), f"{check}: an UNAVAILABLE must name what it needs"
+
+
+def test_interest_income_backfills_from_the_store_for_the_cash_reality_test():
+    """ADR-0055 addendum: the 'is the cash real' test's other half. Interest received (investing
+    section) is filled from the SAME period as the cash balance it will be divided by."""
+    from datetime import date
+
+    from firm.core.facts.store import Document, FactStore
+    from firm.core.pipeline import derive as D
+    from firm.core.pipeline.checks import ExternalInputs, backfill_external_inputs
+
+    store = FactStore(":memory:")
+    pub = date(2018, 8, 31)
+    store.add_document(Document(doc_id="AR", source_url="u", sha256="", published_at=pub,
+                                fetched_at=pub, grade="A", extractor_version="llm-read@1.0.0+verified"))
+    for metric, value in ((D.CASH, 43.23), (D.INTEREST_INCOME, 4.66)):
+        store.add_fact(fact_id=f"AR:{metric}:FY18", doc_id="AR", ticker="T", metric=metric,
+                       period="FY18", value=value, unit="INR_cr", locator="p.137")
+    facts = D.load_company_facts(store, "T", date(2018, 12, 31))
+    ext = backfill_external_inputs(ExternalInputs(), facts)
+    assert ext.cash == 43.23 and ext.interest_income == 4.66
+    assert f"AR:{D.INTEREST_INCOME}:FY18" in ext.fact_ids["cash_interest_inconsistent"]

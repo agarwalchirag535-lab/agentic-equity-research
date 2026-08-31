@@ -2,7 +2,7 @@
 
 **Verdict: `FORENSIC_CAUTION` — Forensic caution — red flags evidenced below**
 
-_As-of 2018-12-31 · run `2018-12-31-65e0f6068121` · confidence 0.25 (from 20 facts, lowest grade A) · 70% of the applicable playbook was evaluable, 12% of notes carry a substantive disposition, 28% of the line-by-line questions could be answered, and the weakest grade relied on is A (cap 0.90)_
+_As-of 2018-12-31 · run `2018-12-31-e2051e41d639` · confidence 0.29 (from 20 facts, lowest grade A) · 80% of the applicable playbook was evaluable, 12% of notes carry a substantive disposition, 31% of the line-by-line questions could be answered, and the weakest grade relied on is A (cap 0.90)_
 
 > Research artifact only. Not investment advice, not a recommendation to transact, and not an offer to buy or sell any security. Figures are computed deterministically from cited primary sources; anything not disclosed is reported as UNAVAILABLE.
 
@@ -49,10 +49,11 @@ Designs, brands and distributes air coolers; manufacturing is outsourced to cont
 | employee_cost_ratio_delta | 0.00 | `[fact:derived:employee_cost_ratio_delta]` derivation:Employee Benefits/Sales FY18 - Employee Benefits/Sales FY12 inputs SYMPHONY-AR-FY13.pdf:pnl:Employee Benefits:FY12, SYMPHONY-AR-FY13.pdf:pnl:Sales:FY12, SYMPHONY-AR-FY18.pdf:pnl:Employee Benefits:FY18, SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18 (grade A) |
 | other_expense_ratio | 0.11 | `[fact:derived:other_expense_ratio]` derivation:Other Expenses FY18 / pnl:Sales FY18 inputs SYMPHONY-AR-FY18.pdf:pnl:Other Expenses:FY18, SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18 (grade A) |
 | other_expense_ratio_delta | -0.14 | `[fact:derived:other_expense_ratio_delta]` derivation:Other Expenses/Sales FY18 - Other Expenses/Sales FY12 inputs SYMPHONY-AR-FY13.pdf:pnl:Other Expenses:FY12, SYMPHONY-AR-FY13.pdf:pnl:Sales:FY12, SYMPHONY-AR-FY18.pdf:pnl:Other Expenses:FY18, SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18 (grade A) |
+| cash_yield_latest | 0.13 | `[fact:derived:cash_yield_latest]` derivation:|Interest Income FY18| / average (Cash + Other Bank Balances), FY17-FY18 inputs SYMPHONY-AR-FY18.pdf:cashflow:Interest Income:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY18, SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY17, SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY17 (grade A) |
 
 ## Line by line — why each number moved
 
-_Every question a competent analyst must ask of each statement line. **28%** of the applicable questions could be answered from the sources read as-of 2018-12-31; the rest are printed unanswered with the exact filing row that would close them, because a question dropped is a question that looks answered._
+_Every question a competent analyst must ask of each statement line. **31%** of the applicable questions could be answered from the sources read as-of 2018-12-31; the rest are printed unanswered with the exact filing row that would close them, because a question dropped is a question that looks answered._
 
 ### Revenue — where the money actually comes from
 
@@ -187,11 +188,10 @@ _Working capital is the bridge between reported profit and cash, so it is where 
 
 _The sharpest single test in the forensic library: cash that exists earns interest at a rate you can compute, and cash that does not exist earns nothing. A company holding a large balance while paying high interest on debt is either badly run or not holding the balance it reports._
 
-**Answered: 0 of 3** (0%)
+**Answered: 1 of 3** (33%)
 
-- **Does the reported cash balance earn a plausible rate of interest?** — ⚠️ **unanswered** (high)
-  → the sources read do not disclose: cashflow:Interest Income FY18
-     - needs: cash-and-bank note — the split between current accounts, term deposits and margin money
+- **Does the reported cash balance earn a plausible rate of interest?**
+  → The reported cash and bank balances yielded 13.4% on the average balance — above term-deposit rates, so the income is not coming from these balances alone and the composition needs reading. `[fact:derived:cash_yield_latest]`
 - **Is the company holding cash while paying materially more to borrow?** — ⚠️ **unanswered** (high)
   → the sources read do not disclose: balance_sheet:Borrowings FY18
      - needs: borrowings note with the interest rate per tranche
@@ -259,17 +259,16 @@ _Deduplicated from every unanswered question above — this is the extraction ba
 22. related-party note cross-check: is the beneficiary an entity the promoter controls?
 23. PPE note — additions by asset class, to split the expansion projects from replacement
 24. MD&A or capex-guidance statement naming the expansion projects and their cost
-25. cash-and-bank note — the split between current accounts, term deposits and margin money
-26. borrowings note with the interest rate per tranche
-27. cash-and-bank note — restricted balances, margin money, deposits under lien
-28. tax-reconciliation note (Ind AS 12) — statutory rate to effective rate, by cause
-29. deferred-tax movement, and whether a deferred-tax asset is being recognised on losses
-30. related-party note (Ind AS 24) — sales, purchases, loans given/taken, guarantees, remuneration
-31. the year-end outstanding balance per party, not just the transaction value
-32. Schedule III mandatory row: loans and advances to promoters, directors and KMP
-33. contingent liabilities note — guarantees given on behalf of related parties
-34. audit-committee report on related-party approvals
-35. any transfer-pricing or independent-valuation reference in the notes
+25. borrowings note with the interest rate per tranche
+26. cash-and-bank note — restricted balances, margin money, deposits under lien
+27. tax-reconciliation note (Ind AS 12) — statutory rate to effective rate, by cause
+28. deferred-tax movement, and whether a deferred-tax asset is being recognised on losses
+29. related-party note (Ind AS 24) — sales, purchases, loans given/taken, guarantees, remuneration
+30. the year-end outstanding balance per party, not just the transaction value
+31. Schedule III mandatory row: loans and advances to promoters, directors and KMP
+32. contingent liabilities note — guarantees given on behalf of related parties
+33. audit-committee report on related-party approvals
+34. any transfer-pricing or independent-valuation reference in the notes
 
 ## Forensic review
 
@@ -285,7 +284,7 @@ _Every check that ran, passes included — a clean verdict with an invisible pro
 |---|---|---|---|
 | `cumulative_cfo_pat` | ✅ pass | ΣCFO/ΣPAT 0.79 vs floor 0.70 (Σ CFO / Σ PAT, FY12-FY18) (grade A) | `[fact:SYMPHONY-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12]`, `[fact:SYMPHONY-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13]`, `[fact:SYMPHONY-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14]`, `[fact:SYMPHONY-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15]`, `[fact:SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY17]`, `[fact:SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY18]`, `[fact:SYMPHONY-AR-FY13.pdf:pnl:Net Profit:FY12]`, `[fact:SYMPHONY-AR-FY14.pdf:pnl:Net Profit:FY13]`, `[fact:SYMPHONY-AR-FY15.pdf:pnl:Net Profit:FY14]`, `[fact:SYMPHONY-AR-FY16.pdf:pnl:Net Profit:FY15]`, `[fact:SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY17]`, `[fact:SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY18]` |
 | `cfo_pat` | 🚩 flag | CFO/PAT 0.55 vs floor 0.70 (CFO FY18 / PAT FY18) (grade A) | `[fact:SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY18]`, `[fact:SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY18]` |
-| `cash_interest_inconsistent` | ⚠️ unavailable | this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income) | — |
+| `cash_interest_inconsistent` | ✅ pass | implied yield on cash and bank balances 13.41% vs floor 2.60% (|Interest Income FY18| / average (Cash + Other Bank Balances), FY17-FY18) (grade A) | `[fact:SYMPHONY-AR-FY18.pdf:cashflow:Interest Income:FY18]`, `[fact:SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY18]`, `[fact:SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY18]`, `[fact:SYMPHONY-AR-FY18.pdf:balance_sheet:Cash Equivalents:FY17]`, `[fact:SYMPHONY-AR-FY18.pdf:balance_sheet:Other Bank Balances:FY17]` |
 | `cash_debt_paradox` | ⚠️ unavailable | this check could not be run on the sources read as-of this run: balance_sheet:Borrowings FY18, balance_sheet:Borrowings FY18 | — |
 | `disclosure_gap` | ✅ pass | every mandated Schedule III / forensic section located in the filing | — |
 | `other_income_heavy` | ✅ pass | other income 20.4% of PBT vs limit 25% (pnl:Other Income FY18 / pnl:Profit before tax FY18) (grade A) | `[fact:SYMPHONY-AR-FY18.pdf:pnl:Other Income:FY18]`, `[fact:SYMPHONY-AR-FY18.pdf:pnl:Profit before tax:FY18]` |
@@ -374,7 +373,7 @@ Symphony designs and sells air coolers under its own brand and has vendors build
 
 **Checks that fired:** `cfo_pat` — CFO/PAT 0.55 vs floor 0.70 (CFO FY18 / PAT FY18) (grade A); `high_accruals` — accruals +0.126 vs limit ±0.10 ((PAT - CFO)(FY18) / avg Total Assets) (grade A)
 
-**Not verifiable from the sources read:** 3 of 10 applicable checks could not be evaluated, so the case against this company includes everything we could not look at.
+**Not verifiable from the sources read:** 2 of 10 applicable checks could not be evaluated, so the case against this company includes everything we could not look at.
 
 ## Falsifiability
 
@@ -392,7 +391,7 @@ Symphony designs and sells air coolers under its own brand and has vendors build
 |---|---|---|---|---|
 | `cfo_pat` clears: cfo_pat_latest >= 0.7 (currently 0.55), evidenced in the next annual report. Until then this remains the reason the verdict is withheld. | `cfo_pat_latest` | `>= 0.7` | 2019-10-27 | **yes** |
 | `high_accruals` clears: accrual_ratio_latest <= 0.1 (currently 0.13), evidenced in the next annual report. Until then this remains the reason the verdict is withheld. | `accrual_ratio_latest` | `<= 0.1` | 2019-10-27 | **yes** |
-| The company discloses the inputs for the checks that could not be run — `cash_interest_inconsistent`, `cash_debt_paradox`, `promoter_lending` — in a filing readable as text. For a listed company these are public by law; the gap, not our patience, is what holds the verdict. | `checks_unavailable` | `<= 0.0` | 2019-10-27 | **yes** |
+| The company discloses the inputs for the checks that could not be run — `cash_debt_paradox`, `promoter_lending` — in a filing readable as text. For a listed company these are public by law; the gap, not our patience, is what holds the verdict. | `checks_unavailable` | `<= 0.0` | 2019-10-27 | **yes** |
 
 ## Open questions
 
@@ -406,7 +405,6 @@ Symphony designs and sells air coolers under its own brand and has vendors build
 - forensic_accountant: The cash-reality test (interest earned versus cash held) could not be run — the interest-income row is not in the reading vocabulary. It is the sharpest remaining test and it is the firm's gap, not the company's.
 - forensic_accountant: The related-party note beyond remuneration is unread in this run; promoter lending cannot be cleared, only not-flagged.
 - forensic_accountant: Contingent liabilities and the guarantees note are enumerated but not substantively dispositioned in this run.
-- cash_interest_inconsistent: this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income)
 - cash_debt_paradox: this check could not be run on the sources read as-of this run: balance_sheet:Borrowings FY18, balance_sheet:Borrowings FY18
 - promoter_lending: inputs not disclosed in the sources read as-of this run: loans and advances to promoters/KMP (Schedule III row)
 
@@ -414,7 +412,6 @@ Symphony designs and sells air coolers under its own brand and has vendors build
 
 _Reported as unavailable rather than estimated._
 
-- cash_interest_inconsistent: this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income)
 - cash_debt_paradox: this check could not be run on the sources read as-of this run: balance_sheet:Borrowings FY18, balance_sheet:Borrowings FY18
 - promoter_lending: inputs not disclosed in the sources read as-of this run: loans and advances to promoters/KMP (Schedule III row)
 
