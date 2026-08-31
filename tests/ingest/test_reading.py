@@ -521,3 +521,77 @@ def test_a_period_end_must_be_named_by_the_filing_and_match_the_label():
     # an end date in the wrong year for its label
     wrong_year = verify_statement(_bs("2015-06-30", period="FY16"), [page])
     assert any(v.rule == "V3c_period_end" for v in wrong_year.violations)
+
+
+NOTE_PAGE = """\
+7  Loans $
+Hin crore
+Particulars  March 31, 2025  March 31, 2024
+Total - Gross  25,583.08  25,608.40
+Less: Impairment loss allowance  1,308.63  503.41
+Total - Net  24,274.45  25,104.99
+"""
+
+
+def _loans_note(**overrides) -> ProposedStatement:
+    base = {
+        "statement": "note", "basis": "consolidated", "period": "FY25", "pages": (1,),
+        "note_label": "7", "heading_quote": "7  Loans $",
+        "unit_quote": "Hin crore", "unit": "INR_cr",
+        "columns": (ProposedColumn(period="FY25", label_quote="Particulars  March 31, 2025",
+                                   ends="2025-03-31"),),
+        "figures": (
+            ProposedFigure("notes:Gross Loans", "FY25", "25,583.08", 1, "Total - Gross"),
+            ProposedFigure("notes:Net Loans", "FY25", "24,274.45", 1, "Total - Net"),
+        ),
+    }
+    base.update(overrides)
+    return ProposedStatement(**base)
+
+
+def _store_with_face(value: float) -> FactStore:
+    from firm.core.facts.store import Document
+    store = FactStore(":memory:")
+    store.add_document(Document(doc_id="FACE", source_url="u", sha256="",
+                                published_at=date(2025, 7, 5), fetched_at=date(2025, 7, 5),
+                                grade="A", extractor_version="t@1"))
+    store.add_fact(fact_id="FACE:loans:FY25", doc_id="FACE", ticker="CA",
+                   metric="balance_sheet:Loans", period="FY25", value=value, unit="INR_cr",
+                   locator="p.138")
+    return store
+
+
+def test_a_note_is_identified_by_its_label_not_by_a_year_in_its_heading():
+    """'7 Loans' names a note, not a period — V1's year test cannot apply to one (ADR-0052)."""
+    reading = verify_statement(_loans_note(), [NOTE_PAGE])
+    assert reading.verified, reading.violations
+    assert any(v.rule == "V1_heading" for v in
+               verify_statement(_loans_note(note_label="46"), [NOTE_PAGE]).violations)
+
+
+def test_a_note_is_trusted_only_when_it_reconciles_to_the_face_of_the_statements():
+    """ADR-0038's standard, enforced (ADR-0052). The corrupted value is REAL and printed on the page, so
+    every page-level check passes it — only the tie to an independently-read balance sheet catches it."""
+    reading = verify_statement(_loans_note(), [NOTE_PAGE])
+    store = _store_with_face(24274.45)
+    ids, skipped = register_reading(store, "CA", FilingReading("AR-X", (reading,)),
+                                    source_url="u", published_at=date(2025, 7, 5))
+    assert skipped == () and any("notes:Gross Loans" in i for i in ids)
+
+    lying = _loans_note(figures=(
+        ProposedFigure("notes:Gross Loans", "FY25", "25,583.08", 1, "Total - Gross"),
+        ProposedFigure("notes:Net Loans", "FY25", "25,583.08", 1, "Total - Net"),   # the gross, as net
+    ))
+    verified = verify_statement(lying, [NOTE_PAGE])
+    assert verified.verified, "the page-level checks cannot catch this — the figure is really there"
+    ids, skipped = register_reading(_store_with_face(24274.45), "CA",
+                                    FilingReading("AR-X", (verified,)),
+                                    source_url="u", published_at=date(2025, 7, 5))
+    assert ids == () and skipped and "the face of the statements says" in skipped[0]
+
+
+def test_a_note_read_before_its_statements_is_refused_rather_than_trusted():
+    reading = verify_statement(_loans_note(), [NOTE_PAGE])
+    ids, skipped = register_reading(FactStore(":memory:"), "CA", FilingReading("AR-X", (reading,)),
+                                    source_url="u", published_at=date(2025, 7, 5))
+    assert ids == () and "not in the store" in skipped[0]

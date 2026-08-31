@@ -305,6 +305,7 @@ def evaluate_checks(
     external: ExternalInputs | None = None,
     check_inputs: Mapping[str, float] | None = None,
     lender: Mapping[str, float] | None = None,
+    financial: Mapping[str, float] | None = None,
 ) -> CheckEvaluation:
     """Evaluate every check the playbook selects, and mark every suppressed check NOT_APPLICABLE.
 
@@ -322,6 +323,10 @@ def evaluate_checks(
         from firm.core.config import originate_to_sell_thresholds
 
         lender = originate_to_sell_thresholds()
+    if financial is None:
+        from firm.core.config import financial_forensic_thresholds
+
+        financial = financial_forensic_thresholds()
     ext = backfill_external_inputs(external or ExternalInputs(), facts)
     # Grades of every fact in scope, so each record can report the provenance span it rests on (ADR-0028).
     grades = {
@@ -581,8 +586,38 @@ def evaluate_checks(
                       f"{lender['reserve_suppression_min_drop']:.2%}",
                       tuple(f.fact_id for f in (*impairment, *book)))
 
-        elif check in ("gnpa_drift", "provision_coverage_low", "restructured_book_high",
-                       "gain_on_sale_reliant", "held_for_sale_no_reserve"):
+        # Asset quality, from the loans and ECL-staging notes (ADR-0052). Under Ind AS 109 the Stage 3
+        # book is the gross-NPA equivalent; a filing that reports NPA under the older RBI form would be
+        # read the same way, from its own note.
+        elif check == "provision_coverage_low":
+            allowance = facts.fact(D.IMPAIRMENT_ALLOWANCE, derived.last_period or "")
+            stage3 = facts.fact(D.STAGE3_GROSS, derived.last_period or "")
+            if allowance is None or stage3 is None:
+                r.unavailable(check, (_LENDER_NOTE_INPUTS[check],))
+            else:
+                flagged = quality.provision_coverage_flag(
+                    allowance.value, stage3.value, financial["provision_coverage_min"])
+                pcr = allowance.value / stage3.value if stage3.value else 0.0
+                r.ran(check, flagged,
+                      f"impairment allowance {allowance.value:,.2f} on Stage-3 gross {stage3.value:,.2f} "
+                      f"= coverage {pcr:.0%} vs floor {financial['provision_coverage_min']:.0%}",
+                      (allowance.fact_id, stage3.fact_id))
+
+        elif check == "gnpa_drift":
+            stage3 = _consecutive_pair(facts, D.STAGE3_GROSS)
+            gross = _consecutive_pair(facts, D.GROSS_LOANS)
+            if stage3 is None or gross is None:
+                r.unavailable(check, (_LENDER_NOTE_INPUTS[check],))
+            else:
+                now = stage3[0].value / gross[0].value if gross[0].value else 0.0
+                before = stage3[1].value / gross[1].value if gross[1].value else 0.0
+                flagged = quality.gnpa_drift_flag(now, before, financial["gnpa_drift_flag"])
+                r.ran(check, flagged,
+                      f"Stage-3 share of the gross book {before:.2%} -> {now:.2%} "
+                      f"({now - before:+.2%} vs limit {financial['gnpa_drift_flag']:+.2%})",
+                      tuple(f.fact_id for f in (*stage3, *gross)))
+
+        elif check in ("restructured_book_high", "gain_on_sale_reliant", "held_for_sale_no_reserve"):
             r.unavailable(check, (_LENDER_NOTE_INPUTS[check],))
 
         else:

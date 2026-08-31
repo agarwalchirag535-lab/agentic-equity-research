@@ -677,6 +677,31 @@ lender check and watching it fail). The four unimplemented checks are **declared
 `UNIMPLEMENTED_CHECKS`, not built: an evaluator gets wired when a company that needs it is run, so it is
 validated against a document rather than an expectation.
 
+## 6g. Notes are readable (2026-08-31, ADR-0052)
+
+The largest remaining capability gap. Tested a cheap hypothesis first — *a note table is a table, so the
+ADR-0046 verifier should already read one* — and it was mostly true: V3 (columns name their year) and V4
+(the value is on the page) work unchanged. Two things do not: a note heading names a NOTE, not a period
+("7 Loans" carries no year), and it never states its basis (the section does).
+
+Both dropped tests are replaced by something stronger — **the reconciliation gate**: a note figure mapped
+to a face metric must equal that metric as already stored, read from the store so the comparison is
+against a figure verified independently from another page. That is ADR-0038's standard turned into a
+gate, and it settles basis better than a heading could: a standalone note does not tie to the
+consolidated face figure. Verified by corrupting a note to claim the gross loan figure as the net one — a
+value genuinely printed on the page, so every page-level check passes it; only the face tie caught it.
+
+**The lender family is now real.** With notes 7 and 7(A) read: `gnpa_drift` **FLAG** (Stage-3 share of
+the gross book **1.18% -> 4.79%**, +3.61pp vs a 1.00pp limit) and `provision_coverage_low` **PASS**
+(allowance Rs 1,308.63cr on Stage-3 gross Rs 1,225.61cr = **107%** coverage). The FY24 figure of 1.18%
+**reproduces the GNPA CreditAccess discloses itself**, computed from the staging note rather than taken
+from their summary — an independent corroboration of the reading. Capability gap **67% -> 50%**.
+
+**Calibration question recorded, not acted on:** the verdict escalates to FORENSIC_CAUTION on the single
+HIGH flag, while every corroborating check says honest recognition (credit-cost rate RAISED 1.80% ->
+7.95%, coverage 107%). ADR-0012 encoded that distinction and the screen respects it — **the ladder reads
+flags, not the pattern of flags**. That is a golden-set question, not a one-observation threshold change.
+
 ## 7. Suggested next step
 
 Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):

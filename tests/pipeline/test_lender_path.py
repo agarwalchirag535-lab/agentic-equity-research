@@ -109,3 +109,48 @@ def test_a_note_level_lender_check_names_what_it_needs():
     reason = ev.record("gnpa_drift").reason
     assert "asset-quality note" in reason and "not\nthe face" not in reason
     assert ev.record("provision_coverage_low").reason != ev.record("gnpa_drift").reason
+
+
+# The loans and ECL-staging notes, read via ADR-0052 and trusted because the note reconciles to the face.
+CREDITACC_NOTES = {
+    "FY25": {D.GROSS_LOANS: 25583.08, D.IMPAIRMENT_ALLOWANCE: 1308.63, D.STAGE3_GROSS: 1225.61},
+    "FY24": {D.GROSS_LOANS: 25608.40, D.IMPAIRMENT_ALLOWANCE: 503.41, D.STAGE3_GROSS: 302.64},
+}
+
+
+def _facts_with_notes() -> D.CompanyFacts:
+    store = FactStore(":memory:")
+    for period, rows in CREDITACC.items():
+        doc, pub = f"AR-{period}", date(int(f"20{period[2:]}"), 7, 5)
+        store.add_document(Document(doc_id=doc, source_url="u", sha256="", published_at=pub,
+                                    fetched_at=pub, grade="A", extractor_version="llm-read@1"))
+        for metric, value in {**rows, **CREDITACC_NOTES[period]}.items():
+            store.add_fact(fact_id=f"{doc}:{metric}:{period}", doc_id=doc, ticker="CA", metric=metric,
+                           period=period, value=value, unit="INR_cr", locator="note 7",
+                           period_end=f"20{period[2:]}-03-31")
+    return D.load_company_facts(store, "CA", date(2025, 12, 31), start_year=2024)
+
+
+def test_asset_quality_checks_run_once_the_notes_are_read():
+    """Before ADR-0052 these were UNAVAILABLE for want of note-level data, on every lender. The Stage-3
+    share reproduces the GNPA CreditAccess discloses itself (1.18% in FY24), which is an independent
+    corroboration of the reading — the firm computed it from the staging note, not from their summary."""
+    _, _, ev = _evaluate(_facts_with_notes())
+
+    drift = ev.record("gnpa_drift")
+    assert drift.outcome.value == "FLAG"
+    assert "1.18%" in drift.detail and "4.79%" in drift.detail
+
+    coverage = ev.record("provision_coverage_low")
+    assert coverage.outcome.value == "PASS"          # allowance EXCEEDS the Stage-3 book
+    assert "107%" in coverage.detail
+
+
+def test_the_exculpatory_checks_stay_visible_beside_the_flag():
+    """ADR-0012's distinction, on a real company: rising provisions are honest recognition of stress and
+    only a CUT is the fraud tell. A reader must see the whole pattern, not just what fired."""
+    _, _, ev = _evaluate(_facts_with_notes())
+    assert ev.record("reserve_suppression").outcome.value == "PASS"
+    assert "raised" in ev.record("reserve_suppression").detail
+    fired = {r.name for r in ev.records if r.outcome.value == "FLAG"}
+    assert fired == {"gnpa_drift", "provision_book_divergent"}

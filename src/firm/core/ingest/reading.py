@@ -62,6 +62,14 @@ PLAUSIBLE_CRORE_MAX = 1e7
 #: the FY15/FY16 cross-filing quarantine: 21.13 lakh-scaled to 0.21 against the next year's 21.13).
 PER_SHARE_METRICS = frozenset({"pnl:EPS in Rs"})
 
+#: A note figure and the face-of-statement metric it must agree with (ADR-0038: "a note is read when it
+#: reconciles to the face of the statements"). This is what replaces V1's year test for a note: the note
+#: is trusted because it ties to a figure verified independently from a different page, which is a
+#: stronger claim than any property of the note's own typography.
+NOTE_RECONCILES_TO: Mapping[str, str] = {
+    "notes:Net Loans": "balance_sheet:Loans",
+}
+
 #: Verification-only metric ids: transcribed so the identities can be checked, never registered as facts.
 VERIFY_TOTAL_EQ_LIAB = "verify:Total Equity and Liabilities"
 VERIFY_NET_CHANGE_IN_CASH = "verify:Net Change in Cash"
@@ -194,6 +202,10 @@ class ProposedStatement:
     unit: str                   # key of UNIT_TO_CRORE
     columns: tuple[ProposedColumn, ...]
     figures: tuple[ProposedFigure, ...]
+    #: For `statement="note"`: the note's own label as the filing numbers it ("7", "36a", "46"). A note
+    #: heading names a NOTE, not a period — "7 Loans" carries no year — so V1's year test cannot apply to
+    #: one, and this is what identifies it instead.
+    note_label: str = ""
 
 
 @dataclass(frozen=True)
@@ -274,11 +286,25 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
     violations: list[Violation] = []
 
     # V1 — the heading exists, names the fiscal year, and agrees with the claimed basis.
+    is_note = stmt.statement == "note"
     if not _find_letters_on_pages(stmt.heading_quote, pages, stmt.pages[:1] or stmt.pages):
         violations.append(Violation("V1_heading", name,
                                     f"heading {stmt.heading_quote!r} not found on p.{stmt.pages[:1]}"))
     year = _fy_year(stmt.period)
-    if year and year not in _letters(stmt.heading_quote):
+    if is_note:
+        # A note heading names a note, not a period ("7 Loans", "46 Contingent liability"), so the year
+        # test is meaningless here — the note's LABEL is its identity, and its periods come from the
+        # column headers like any other table. What replaces the year check is stronger: a note figure
+        # mapped to a face metric must RECONCILE to it at registration (ADR-0038's standard).
+        if not stmt.note_label.strip():
+            violations.append(Violation("V1_heading", name,
+                                        "a note must declare the label the filing numbers it by"))
+        elif _letters(stmt.note_label) not in _letters(stmt.heading_quote):
+            violations.append(Violation(
+                "V1_heading", name,
+                f"note label {stmt.note_label!r} does not appear in its own heading "
+                f"{stmt.heading_quote!r}"))
+    elif year and year not in _letters(stmt.heading_quote):
         violations.append(Violation(
             "V1_heading", name,
             f"heading {stmt.heading_quote!r} does not name {year} — wrong year's statement, or a "
@@ -286,7 +312,12 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
     heading_letters = _letters(stmt.heading_quote)
     if stmt.basis == "standalone" and "consolidated" in heading_letters:
         violations.append(Violation("V1_heading", name, "claimed standalone but heading says consolidated"))
-    if stmt.basis == "consolidated" and "consolidated" not in heading_letters:
+    # A note's heading never states its basis — "7 Loans" belongs to whichever set of statements its
+    # section sits in, and the filing prints the same note twice under both. Demanding the word here
+    # would make every note unreadable. Basis is instead PROVEN by the reconciliation gate, and proven
+    # better: a standalone note does not tie to the consolidated face figure, so a note that reconciles
+    # has demonstrated which statements it belongs to rather than merely asserting it.
+    if not is_note and stmt.basis == "consolidated" and "consolidated" not in heading_letters:
         violations.append(Violation("V1_heading", name, "claimed consolidated but heading does not say so"))
 
     # V2 — the unit declaration exists and is in the vocabulary.
@@ -298,7 +329,7 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
 
     # V3 — every period column's label exists on the page and names that period's calendar year.
     # V3b — and, for a FLOW statement, its length is established and agrees with the filing's own words.
-    is_flow = stmt.statement in ("pnl", "cashflow")
+    is_flow = stmt.statement in ("pnl", "cashflow")   # a note carries whatever its parent line carries
     heading_months = months_stated(stmt.heading_quote)
     declared_periods: set[str] = set()
     months_by_period: dict[str, int] = {}
@@ -491,6 +522,28 @@ def register_reading(
 
     Returns `(fact_ids, skipped_stub_flows)`.
     """
+    def reconcile(stmt) -> list[str]:
+        """A note must agree with the face of the statements, or none of it is stored (ADR-0038/0052).
+
+        Read from the STORE rather than from this reading, so the comparison is against a figure already
+        verified and registered from a different page of the filing — an independent check, not a
+        restatement of the same transcription."""
+        problems: list[str] = []
+        for fig in stmt.figures:
+            face = NOTE_RECONCILES_TO.get(fig.metric)
+            if face is None:
+                continue
+            stored = store.query_fact(ticker, face, fig.period, as_of=published_at)
+            if stored is None:
+                problems.append(
+                    f"{fig.metric} {fig.period} must reconcile to {face}, which is not in the store — "
+                    "read the statements before the notes that explain them")
+            elif abs(stored.value - fig.value_crore) > max(0.01, 0.001 * abs(stored.value)):
+                problems.append(
+                    f"{fig.metric} {fig.period} is {fig.value_crore:,.2f} but the face of the "
+                    f"statements says {face} = {stored.value:,.2f}")
+        return problems
+
     chosen = [s for s in reading.statements if s.verified and s.basis == preferred_basis]
     if not chosen:
         fallback = "standalone" if preferred_basis == "consolidated" else "consolidated"
@@ -514,6 +567,9 @@ def register_reading(
         fact_ids.append(fact_id)
 
     for stmt in chosen:
+        if stmt.statement == "note" and (problems := reconcile(stmt)):
+            skipped.extend(f"note {stmt.heading_quote!r}: {p}" for p in problems)
+            continue
         for fig in stmt.figures:
             if fig.metric in VERIFICATION_ONLY:
                 continue
@@ -530,7 +586,7 @@ def register_reading(
         # prints only as parts is the sum of the printed rows, its locator naming both so a reader can
         # redo the addition. Borrowings (non-current + current) and trade payables (the Schedule III
         # micro/other split every modern filing uses) are the two such totals.
-        if stmt.statement == "balance_sheet":
+        if stmt.statement in ("balance_sheet", "note"):
             parts = {(f.metric, f.period): f for f in stmt.figures}
             periods = {f.period for f in stmt.figures}
             # A total the filing prints only as parts. The lender rule is a THREE-part sum and is
@@ -545,6 +601,11 @@ def register_reading(
                  ("balance_sheet:Non-Current Borrowings", "balance_sheet:Current Borrowings")),
                 ("balance_sheet:Trade Payables",
                  ("balance_sheet:Trade Payables (Micro)", "balance_sheet:Trade Payables (Other)")),
+                # A lender that stages each lending book separately prints no combined Stage-3 row; the
+                # asset-quality checks need the whole book, so it is summed here in trusted code with
+                # both source rows named in the locator.
+                ("notes:Stage 3 Gross",
+                 ("notes:Stage 3 Gross (Group)", "notes:Stage 3 Gross (Individual)")),
             )
             for period in sorted(periods):
                 done: set[str] = set()
@@ -723,6 +784,17 @@ READING_VOCABULARY: Mapping[str, str] = {
     "pnl:Impairment on Financial Instruments": "impairment on financial instruments / provisions and "
                                                "write-offs / expected credit loss charge for the year — "
                                                "a lender's credit cost",
+    # --- read from the NOTES rather than the face of the statements -------------------------------
+    "notes:Gross Loans": "gross loan book before impairment allowance (loans note, 'Total - Gross')",
+    "notes:Impairment Allowance": "impairment loss allowance / ECL allowance carried on the loan book "
+                                  "(loans note, 'Less: Impairment loss allowance')",
+    "notes:Stage 3 Gross": "gross carrying value of Stage 3 (credit-impaired) loans — the Ind AS 109 "
+                           "equivalent of gross NPA (ECL staging note). Transcribe the per-book rows "
+                           "below instead when the filing stages each lending book separately",
+    "notes:Stage 3 Gross (Group)": "Stage 3 gross carrying value, group / joint-liability lending book",
+    "notes:Stage 3 Gross (Individual)": "Stage 3 gross carrying value, individual lending book",
+    "notes:Net Loans": "net loans after impairment allowance (loans note, 'Total - Net') — transcribed "
+                       "so the note can be reconciled against the balance sheet",
     "balance_sheet:Fixed Assets": "property, plant and equipment (tangible assets, net block)",
     "balance_sheet:CWIP": "capital work-in-progress",
     "balance_sheet:Inventories": "inventories",
@@ -806,6 +878,7 @@ def proposal_from_json(text: str) -> list[ProposedStatement]:
                 heading_quote=str(s["heading_quote"]),
                 unit_quote=str(s["unit_quote"]),
                 unit=str(s["unit"]),
+                note_label=str(s.get("note_label", "")),
                 columns=tuple(ProposedColumn(
                     period=(None if c.get("period") in (None, "") else str(c["period"])),
                     label_quote=str(c["label_quote"]),

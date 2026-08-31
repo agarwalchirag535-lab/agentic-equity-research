@@ -485,6 +485,129 @@
      "row_label": "Net increase/ (decrease) in cash and cash equivalents (A+B+C)"
     }
    ]
+  },
+  {
+   "statement": "note",
+   "basis": "consolidated",
+   "period": "FY25",
+   "pages": [
+    146
+   ],
+   "note_label": "7",
+   "heading_quote": "7  Loans $  7(A) Group lending loans (Contd..)",
+   "unit_quote": "Hin crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY25",
+     "label_quote": "Particulars  March 31, 2025",
+     "ends": "2025-03-31"
+    },
+    {
+     "period": "FY24",
+     "label_quote": "March 31, 2025  March 31, 2024",
+     "ends": "2024-03-31"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "notes:Gross Loans",
+     "period": "FY25",
+     "value_printed": "25,583.08",
+     "page": 146,
+     "row_label": "Total - Gross"
+    },
+    {
+     "metric": "notes:Gross Loans",
+     "period": "FY24",
+     "value_printed": "25,608.40",
+     "page": 146,
+     "row_label": "Total - Gross"
+    },
+    {
+     "metric": "notes:Impairment Allowance",
+     "period": "FY25",
+     "value_printed": "1,308.63",
+     "page": 146,
+     "row_label": "Less: Impairment loss allowance"
+    },
+    {
+     "metric": "notes:Impairment Allowance",
+     "period": "FY24",
+     "value_printed": "503.41",
+     "page": 146,
+     "row_label": "Less: Impairment loss allowance"
+    },
+    {
+     "metric": "notes:Net Loans",
+     "period": "FY25",
+     "value_printed": "24,274.45",
+     "page": 146,
+     "row_label": "Total - Net"
+    },
+    {
+     "metric": "notes:Net Loans",
+     "period": "FY24",
+     "value_printed": "25,104.99",
+     "page": 146,
+     "row_label": "Total - Net"
+    }
+   ]
+  },
+  {
+   "statement": "note",
+   "basis": "consolidated",
+   "period": "FY25",
+   "pages": [
+    146,
+    147
+   ],
+   "note_label": "7(A)",
+   "heading_quote": "7(A) Group lending loans  Hin crore",
+   "unit_quote": "Hin crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY25",
+     "label_quote": "Gross carrying value of assets as at March 31, 2025",
+     "ends": "2025-03-31"
+    },
+    {
+     "period": "FY24",
+     "label_quote": "Gross carrying value of assets as at March 31, 2024",
+     "ends": "2024-03-31"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "notes:Stage 3 Gross (Group)",
+     "period": "FY25",
+     "value_printed": "1,213.41",
+     "page": 146,
+     "row_label": "Gross carrying value of assets as at March 31, 2025 (Stage 3)"
+    },
+    {
+     "metric": "notes:Stage 3 Gross (Group)",
+     "period": "FY24",
+     "value_printed": "302.07",
+     "page": 146,
+     "row_label": "Gross carrying value of assets as at March 31, 2024 (Stage 3)"
+    },
+    {
+     "metric": "notes:Stage 3 Gross (Individual)",
+     "period": "FY25",
+     "value_printed": "12.20",
+     "page": 147,
+     "row_label": "Gross carrying value of assets as at March 31, 2025 (Stage 3)"
+    },
+    {
+     "metric": "notes:Stage 3 Gross (Individual)",
+     "period": "FY24",
+     "value_printed": "0.57",
+     "page": 147,
+     "row_label": "Gross carrying value of assets as at March 31, 2024 (Stage 3)"
+    }
+   ]
   }
  ]
 }
