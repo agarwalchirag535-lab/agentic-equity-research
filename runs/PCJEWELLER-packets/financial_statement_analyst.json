@@ -1,0 +1,174 @@
+{
+ "agent": "financial_statement_analyst",
+ "agent_version": "1.0.0",
+ "ticker": "PCJEWELLER",
+ "as_of": "2017-12-31",
+ "observations": [
+  {
+   "text": "Across the six-year window, cumulative operating cash flow was 0.24 [fact:derived:cum_cfo_pat] of cumulative profit after tax. Roughly three rupees of every four of reported profit did not arrive as cash from operations.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cum_cfo_pat",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.9,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  },
+  {
+   "text": "The latest year alone converted 1.80 [fact:derived:cfo_pat_latest] of profit to cash, with an accrual ratio of -0.051 [fact:derived:accrual_ratio_latest] \u2014 the best conversion in the window, and the year the cumulative record is graded on ended with it.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cfo_pat_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:accrual_ratio_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  },
+  {
+   "text": "Operations funded only 0.70 [fact:derived:self_funding_ratio] of the cumulative investing outflow of 717.92 [fact:derived:investing_outflow_cum] crore against 502.71 [fact:derived:cfo_cum_window] crore of operating cash.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:self_funding_ratio",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:investing_outflow_cum",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:cfo_cum_window",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 3,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  },
+  {
+   "text": "The implied cost of visible debt is 40.3% [fact:derived:cost_of_debt_latest] in the latest year and 34.1% [fact:derived:cost_of_debt_average] on average balances \u2014 several times any rate an Indian jeweller pays a bank.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cost_of_debt_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:cost_of_debt_average",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  }
+ ],
+ "inferences": [
+  {
+   "text": "A finance charge that large against borrowings that small means the borrowing line does not carry the real funding: the gold metal loans and bill discounting sit inside trade payables, so stated leverage understates true leverage and the payable days of 153.6 [fact:derived:payable_days] are partly disguised borrowing.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:payable_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.8,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  },
+  {
+   "text": "The latest year's strong conversion coexists with receivables going 17.4 [fact:derived:receivable_days_delta] days slower \u2014 the cash arrived from stretching payables and moving balances between categories rather than from customers paying faster.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:receivable_days_delta",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.65,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  }
+ ],
+ "speculations": [],
+ "open_questions": [
+  "The interest income earned on the cash and bank balances is not broken out of other income, so whether the reported balances behave like real, unencumbered cash cannot be tested from this read.",
+  "Purchase of property, plant and equipment is not separated in the cash-flow read, so capex versus the depreciation charge cannot be compared.",
+  "Operating profit is not derivable from the rows read this run, so return on capital and interest cover are not computed \u2014 the finance-cost anomaly is measured against borrowings instead."
+ ],
+ "disconfirming_search": "Searched for an innocent reading of the cash-conversion record: a young company investing ahead of growth would show the shortfall in investing outflows, but here the shortfall sits in operating cash itself, absorbed by inventory and receivables, which is the pattern of profit recognised ahead of cash rather than of investment.",
+ "narrative": "The statements describe a company whose profit is an accounting event and whose cash is a financing event. Working capital absorbs the profit year after year, the investing line is small beside it, and the finance-cost line is far too large for the borrowings shown, which points at funding hidden inside the payables. The one good year of conversion at the end of the window does not repair the cumulative record; it coincides with slower collections and should be read with the forensic note rather than against it.",
+ "incremental_roic": null,
+ "cfo_to_ebitda": null,
+ "fcf_to_pat": null,
+ "working_capital_days": 127.2225
+}

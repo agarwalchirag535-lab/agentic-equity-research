@@ -645,6 +645,12 @@ def run_deep_dive(
     start_year: int = 2015,
     write: bool = True,
     max_citation_retries: int = 1,
+    #: ADR-0046 walk options: a verified reading already covers the numeric rows (so the row-locator must
+    #: not re-register them), and may supply verified note/related-party enumerations in place of the
+    #: pattern scanners. Defaults preserve the walker-only path unchanged.
+    walk_numeric_rows: bool = True,
+    notes_override: Sequence[Any] | None = None,
+    related_party_override: Any | None = None,
 ) -> DeepDiveResult:
     """Run Phase 2 for one company and publish the report if it passes every gate.
 
@@ -664,7 +670,9 @@ def run_deep_dive(
     # rows and its auditor language into the run — exactly the look-ahead the point-in-time rule exists to
     # prevent once this pipeline is replayed over history (Phase 6).
     if filing is not None and filing.published_at <= as_of:
-        walk = walk_filing(store, ticker, filing)
+        walk = walk_filing(store, ticker, filing, numeric_rows=walk_numeric_rows,
+                           notes_override=notes_override,
+                           related_party_override=related_party_override)
         facts = D.load_company_facts(store, ticker, as_of, start_year=start_year)  # re-read: AR facts
     derived = D.derive_metrics(facts)
 

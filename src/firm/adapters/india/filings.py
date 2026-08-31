@@ -51,8 +51,13 @@ def extract_text(pdf_bytes: bytes) -> str:
 
 
 def find_section(text: str, keywords: list[str], window: int = 4000) -> str:
-    """Return the first ~window chars starting at the earliest matching heading keyword ('' if none)."""
-    positions = [text.find(kw) for kw in keywords]
+    """Return the first ~window chars starting at the earliest matching heading keyword ('' if none).
+
+    Case-insensitive: display fonts scramble case through text extraction ("contingent liability" in a
+    small-caps face), and a mandated disclosure reported missing because of a font is a false gap —
+    PC Jeweller FY17's contingent-liabilities note was about to be charged as undisclosed this way."""
+    lowered = text.casefold()
+    positions = [lowered.find(kw.casefold()) for kw in keywords]
     hits = [p for p in positions if p != -1]
     if not hits:
         return ""
@@ -72,13 +77,22 @@ REQUIRED_DISCLOSURES: frozenset[str] = frozenset(
     {"auditors_opinion", "related_party", "contingent_liabilities", "key_audit_matters"}
 )
 
+#: First fiscal year each requirement applies to. Key Audit Matters is SA 701, effective for audits of
+#: periods beginning on/after 1 April 2017 — the FY18 annual report is the first that must carry it.
+#: An FY17 filing without KAM is compliant, and calling it a gap is a false accusation (PC Jeweller run).
+DISCLOSURE_EFFECTIVE_FY: dict[str, int] = {"key_audit_matters": 2018}
 
-def disclosure_gaps(sections: dict[str, str]) -> tuple[list[str], bool]:
+
+def disclosure_gaps(sections: dict[str, str], fiscal_year: int | None = None) -> tuple[list[str], bool]:
     """Which legally-mandated AR disclosures are missing from the extracted text (owner directive /
     ADR-0014). Delegates to the deterministic `disclosure_completeness` check (compute layer). A missing
     required section means either it was not disclosed or the filing could not be read — both are signals
     that feed the `disclosure_gap` forensic flag, never a silent blank. Returns (missing, is_flagged)."""
     from firm.core.compute.quality import disclosure_completeness
 
+    required = REQUIRED_DISCLOSURES if fiscal_year is None else frozenset(
+        name for name in REQUIRED_DISCLOSURES
+        if DISCLOSURE_EFFECTIVE_FY.get(name, 0) <= fiscal_year
+    )
     present = [name for name, txt in sections.items() if txt.strip()]
-    return disclosure_completeness(REQUIRED_DISCLOSURES, present)
+    return disclosure_completeness(required, present)

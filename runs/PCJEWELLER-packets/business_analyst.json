@@ -1,0 +1,114 @@
+{
+ "agent": "business_analyst",
+ "agent_version": "1.0.0",
+ "ticker": "PCJEWELLER",
+ "as_of": "2017-12-31",
+ "observations": [
+  {
+   "text": "Revenue compounded at 22.8% [fact:derived:revenue_cagr] across the window while profit compounded at 12.8% [fact:derived:pat_cagr] \u2014 growth has been bought at declining profitability per rupee of sales.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:revenue_cagr",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:pat_cagr",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  },
+  {
+   "text": "The business carries 214.6 [fact:derived:inventory_days] days of inventory and collects in 66.2 [fact:derived:receivable_days] days, against 153.6 [fact:derived:payable_days] payable days \u2014 a cash conversion cycle of 127.2 [fact:derived:cash_conversion_cycle] days that makes growth structurally cash-hungry.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:inventory_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:receivable_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:payable_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:cash_conversion_cycle",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 4,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  }
+ ],
+ "inferences": [
+  {
+   "text": "A jewellery retailer's inventory is bullion-heavy and its domestic sales are cash sales, so the working-capital strain visible here concentrates in the export channel, where the receivable book lives and where collection went 17.4 [fact:derived:receivable_days_delta] days slower in the latest year.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:receivable_days_delta",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.7,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  }
+ ],
+ "speculations": [],
+ "open_questions": [
+  "What share of revenue is export versus showroom, and who are the export counterparties? The segment note separates domestic from export revenue but the buyers behind the export receivables are not named.",
+  "How much of the gold inventory is held on leased gold (metal loans) versus owned, and at what price risk?",
+  "Same-store versus new-store growth split for the domestic showroom network is not disclosed."
+ ],
+ "disconfirming_search": "Looked for evidence that the growth is cash-generative retail rather than receivable-funded export: the receivable and inventory day counts and their direction argue against it, and no customer-concentration disclosure exists to rebut it.",
+ "narrative": "PC Jeweller sells jewellery through two very different channels wearing one P&L. The domestic showroom half is a working-capital-heavy but cash-collecting retail business. The export half books revenue against receivables from unnamed overseas buyers. The filings this run read do not let the two be separated cleanly, and that separation is exactly where the analysis of this company should go next, because the cash-flow strain the financial-statement work surfaces has to live in one of those channels.",
+ "what_it_does": "Manufactures and retails gold, diamond-studded and silver jewellery through its own domestic showrooms, and sells gold jewellery in bulk to export buyers. A rupee of revenue arrives either over a showroom counter, largely against cash, or as an export invoice that becomes a trade receivable. The raw material is bullion: the company buys gold, including on gold metal loans routed through bank trade payables, converts it through owned and outsourced karigar workshops, and carries a very large inventory of finished stock in the showrooms.",
+ "moat": null,
+ "customer_concentration": null,
+ "national_relevance": true
+}

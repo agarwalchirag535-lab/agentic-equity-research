@@ -1,0 +1,461 @@
+{
+  "ticker": "PCJEWELLER",
+  "as_of": "2017-12-31",
+  "history": "FY12-FY17 (5y)",
+  "business_models_detected": [
+    "none matched \u2014 universal checks only"
+  ],
+  "computed_metrics": {
+    "revenue_cagr": {
+      "value": 0.22756590947477218,
+      "formula": "(pnl:Sales FY17 / pnl:Sales FY12)^(1/5) - 1",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:revenue_cagr]",
+      "grade": "A"
+    },
+    "pat_cagr": {
+      "value": 0.12761605578796464,
+      "formula": "(pnl:Net Profit FY17 / pnl:Net Profit FY12)^(1/5) - 1",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+      ],
+      "cite_as": "[fact:derived:pat_cagr]",
+      "grade": "A"
+    },
+    "cum_cfo_pat": {
+      "value": 0.2421683487895578,
+      "formula": "\u03a3 CFO / \u03a3 PAT, FY12-FY17",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:pnl:Net Profit:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:pnl:Net Profit:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:pnl:Net Profit:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+      ],
+      "cite_as": "[fact:derived:cum_cfo_pat]",
+      "grade": "A"
+    },
+    "cfo_pat_latest": {
+      "value": 1.7968219282202325,
+      "formula": "CFO FY17 / PAT FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+      ],
+      "cite_as": "[fact:derived:cfo_pat_latest]",
+      "grade": "A"
+    },
+    "accrual_ratio_latest": {
+      "value": -0.051031599827800485,
+      "formula": "(PAT - CFO)(FY17) / avg Total Assets",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY16"
+      ],
+      "cite_as": "[fact:derived:accrual_ratio_latest]",
+      "grade": "A"
+    },
+    "other_income_share": {
+      "value": 0.17549399981954344,
+      "formula": "pnl:Other Income FY17 / pnl:Profit before tax FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Income:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Profit before tax:FY17"
+      ],
+      "cite_as": "[fact:derived:other_income_share]",
+      "grade": "A"
+    },
+    "cost_of_debt_latest": {
+      "value": 0.40271794130403354,
+      "formula": "Interest FY17 / Borrowings FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Interest:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+      ],
+      "cite_as": "[fact:derived:cost_of_debt_latest]",
+      "grade": "A"
+    },
+    "debt_delta_window": {
+      "value": 114.39381960000003,
+      "formula": "Borrowings FY17 - Borrowings FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+      ],
+      "cite_as": "[fact:derived:debt_delta_window]",
+      "grade": "A"
+    },
+    "cfo_cum_window": {
+      "value": 502.71195909999994,
+      "formula": "\u03a3 CFO, FY12-FY17",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:cfo_cum_window]",
+      "grade": "A"
+    },
+    "investing_outflow_cum": {
+      "value": 717.9203643999999,
+      "formula": "-\u03a3 CFI, FY12-FY17",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:investing_outflow_cum]",
+      "grade": "A"
+    },
+    "self_funding_ratio": {
+      "value": 0.7002335969674578,
+      "formula": "\u03a3 CFO / -\u03a3 CFI, FY12-FY17 (>=1 means operations paid for the investment programme)",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:self_funding_ratio]",
+      "grade": "A"
+    },
+    "debt_funded_investment_share": {
+      "value": 0.15934054147580054,
+      "formula": "\u0394Borrowings / -\u03a3 CFI, FY12-FY17 (share of the investment programme debt paid for)",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:debt_funded_investment_share]",
+      "grade": "A"
+    },
+    "receivable_days": {
+      "value": 66.20452736289073,
+      "formula": "balance_sheet:Trade Receivables FY17 / pnl:Sales FY17 x 365",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:receivable_days]",
+      "grade": "A"
+    },
+    "inventory_days": {
+      "value": 214.64621008593363,
+      "formula": "balance_sheet:Inventories FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+      ],
+      "cite_as": "[fact:derived:inventory_days]",
+      "grade": "A"
+    },
+    "payable_days": {
+      "value": 153.6282565679064,
+      "formula": "balance_sheet:Trade Payables FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+      ],
+      "cite_as": "[fact:derived:payable_days]",
+      "grade": "A"
+    },
+    "receivable_days_delta": {
+      "value": 17.42604335172853,
+      "formula": "Receivable days FY17 - FY16 (positive = collection is slowing)",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16"
+      ],
+      "cite_as": "[fact:derived:receivable_days_delta]",
+      "grade": "A"
+    },
+    "cash_conversion_cycle": {
+      "value": 127.22248088091797,
+      "formula": "Receivable days + Inventory days - Payable days, FY17 (days of cash tied up)",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+      ],
+      "cite_as": "[fact:derived:cash_conversion_cycle]",
+      "grade": "A"
+    },
+    "material_cost_ratio": {
+      "value": 0.8876379053133717,
+      "formula": "Cost of Materials Consumed FY17 / pnl:Sales FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:material_cost_ratio]",
+      "grade": "A"
+    },
+    "material_cost_ratio_delta": {
+      "value": -0.14046492934467103,
+      "formula": "Cost of Materials Consumed/Sales FY17 - Cost of Materials Consumed/Sales FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Cost of Materials Consumed:FY12",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:material_cost_ratio_delta]",
+      "grade": "A"
+    },
+    "employee_cost_ratio": {
+      "value": 0.009831889663956225,
+      "formula": "Employee Benefits FY17 / pnl:Sales FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:employee_cost_ratio]",
+      "grade": "A"
+    },
+    "employee_cost_ratio_delta": {
+      "value": 0.001647534387983405,
+      "formula": "Employee Benefits/Sales FY17 - Employee Benefits/Sales FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Employee Benefits:FY12",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:employee_cost_ratio_delta]",
+      "grade": "A"
+    },
+    "other_expense_ratio": {
+      "value": 0.02392933587277627,
+      "formula": "Other Expenses FY17 / pnl:Sales FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Expenses:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:other_expense_ratio]",
+      "grade": "A"
+    },
+    "other_expense_ratio_delta": {
+      "value": -0.03134482531993468,
+      "formula": "Other Expenses/Sales FY17 - Other Expenses/Sales FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Other Expenses:FY12",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Expenses:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:other_expense_ratio_delta]",
+      "grade": "A"
+    },
+    "net_cash_position": {
+      "value": 499.9799999999998,
+      "formula": "Cash + Other Bank Balances - Borrowings, FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Cash Equivalents:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Other Bank Balances:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+      ],
+      "cite_as": "[fact:derived:net_cash_position]",
+      "grade": "A"
+    },
+    "cost_of_debt_average": {
+      "value": 0.3414039280571131,
+      "formula": "Interest FY17 / average Borrowings, FY16-FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Interest:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY16"
+      ],
+      "cite_as": "[fact:derived:cost_of_debt_average]",
+      "grade": "A"
+    }
+  },
+  "metrics_unavailable": {
+    "opm_latest": [
+      "pnl:Operating Profit FY17"
+    ],
+    "roic_latest": [
+      "pnl:Operating Profit FY17",
+      "pnl:Tax % FY17"
+    ],
+    "interest_coverage_latest": [
+      "pnl:Operating Profit FY17"
+    ],
+    "cwip_share_latest": [
+      "balance_sheet:CWIP FY17"
+    ],
+    "cfo_to_ebitda_latest": [
+      "pnl:Operating Profit FY17"
+    ],
+    "fcf_to_pat_cum": [
+      "cashflow:Free Cash Flow (no period with both FCF and PAT)"
+    ],
+    "eps_cagr": [
+      "pnl:EPS in Rs FY12"
+    ],
+    "dilution_drag": [
+      "pnl:EPS in Rs at FY12 and FY17"
+    ],
+    "expense_cagr": [
+      "pnl:Expenses FY12",
+      "pnl:Expenses FY17"
+    ],
+    "opm_delta_window": [
+      "pnl:Operating Profit FY12",
+      "pnl:Operating Profit FY17"
+    ],
+    "effective_tax_rate_latest": [
+      "pnl:Tax % FY17"
+    ],
+    "dividend_cum_window": [
+      "pnl:Dividend Payout % (no period with PAT)"
+    ],
+    "capex_cum_window": [
+      "cashflow:Purchase of PPE (no period in the window discloses it)"
+    ],
+    "capex_to_depreciation": [
+      "cashflow:Purchase of PPE and pnl:Depreciation in the same year (the cash-flow capex line comes from the filing, not the screener)"
+    ],
+    "cash_yield_latest": [
+      "cashflow:Interest Income FY17",
+      "balance_sheet:Cash Equivalents FY16"
+    ],
+    "incremental_roic_3y": [
+      "a 4+ year run of Operating Profit, Depreciation, Tax %, Borrowings, Equity Capital and Reserves is required for a rolling 3-year incremental ROIC"
+    ]
+  },
+  "forensic_screen": {
+    "verdict": "HARD_FAIL",
+    "hard_fail": true,
+    "flags": [
+      {
+        "name": "cumulative_cfo_pat_low",
+        "severity": "SEVERE",
+        "detail": "\u03a3CFO/\u03a3PAT 0.24 < 0.70"
+      },
+      {
+        "name": "receivables_divergent",
+        "severity": "HIGH",
+        "detail": "receivables outrunning revenue \u2014 channel-stuffing / fictitious-sales tell"
+      }
+    ]
+  },
+  "checklist": [
+    {
+      "check": "cumulative_cfo_pat",
+      "outcome": "FLAG",
+      "detail": "\u03a3CFO/\u03a3PAT 0.24 vs floor 0.70 (\u03a3 CFO / \u03a3 PAT, FY12-FY17) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "cfo_pat",
+      "outcome": "PASS",
+      "detail": "CFO/PAT 1.80 vs floor 0.70 (CFO FY17 / PAT FY17) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "cash_interest_inconsistent",
+      "outcome": "UNAVAILABLE",
+      "detail": "",
+      "reason": "inputs not disclosed in the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+    },
+    {
+      "check": "cash_debt_paradox",
+      "outcome": "PASS",
+      "detail": "cash/assets 5.6% at cost of debt 34.1% (paradox above 15% and 10%) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "disclosure_gap",
+      "outcome": "PASS",
+      "detail": "every mandated Schedule III / forensic section located in the filing",
+      "reason": ""
+    },
+    {
+      "check": "other_income_heavy",
+      "outcome": "PASS",
+      "detail": "other income 17.5% of PBT vs limit 25% (pnl:Other Income FY17 / pnl:Profit before tax FY17) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "promoter_lending",
+      "outcome": "PASS",
+      "detail": "related-party note read (AR-FY17-PCJ-AR-FY17.pdf note 37 p.165): categories disclosed = dividend, loans_taken, remuneration, rent; KMP remuneration \u20b96.95cr",
+      "reason": ""
+    },
+    {
+      "check": "receivables_divergent",
+      "outcome": "FLAG",
+      "detail": "receivables +57.6% vs revenue +16.1%, gap +41.5% vs limit 25% (AR) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "inventory_divergent",
+      "outcome": "PASS",
+      "detail": "inventory +8.3% vs revenue +16.1%, gap -7.8% vs limit 30% (AR) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "high_accruals",
+      "outcome": "PASS",
+      "detail": "accruals -0.051 vs limit \u00b10.10 ((PAT - CFO)(FY17) / avg Total Assets) (grade A)",
+      "reason": ""
+    }
+  ],
+  "notes_to_accounts": {
+    "enumerated": 52,
+    "coverage": 1.0,
+    "substantive_share": 0.25,
+    "disclosure_gaps": []
+  },
+  "peer_comparison": [],
+  "management_guidance": [],
+  "feasibility_gate": null,
+  "rules": [
+    "Do NOT compute, adjust or invent any number. Quote only the values above.",
+    "Every number you write in prose must be followed by its [fact:...] token.",
+    "Numeric schema fields must equal the computed value above, or be null.",
+    "open_questions must not be empty; disconfirming_search must describe a real search."
+  ]
+}

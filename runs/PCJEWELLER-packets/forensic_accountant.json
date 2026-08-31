@@ -1,0 +1,132 @@
+{
+ "agent": "forensic_accountant",
+ "agent_version": "1.0.0",
+ "ticker": "PCJEWELLER",
+ "as_of": "2017-12-31",
+ "observations": [
+  {
+   "text": "The deterministic screen hard-fails on cumulative cash conversion: 0.24 [fact:derived:cum_cfo_pat] of cumulative reported profit arrived as operating cash across the window.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cum_cfo_pat",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.9,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  },
+  {
+   "text": "Trade receivables grew far faster than revenue in the latest year \u2014 collection slowed by 17.4 [fact:derived:receivable_days_delta] days to 66.2 [fact:derived:receivable_days] days \u2014 the stock-flow divergence that channel-stuffing and booked-but-uncollected sales produce.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:receivable_days_delta",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:receivable_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  },
+  {
+   "text": "The company holds a net cash position of 499.98 [fact:derived:net_cash_position] crore while paying an implied 40.3% [fact:derived:cost_of_debt_latest] on its visible borrowings \u2014 cash held beside expensive debt is either encumbered or not usable as cash.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:net_cash_position",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:cost_of_debt_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.75,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  }
+ ],
+ "inferences": [
+  {
+   "text": "The evidence indicates profit has been recognised years ahead of cash, with the gap parked in inventory of 214.6 [fact:derived:inventory_days] days and an export receivable book, and funded by payables-side borrowing the balance sheet does not label as debt.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:inventory_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2017-09-09",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.75,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  }
+ ],
+ "speculations": [
+  {
+   "text": "If the export receivables are concentrated in a small set of related or accommodating buyers, the revenue behind them is a number management can choose; the filings read this run neither prove nor exclude that.",
+   "kind": "speculation",
+   "citations": [],
+   "confidence": {
+    "value": 0.4,
+    "evidence_count": 0,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from audited filings"
+   }
+  }
+ ],
+ "open_questions": [
+  "Who are the export receivable counterparties, and what is their ageing? The receivables note read this run does not break them out by buyer.",
+  "What exactly do the bank balances secure? The other-bank-balances note and the borrowings security schedule would answer whether the cash is free.",
+  "The related-party note discloses rent paid to promoter directors that multiplied against the prior year; what changed in those lease arrangements, and on whose terms?"
+ ],
+ "disconfirming_search": "Sought the honest explanations first: a working-capital build ahead of showroom expansion would show capex and inventory rising together with stable collections, and a genuinely cash-rich company would show interest income consistent with its balances. The first is contradicted by collections slowing while conversion is claimed to improve; the second cannot be tested because interest income is not broken out, which is itself noted.",
+ "narrative": "The evidence indicates a company whose reported profits have not been matched by cash for most of the window, whose receivables are outrunning its revenue, and whose true cost and quantum of funding are larger than the balance sheet labels them. Nothing here is an accusation of fraud; every figure is computed from the company's own audited filings and each can be replicated from the cited derivations and page locators. The deterministic hard-fail stands, and the veto is exercised: no narrative about growth or brand should outrank a cumulative cash record this weak, and the burden of proof now sits with the disclosures the open questions name.",
+ "verdict": "HARD_FAIL",
+ "flags": [
+  "cumulative_cfo_pat_low",
+  "receivables_divergent"
+ ],
+ "veto": true
+}

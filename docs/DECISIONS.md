@@ -1384,3 +1384,53 @@ figure of the payables row); plain-rupee eras become readable by declaring one m
 parser. The walker's row-locator remains as a zero-cost proposer whose output faces the same verifier,
 and remains authoritative for note enumeration, CARO and Schedule III scanning, which are pattern
 problems, not reading problems.
+
+---
+
+### ADR-0047 — The law knows what year it is, and the notes are read the way the statements are
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0046 · **Delivers** the first published
+REJECT-class report (`reports/PCJEWELLER/2017-12-31-cccdf1de45b8/`, FORENSIC_CAUTION, confidence 0.38)
+
+**Context.** Taking the PC Jeweller HARD_FAIL through to a published report hit three defects, all of the
+same family as ADR-0046's: pattern scans asserting things reading would refute.
+
+1. **The disclosure scan charged an FY17 filing with FY22 law.** Every Schedule III row the scanner
+   demands (benami, crypto, ageing schedules, ratios…) is the MCA amendment effective 1 April 2021, and
+   Key Audit Matters is SA 701, first mandatory in the FY18 report. PC Jeweller FY17 was about to be
+   published with a dozen "missing mandated disclosures" it could not lawfully have carried — a false
+   accusation, and the exact class the disclosure-vs-capability rule exists to prevent.
+2. **The note enumerator "found" ten notes that were not notes** (transition-note sub-items, auditor
+   paragraphs, AGM-notice items) and missed the real 1–52 — so coverage arithmetic would have been
+   theatre with a wrong denominator, on the report where the line-by-line rule (owner directive 6) is
+   load-bearing: a FORENSIC_CAUTION cannot publish below 100% note coverage (P1).
+3. **The Ind AS 24 reader knew one note format** (Alkyl's) and returned "not located" on a promoter
+   company whose related-party note sat plainly on p.165.
+
+**Decision.**
+- `disclosure_gaps` and `schedule_iii_gaps` take the filing's fiscal year; a requirement whose
+  effective-from postdates the filing is not a gap (`DISCLOSURE_EFFECTIVE_FY`,
+  `SCHEDULE_III_EFFECTIVE_FY`). Section search is casefolded — a small-caps font is not non-disclosure.
+- Notes and the related-party summary join ADR-0046's propose/verify path: `verify_notes` (title on the
+  claimed page, unique labels, pages and numbers non-decreasing — the filing's own ordering as the
+  check) and `verify_related_party` (title and printed KMP remuneration found verbatim). Verified
+  enumerations enter `walk_filing(notes_override=, related_party_override=)`; disposition, coverage,
+  NOTE_CHECKS routing and the substantive gate run unchanged on top.
+- `walk_filing(numeric_rows=False)` + `run_deep_dive(walk_numeric_rows=False, …)` keep the row-locator
+  from re-poisoning a store a verified reading populated. The walker keeps CARO/Schedule III/section
+  scanning either way.
+
+**Result.** PC Jeweller FY17: 52 of 52 notes enumerated and dispositioned (100% coverage, 25%
+substantive), the related-party note read (rent, dividend, remuneration ₹6.95cr, loans TAKEN from a
+promoter — no lending to promoters, so `promoter_lending` runs and passes), `disclosure_gap` passes on
+era-correct law, and the report published through every gate: FORENSIC_CAUTION on SEVERE
+`cumulative_cfo_pat_low` (ΣCFO/ΣPAT 0.24) + HIGH `receivables_divergent` (+57.6% vs +16.1%), grade A
+throughout, kill and rehabilitation criteria dated 2018-10-27 — a date by which, historically, the
+collapse had already answered them. The dual-verdict directive now has its first FAIL publication, and
+the golden set its first point-in-time true positive.
+
+**Open, stated plainly.** CARO clause triage is still era-blind (CARO 2016 vs 2020 numbering) — it is
+narration-tier input, not a deterministic flag, and is noted on the report only as a candidate; the
+`cash_debt_paradox` check reads `Cash Equivalents` alone while the encumbered-cash story of this era
+lives in `Other Bank Balances`; and the FY16-and-earlier combined "cash and bank balances" mapping to
+`Cash Equivalents` is a definitional boundary the quarantine currently resolves by refusing FY16 cash.

@@ -399,6 +399,125 @@ def register_reading(
 
 
 # --------------------------------------------------------------------------------------------------
+# Notes enumeration by reading (the line-by-line rule, owner directive 6).
+# --------------------------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ProposedNote:
+    """One note to the accounts, as the proposer read it: '36a', its printed title, its 1-based page."""
+
+    label: str
+    title: str
+    page: int
+
+
+def verify_notes(proposals: Sequence[ProposedNote], pages: Sequence[str]) -> tuple[list, list[Violation]]:
+    """Verify a proposed note enumeration and return `(notes, violations)` — `notes` are
+    `adapters.india.notes.Note` objects ready for `walk_filing(notes_override=...)`.
+
+    The pattern enumerator on PC Jeweller FY17 "found" ten notes that were transition-note sub-items and
+    AGM paragraphs; a proposer reads the real 1-52. The checks mirror what typography cannot fake:
+
+      N1  the note's title appears on its claimed page (letters-only — display fonts scramble spacing);
+      N2  labels are unique (sub-notes '45a'/'45b' are distinct; a duplicate is a misread);
+      N3  pages never decrease in listed order — notes print in sequence (the ADR-0038 insight);
+      N4  numeric parts never decrease either, for the same reason.
+
+    Any violation refuses the WHOLE enumeration: coverage arithmetic over a partly-wrong note list would
+    be theatre with a denominator."""
+    from firm.adapters.india.notes import Note
+
+    violations: list[Violation] = []
+    seen: set[str] = set()
+    prev_page, prev_num = 0, 0
+    notes: list[Note] = []
+    for p in proposals:
+        m = re.fullmatch(r"(\d{1,3})([a-z]?)", p.label.strip(), re.IGNORECASE)
+        if m is None:
+            violations.append(Violation("N2_label", "notes", f"unparseable note label {p.label!r}"))
+            continue
+        number, suffix = int(m.group(1)), m.group(2).lower()
+        if p.label in seen:
+            violations.append(Violation("N2_label", "notes", f"duplicate note label {p.label!r}"))
+        seen.add(p.label)
+        if not _find_letters_on_pages(p.title, pages, (p.page,)):
+            violations.append(Violation(
+                "N1_title", "notes", f"note {p.label} title {p.title!r} not found on p.{p.page}"))
+        if p.page < prev_page:
+            violations.append(Violation(
+                "N3_order", "notes",
+                f"note {p.label} on p.{p.page} before p.{prev_page} — notes print in sequence"))
+        if number < prev_num:
+            violations.append(Violation(
+                "N4_order", "notes", f"note {p.label} number falls after {prev_num}"))
+        prev_page, prev_num = p.page, number
+        notes.append(Note(number=number, title=p.title, page=p.page, line=1, suffix=suffix))
+    if violations:
+        return [], violations
+    return notes, []
+
+
+@dataclass(frozen=True)
+class ProposedRelatedParty:
+    """The proposer's reading of the Ind AS 24 note: where it is, what channels it discloses, and the
+    KMP compensation total exactly as printed. `categories` uses the `notes_content` vocabulary
+    (remuneration, rent, dividend, loans_given, guarantees, sales, purchases, loans_taken, ...)."""
+
+    note_label: str
+    page: int
+    title_quote: str            # verbatim heading, e.g. 'note: 37 related party transactions:'
+    categories: tuple[str, ...]
+    kmp_remuneration_printed: str | None = None   # e.g. '6.95' — must appear on a claimed page
+    remuneration_page: int | None = None
+
+
+def verify_related_party(proposal: ProposedRelatedParty, pages: Sequence[str]):
+    """Verify and convert to a `RelatedPartySummary` for `walk_filing(related_party_override=...)`.
+
+    Same discipline as statements: the title must sit on the claimed page, the printed remuneration
+    figure must be found verbatim on its page. Categories are the proposer's classification of channels
+    the note discloses — a judgment call the tri-state downstream treats as 'the note was read'."""
+    from firm.adapters.india.notes_content import RelatedPartySummary
+
+    violations: list[Violation] = []
+    if not _find_letters_on_pages(proposal.title_quote, pages, (proposal.page,)):
+        violations.append(Violation("N1_title", "related_party",
+                                    f"title {proposal.title_quote!r} not found on p.{proposal.page}"))
+    remuneration = None
+    if proposal.kmp_remuneration_printed is not None:
+        page = proposal.remuneration_page or proposal.page
+        if not _find_on_pages(proposal.kmp_remuneration_printed, pages, (page,)):
+            violations.append(Violation(
+                "V4_value", "related_party",
+                f"KMP remuneration {proposal.kmp_remuneration_printed!r} not found on p.{page}"))
+        else:
+            remuneration = parse_number(proposal.kmp_remuneration_printed)
+    if violations:
+        return None, violations
+    m = re.match(r"(\d+)", proposal.note_label)
+    return RelatedPartySummary(
+        located=True,
+        note_number=int(m.group(1)) if m else None,
+        page=proposal.page,
+        categories=frozenset(proposal.categories),
+        remuneration_cr=remuneration,
+    ), []
+
+
+def notes_from_json(text: str) -> list[ProposedNote]:
+    """Parse a proposer's notes answer: {"notes": [{"label", "title", "page"}, ...]}."""
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as err:
+        raise ValueError(f"notes proposal is not valid JSON: {err}") from err
+    if not isinstance(data, dict) or not isinstance(data.get("notes"), list):
+        msg = "notes proposal must be an object with a 'notes' list"
+        raise TypeError(msg)
+    return [ProposedNote(label=str(n["label"]), title=str(n["title"]), page=int(n["page"]))
+            for n in data["notes"]]
+
+
+# --------------------------------------------------------------------------------------------------
 # The reading packet — what any proposer receives (an API model, or a human/Claude answering by hand).
 # --------------------------------------------------------------------------------------------------
 

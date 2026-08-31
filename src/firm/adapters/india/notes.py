@@ -127,6 +127,13 @@ NOTE_TAXONOMY: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: the pipeline fired a MEDIUM `disclosure_gap` — "unexplained opacity" — at a company that had disclosed
 #: every one of them. That is the firm's extraction charged to the company, which ADR-0022 rules out
 #: explicitly, and it is worse than a miss because it reads as a finding.
+#: The Schedule III rows scanned below are the MCA amendment of 24 March 2021, effective for financial
+#: years beginning 1 April 2021 — i.e. the FY22 annual report is the first that can lawfully carry them.
+#: Charging an earlier filing with their absence is a false disclosure gap (found live on PC Jeweller
+#: FY17, which was about to be cited for missing benami/crypto/ageing rows four years before they
+#: existed). `schedule_iii_gaps` takes the filing's fiscal year for exactly this reason.
+SCHEDULE_III_EFFECTIVE_FY = 2022
+
 SCHEDULE_III_ROWS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("struck_off_companies", ("struck off", "struck-off")),
     ("benami_property", ("benami",)),
@@ -380,8 +387,17 @@ def scan_schedule_iii(pages: Sequence[str]) -> list[ScheduleIIIFinding]:
     return findings
 
 
-def schedule_iii_gaps(findings: Sequence[ScheduleIIIFinding]) -> tuple[list[str], bool]:
-    """(missing mandatory rows, is_flagged) — feeds the `disclosure_gap` forensic signal."""
+def schedule_iii_gaps(
+    findings: Sequence[ScheduleIIIFinding], fiscal_year: int | None = None
+) -> tuple[list[str], bool]:
+    """(missing mandatory rows, is_flagged) — feeds the `disclosure_gap` forensic signal.
+
+    `fiscal_year` is the year the filing reports (2017 for FY17). Rows the law did not yet require are
+    NOT gaps: a missing-capability-or-era claim must never become a company non-disclosure. None means
+    era-unknown and keeps the strict behaviour (every row required), which is only correct for current
+    filings."""
+    if fiscal_year is not None and fiscal_year < SCHEDULE_III_EFFECTIVE_FY:
+        return [], False
     missing = sorted(f.row for f in findings if not f.found)
     return missing, bool(missing)
 

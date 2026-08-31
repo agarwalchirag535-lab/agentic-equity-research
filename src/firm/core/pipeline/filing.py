@@ -33,7 +33,7 @@ from firm.adapters.base.tables import (
     to_canonical_crore,
 )
 from firm.adapters.india.filings import disclosure_gaps, forensic_sections
-from firm.adapters.india.notes_content import related_party_summary
+from firm.adapters.india.notes_content import RelatedPartySummary, related_party_summary
 from firm.adapters.india.notes import (
     Note,
     notes_section_start,
@@ -418,16 +418,45 @@ def register_filing_facts(
     return rows, tuple(fact_ids), unresolved, values
 
 
-def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWalk:
-    """Enumerate the notes, scan the mandated disclosures, and register the filing's figures as facts."""
-    rows, fact_ids, unresolved, values = register_filing_facts(store, ticker, filing)
+def walk_filing(
+    store: FactStore, ticker: str, filing: FilingSource, *, numeric_rows: bool = True,
+    notes_override: Sequence[Note] | None = None,
+    related_party_override: RelatedPartySummary | None = None,
+) -> FilingWalk:
+    """Enumerate the notes, scan the mandated disclosures, and register the filing's figures as facts.
+
+    `numeric_rows=False` skips the row-locator's numeric registration and leaves the checks to read the
+    fact store instead (`backfill_external_inputs`). Pass it when a verified ADR-0046 reading already
+    covers this document: the row-locator misread PC Jeweller's FY17 balance sheet wholesale (it stored
+    the Ind AS transition note at grade A), and re-walking would poison the very store the reading just
+    populated. The notes/CARO/Schedule III/related-party scanning still runs either way — those are
+    pattern problems the walker remains authoritative for. End-state per ADR-0046: the row-locator's
+    numeric output becomes one more *proposal* into the reading verifier; until then this flag keeps the
+    two extraction lines from writing over each other.
+
+    `notes_override` supplies a verified ADR-0046 note enumeration in place of the pattern enumerator,
+    which on PC Jeweller FY17 "found" ten notes that were transition-note sub-items and AGM-notice
+    paragraphs while missing the real 1-52. The override must already be verified (`verify_notes` in
+    core/ingest/reading.py); disposition, coverage and the substantive gate all run unchanged on top.
+    """
+    if numeric_rows:
+        rows, fact_ids, unresolved, values = register_filing_facts(store, ticker, filing)
+    else:
+        # No document row either: the ADR-0046 reading that justified skipping the rows has already
+        # registered this document with its own extractor_version, and INSERT OR REPLACE would overwrite
+        # that provenance. A notes-only walk creates no facts, so it needs no row.
+        rows, fact_ids, unresolved, values = {}, (), {}, {}
     # Only the notes to the ACCOUNTS count (ADR-0027). An unscoped scan enumerates AGM-notice and
     # directors'-report paragraph numbers, which no financial check can ever disposition.
-    notes = tuple(enumerate_notes(filing.pages, first_page=notes_section_start(filing.pages)))
+    notes = (tuple(notes_override) if notes_override is not None
+             else tuple(enumerate_notes(filing.pages, first_page=notes_section_start(filing.pages))))
 
+    # The filing's own fiscal year gates which disclosures the law required OF IT. Scanning an FY17
+    # report for FY22-mandated Schedule III rows produced a page of false "gaps" on PC Jeweller.
+    fiscal_year = 2000 + int(filing.period[2:]) if filing.period.startswith("FY") else None
     text = "\n".join(filing.pages)
-    sections_missing, _ = disclosure_gaps(forensic_sections(text))
-    schedule_missing, _ = schedule_iii_gaps(scan_schedule_iii(filing.pages))
+    sections_missing, _ = disclosure_gaps(forensic_sections(text), fiscal_year)
+    schedule_missing, _ = schedule_iii_gaps(scan_schedule_iii(filing.pages), fiscal_year)
     caro = tuple(caro_candidate_flags(parse_caro_clauses(text)))
     # A row found but unusable is a disclosure/extraction gap in its own right, and must surface rather
     # than vanish into a silently shorter `rows` mapping.
@@ -469,7 +498,9 @@ def walk_filing(store: FactStore, ticker: str, filing: FilingSource) -> FilingWa
     # Read the Ind AS 24 note body (ADR-0027) so the related-party notes become SUBSTANTIVE rather than
     # merely enumerated — `NOTE_CHECKS` routes the `related_party` and `loans_advances` categories through
     # `promoter_lending`, so a check that can finally run is what dispositions those notes.
-    rp = related_party_summary(filing.pages)
+    # A verified ADR-0046 reading of the Ind AS 24 note outranks the pattern reader, which knows one
+    # note format per hand-fix (it read Alkyl's and not PC Jeweller's).
+    rp = related_party_override if related_party_override is not None else related_party_summary(filing.pages)
     if rp.located:
         locators["promoter_lending"] = f"{filing.doc_id} {rp.locator}"
         ids_by_check.setdefault("promoter_lending", ())

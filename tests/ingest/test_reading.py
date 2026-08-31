@@ -325,3 +325,52 @@ def test_per_share_figures_never_scale_with_the_statement_unit():
     values = {f.metric: f.value_crore for f in reading.figures}
     assert values["pnl:Net Profit"] == pytest.approx(378.4317)   # lakhs -> crore
     assert values["pnl:EPS in Rs"] == pytest.approx(21.13)       # rupees, untouched
+
+
+NOTE_PAGES = [
+    "note 1: corporate information\nPC Jeweller Limited was incorporated\n",
+    "note 2: inventories\nnote 3: trade receivables\n",
+    "note: 4 related party transactions:\ntotal  6.95  6.03\n",
+]
+
+
+def test_a_faithful_note_enumeration_verifies():
+    from firm.core.ingest.reading import ProposedNote, verify_notes
+    notes, violations = verify_notes([
+        ProposedNote("1", "corporate information", 1),
+        ProposedNote("2", "inventories", 2),
+        ProposedNote("3", "trade receivables", 2),
+        ProposedNote("4", "related party transactions", 3),
+    ], NOTE_PAGES)
+    assert not violations
+    assert [n.label for n in notes] == ["1", "2", "3", "4"]
+    assert notes[1].category == "inventory"      # the taxonomy still classifies override notes
+
+
+def test_note_enumeration_refuses_wrong_page_duplicates_and_disorder():
+    from firm.core.ingest.reading import ProposedNote, verify_notes
+    _, v1 = verify_notes([ProposedNote("1", "corporate information", 3)], NOTE_PAGES)
+    assert any(x.rule == "N1_title" for x in v1)
+    _, v2 = verify_notes([ProposedNote("2", "inventories", 2),
+                          ProposedNote("2", "inventories", 2)], NOTE_PAGES)
+    assert any(x.rule == "N2_label" for x in v2)
+    _, v3 = verify_notes([ProposedNote("4", "related party transactions", 3),
+                          ProposedNote("2", "inventories", 2)], NOTE_PAGES)
+    assert {x.rule for x in v3} >= {"N3_order", "N4_order"}
+
+
+def test_related_party_reading_verifies_the_printed_remuneration():
+    from firm.core.ingest.reading import ProposedRelatedParty, verify_related_party
+    summary, violations = verify_related_party(ProposedRelatedParty(
+        note_label="4", page=3, title_quote="note: 4 related party transactions:",
+        categories=("remuneration", "rent", "dividend"),
+        kmp_remuneration_printed="6.95", remuneration_page=3,
+    ), NOTE_PAGES)
+    assert not violations
+    assert summary.located and summary.remuneration_cr == pytest.approx(6.95)
+    assert summary.has_promoter_lending is False     # no loans_given/guarantees category
+    _, bad = verify_related_party(ProposedRelatedParty(
+        note_label="4", page=3, title_quote="note: 4 related party transactions:",
+        categories=("remuneration",), kmp_remuneration_printed="9.99", remuneration_page=3,
+    ), NOTE_PAGES)
+    assert any(x.rule == "V4_value" for x in bad)

@@ -1,0 +1,1396 @@
+{
+  "agent_versions": {
+    "business_analyst": "1.0.0",
+    "financial_statement_analyst": "1.0.0",
+    "forensic_accountant": "1.0.0"
+  },
+  "anti_thesis": "**business_analyst (disconfirming search):** Looked for evidence that the growth is cash-generative retail rather than receivable-funded export: the receivable and inventory day counts and their direction argue against it, and no customer-concentration disclosure exists to rebut it.\n\n**financial_statement_analyst (disconfirming search):** Searched for an innocent reading of the cash-conversion record: a young company investing ahead of growth would show the shortfall in investing outflows, but here the shortfall sits in operating cash itself, absorbed by inventory and receivables, which is the pattern of profit recognised ahead of cash rather than of investment.\n\n**forensic_accountant (disconfirming search):** Sought the honest explanations first: a working-capital build ahead of showroom expansion would show capex and inventory rising together with stable collections, and a genuinely cash-rich company would show interest income consistent with its balances. The first is contradicted by collections slowing while conversion is claimed to improve; the second cannot be tested because interest income is not broken out, which is itself noted.\n\n**Checks that fired:** `cumulative_cfo_pat` \u2014 \u03a3CFO/\u03a3PAT 0.24 vs floor 0.70 (\u03a3 CFO / \u03a3 PAT, FY12-FY17) (grade A); `receivables_divergent` \u2014 receivables +57.6% vs revenue +16.1%, gap +41.5% vs limit 25% (AR) (grade A)\n\n**Not verifiable from the sources read:** 1 of 10 applicable checks could not be evaluated, so the case against this company includes everything we could not look at.",
+  "as_of": "2017-12-31",
+  "business_model_plain": "Manufactures and retails gold, diamond-studded and silver jewellery through its own domestic showrooms, and sells gold jewellery in bulk to export buyers. A rupee of revenue arrives either over a showroom counter, largely against cash, or as an export invoice that becomes a trade receivable. The raw material is bullion: the company buys gold, including on gold metal loans routed through bank trade payables, converts it through owned and outsourced karigar workshops, and carries a very large inventory of finished stock in the showrooms.",
+  "checklist": {
+    "business_models": [],
+    "disclosure_gaps": [],
+    "expected_checks": [
+      "cumulative_cfo_pat",
+      "cfo_pat",
+      "cash_interest_inconsistent",
+      "cash_debt_paradox",
+      "disclosure_gap",
+      "other_income_heavy",
+      "promoter_lending",
+      "receivables_divergent",
+      "inventory_divergent",
+      "high_accruals"
+    ],
+    "note_coverage": 1.0,
+    "notes_undispositioned": [],
+    "notes_unenumerated": [],
+    "records": [
+      {
+        "detail": "\u03a3CFO/\u03a3PAT 0.24 vs floor 0.70 (\u03a3 CFO / \u03a3 PAT, FY12-FY17) (grade A)",
+        "fact_ids": [
+          "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+          "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+          "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+          "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+          "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+          "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+          "AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12",
+          "AR-FY14-PCJ-AR-FY14.pdf:pnl:Net Profit:FY13",
+          "AR-FY15-PCJ-AR-FY15.pdf:pnl:Net Profit:FY14",
+          "AR-FY16-PCJ-AR-FY16.pdf:pnl:Net Profit:FY15",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY16",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+        ],
+        "name": "cumulative_cfo_pat",
+        "outcome": "FLAG",
+        "reason": ""
+      },
+      {
+        "detail": "CFO/PAT 1.80 vs floor 0.70 (CFO FY17 / PAT FY17) (grade A)",
+        "fact_ids": [
+          "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+        ],
+        "name": "cfo_pat",
+        "outcome": "PASS",
+        "reason": ""
+      },
+      {
+        "detail": "",
+        "fact_ids": [],
+        "name": "cash_interest_inconsistent",
+        "outcome": "UNAVAILABLE",
+        "reason": "inputs not disclosed in the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+      },
+      {
+        "detail": "cash/assets 5.6% at cost of debt 34.1% (paradox above 15% and 10%) (grade A)",
+        "fact_ids": [
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Cash Equivalents:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+        ],
+        "name": "cash_debt_paradox",
+        "outcome": "PASS",
+        "reason": ""
+      },
+      {
+        "detail": "every mandated Schedule III / forensic section located in the filing",
+        "fact_ids": [],
+        "name": "disclosure_gap",
+        "outcome": "PASS",
+        "reason": ""
+      },
+      {
+        "detail": "other income 17.5% of PBT vs limit 25% (pnl:Other Income FY17 / pnl:Profit before tax FY17) (grade A)",
+        "fact_ids": [
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Income:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Profit before tax:FY17"
+        ],
+        "name": "other_income_heavy",
+        "outcome": "PASS",
+        "reason": ""
+      },
+      {
+        "detail": "related-party note read (AR-FY17-PCJ-AR-FY17.pdf note 37 p.165): categories disclosed = dividend, loans_taken, remuneration, rent; KMP remuneration \u20b96.95cr",
+        "fact_ids": [],
+        "name": "promoter_lending",
+        "outcome": "PASS",
+        "reason": ""
+      },
+      {
+        "detail": "receivables +57.6% vs revenue +16.1%, gap +41.5% vs limit 25% (AR) (grade A)",
+        "fact_ids": [
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY16",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16"
+        ],
+        "name": "receivables_divergent",
+        "outcome": "FLAG",
+        "reason": ""
+      },
+      {
+        "detail": "inventory +8.3% vs revenue +16.1%, gap -7.8% vs limit 30% (AR) (grade A)",
+        "fact_ids": [
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY16",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16"
+        ],
+        "name": "inventory_divergent",
+        "outcome": "PASS",
+        "reason": ""
+      },
+      {
+        "detail": "accruals -0.051 vs limit \u00b10.10 ((PAT - CFO)(FY17) / avg Total Assets) (grade A)",
+        "fact_ids": [
+          "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY17",
+          "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY16"
+        ],
+        "name": "high_accruals",
+        "outcome": "PASS",
+        "reason": ""
+      }
+    ]
+  },
+  "company_name": "PC Jeweller Limited",
+  "computed_facts": {
+    "accrual_ratio_latest": -0.051031599827800485,
+    "cash_conversion_cycle": 127.22248088091797,
+    "cfo_cum_window": 502.71195909999994,
+    "cfo_pat_latest": 1.7968219282202325,
+    "cost_of_debt_average": 0.3414039280571131,
+    "cost_of_debt_latest": 0.40271794130403354,
+    "cum_cfo_pat": 0.2421683487895578,
+    "debt_delta_window": 114.39381960000003,
+    "debt_funded_investment_share": 0.15934054147580054,
+    "employee_cost_ratio": 0.009831889663956225,
+    "employee_cost_ratio_delta": 0.001647534387983405,
+    "inventory_days": 214.64621008593363,
+    "investing_outflow_cum": 717.9203643999999,
+    "material_cost_ratio": 0.8876379053133717,
+    "material_cost_ratio_delta": -0.14046492934467103,
+    "net_cash_position": 499.9799999999998,
+    "other_expense_ratio": 0.02392933587277627,
+    "other_expense_ratio_delta": -0.03134482531993468,
+    "other_income_share": 0.17549399981954344,
+    "pat_cagr": 0.12761605578796464,
+    "payable_days": 153.6282565679064,
+    "receivable_days": 66.20452736289073,
+    "receivable_days_delta": 17.42604335172853,
+    "revenue_cagr": 0.22756590947477218,
+    "self_funding_ratio": 0.7002335969674578
+  },
+  "confidence": {
+    "evidence_count": 16,
+    "lowest_grade_relied_on": "A",
+    "rationale": "90% of the applicable playbook was evaluable, 25% of notes carry a substantive disposition, 36% of the line-by-line questions could be answered, and the weakest grade relied on is A (cap 0.90)",
+    "value": 0.38
+  },
+  "disclaimer": "Research artifact only. Not investment advice, not a recommendation to transact, and not an offer to buy or sell any security. Figures are computed deterministically from cited primary sources; anything not disclosed is reported as UNAVAILABLE.",
+  "disclosure_backlog": [
+    "tonnes / units sold per year (MD&A production-and-sales table, or the segment note)",
+    "realisation per unit (segment revenue / segment volume) to separate price from mix",
+    "customer-concentration disclosure (Ind AS 108 segment note: revenue from customers >10%)",
+    "trade-receivable concentration in the credit-risk note (Ind AS 107)",
+    "related-party transactions note (Ind AS 24) \u2014 sales-of-goods line, by party",
+    "the related-party balance outstanding at year end, to see whether the sale was ever collected",
+    "business-combination note (Ind AS 103) \u2014 consideration paid, revenue acquired",
+    "consolidated-vs-standalone revenue gap, to size what the subsidiaries contribute",
+    "significant-accounting-policies note, revenue paragraph, compared across two annual reports",
+    "segment-wise revenue and result (Ind AS 108) to separate mix from price",
+    "capacity and utilisation, to attribute the balance to operating leverage",
+    "other-income breakup note (interest / dividend / forex / profit on sale of assets / other)",
+    "prior-year comparative for the same note, to see which components recur",
+    "borrowings note \u2014 the interest rate stated per facility, which is the disclosed rate rather than an implied one",
+    "borrowings note \u2014 to confirm the debt is genuinely immaterial rather than reclassified",
+    "borrowings note \u2014 repayment schedule by year, secured vs unsecured, and the interest rate on each tranche",
+    "current-vs-non-current split of borrowings from the balance sheet",
+    "borrowings note \u2014 nature of security, assets charged",
+    "CERSAI / ROC charge register for charges the notes do not mention",
+    "any covenant-breach or default disclosure, including the CARO clause on repayment defaults",
+    "contingent liabilities note \u2014 guarantees given, by beneficiary",
+    "related-party note cross-check: is the beneficiary an entity the promoter controls?",
+    "PPE note \u2014 additions by asset class, to split the expansion projects from replacement",
+    "MD&A or capex-guidance statement naming the expansion projects and their cost",
+    "cash-and-bank note \u2014 the split between current accounts, term deposits and margin money",
+    "cash-and-bank note \u2014 restricted balances, margin money, deposits under lien",
+    "tax-reconciliation note (Ind AS 12) \u2014 statutory rate to effective rate, by cause",
+    "deferred-tax movement, and whether a deferred-tax asset is being recognised on losses",
+    "related-party note (Ind AS 24) \u2014 sales, purchases, loans given/taken, guarantees, remuneration",
+    "the year-end outstanding balance per party, not just the transaction value",
+    "Schedule III mandatory row: loans and advances to promoters, directors and KMP",
+    "contingent liabilities note \u2014 guarantees given on behalf of related parties",
+    "audit-committee report on related-party approvals",
+    "any transfer-pricing or independent-valuation reference in the notes"
+  ],
+  "executive_summary": "The statements describe a company whose profit is an accounting event and whose cash is a financing event. Working capital absorbs the profit year after year, the investing line is small beside it, and the finance-cost line is far too large for the borrowings shown, which points at funding hidden inside the payables. The one good year of conversion at the end of the window does not repair the cumulative record; it coincides with slower collections and should be read with the forensic note rather than against it.\n\n**Verdict rationale (deterministic):** deterministic screen returned HARD_FAIL with 2 flag(s); at or above severity HIGH: cumulative_cfo_pat_low, receivables_divergent",
+  "fact_citations": {
+    "accrual_ratio_latest": {
+      "doc_id": "derivation:(PAT - CFO)(FY17) / avg Total Assets",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:accrual_ratio_latest",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY16",
+      "published_at": "2017-09-09"
+    },
+    "cash_conversion_cycle": {
+      "doc_id": "derivation:Receivable days + Inventory days - Payable days, FY17 (days of cash tied up)",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:cash_conversion_cycle",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+      "published_at": "2017-09-09"
+    },
+    "cfo_cum_window": {
+      "doc_id": "derivation:\u03a3 CFO, FY12-FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:cfo_cum_window",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+      "published_at": "2017-09-09"
+    },
+    "cfo_pat_latest": {
+      "doc_id": "derivation:CFO FY17 / PAT FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:cfo_pat_latest",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17",
+      "published_at": "2017-09-09"
+    },
+    "cost_of_debt_average": {
+      "doc_id": "derivation:Interest FY17 / average Borrowings, FY16-FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:cost_of_debt_average",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Interest:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY16",
+      "published_at": "2017-09-09"
+    },
+    "cost_of_debt_latest": {
+      "doc_id": "derivation:Interest FY17 / Borrowings FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:cost_of_debt_latest",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Interest:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+      "published_at": "2017-09-09"
+    },
+    "cum_cfo_pat": {
+      "doc_id": "derivation:\u03a3 CFO / \u03a3 PAT, FY12-FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:cum_cfo_pat",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17, AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12, AR-FY14-PCJ-AR-FY14.pdf:pnl:Net Profit:FY13, AR-FY15-PCJ-AR-FY15.pdf:pnl:Net Profit:FY14, AR-FY16-PCJ-AR-FY16.pdf:pnl:Net Profit:FY15, AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY16, AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17",
+      "published_at": "2017-09-09"
+    },
+    "debt_delta_window": {
+      "doc_id": "derivation:Borrowings FY17 - Borrowings FY12",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:debt_delta_window",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+      "published_at": "2017-09-09"
+    },
+    "debt_funded_investment_share": {
+      "doc_id": "derivation:\u0394Borrowings / -\u03a3 CFI, FY12-FY17 (share of the investment programme debt paid for)",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:debt_funded_investment_share",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17, AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17",
+      "published_at": "2017-09-09"
+    },
+    "employee_cost_ratio": {
+      "doc_id": "derivation:Employee Benefits FY17 / pnl:Sales FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:employee_cost_ratio",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "employee_cost_ratio_delta": {
+      "doc_id": "derivation:Employee Benefits/Sales FY17 - Employee Benefits/Sales FY12",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:employee_cost_ratio_delta",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:pnl:Employee Benefits:FY12, AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12, AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "inventory_days": {
+      "doc_id": "derivation:balance_sheet:Inventories FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:inventory_days",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+      "published_at": "2017-09-09"
+    },
+    "investing_outflow_cum": {
+      "doc_id": "derivation:-\u03a3 CFI, FY12-FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:investing_outflow_cum",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17",
+      "published_at": "2017-09-09"
+    },
+    "material_cost_ratio": {
+      "doc_id": "derivation:Cost of Materials Consumed FY17 / pnl:Sales FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:material_cost_ratio",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "material_cost_ratio_delta": {
+      "doc_id": "derivation:Cost of Materials Consumed/Sales FY17 - Cost of Materials Consumed/Sales FY12",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:material_cost_ratio_delta",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:pnl:Cost of Materials Consumed:FY12, AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "net_cash_position": {
+      "doc_id": "derivation:Cash + Other Bank Balances - Borrowings, FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:net_cash_position",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Cash Equivalents:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Other Bank Balances:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+      "published_at": "2017-09-09"
+    },
+    "other_expense_ratio": {
+      "doc_id": "derivation:Other Expenses FY17 / pnl:Sales FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:other_expense_ratio",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Expenses:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "other_expense_ratio_delta": {
+      "doc_id": "derivation:Other Expenses/Sales FY17 - Other Expenses/Sales FY12",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:other_expense_ratio_delta",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:pnl:Other Expenses:FY12, AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12, AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Expenses:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "other_income_share": {
+      "doc_id": "derivation:pnl:Other Income FY17 / pnl:Profit before tax FY17",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:other_income_share",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Income:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Profit before tax:FY17",
+      "published_at": "2017-09-09"
+    },
+    "pat_cagr": {
+      "doc_id": "derivation:(pnl:Net Profit FY17 / pnl:Net Profit FY12)^(1/5) - 1",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:pat_cagr",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12, AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17",
+      "published_at": "2017-09-09"
+    },
+    "payable_days": {
+      "doc_id": "derivation:balance_sheet:Trade Payables FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:payable_days",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+      "published_at": "2017-09-09"
+    },
+    "receivable_days": {
+      "doc_id": "derivation:balance_sheet:Trade Receivables FY17 / pnl:Sales FY17 x 365",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:receivable_days",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "receivable_days_delta": {
+      "doc_id": "derivation:Receivable days FY17 - FY16 (positive = collection is slowing)",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:receivable_days_delta",
+      "grade": "A",
+      "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY16, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16",
+      "published_at": "2017-09-09"
+    },
+    "revenue_cagr": {
+      "doc_id": "derivation:(pnl:Sales FY17 / pnl:Sales FY12)^(1/5) - 1",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:revenue_cagr",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+      "published_at": "2017-09-09"
+    },
+    "self_funding_ratio": {
+      "doc_id": "derivation:\u03a3 CFO / -\u03a3 CFI, FY12-FY17 (>=1 means operations paid for the investment programme)",
+      "extractor_version": "core.compute@1.0.0",
+      "fact_id": "derived:self_funding_ratio",
+      "grade": "A",
+      "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17, AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17",
+      "published_at": "2017-09-09"
+    }
+  },
+  "forensic_narrative": "The evidence indicates a company whose reported profits have not been matched by cash for most of the window, whose receivables are outrunning its revenue, and whose true cost and quantum of funding are larger than the balance sheet labels them. Nothing here is an accusation of fraud; every figure is computed from the company's own audited filings and each can be replicated from the cited derivations and page locators. The deterministic hard-fail stands, and the veto is exercised: no narrative about growth or brand should outrank a cumulative cash record this weak, and the burden of proof now sits with the disclosures the open questions name.",
+  "kill_criteria": [
+    {
+      "load_bearing": true,
+      "metric": "cum_cfo_pat",
+      "operator": ">=",
+      "resolve_by": "2018-10-27",
+      "statement": "Cumulative CFO/PAT stays at or above 0.70 (it is 0.24 today). If a decade of reported profit stops converting to cash, the thesis is dead regardless of growth.",
+      "threshold": 0.7
+    },
+    {
+      "load_bearing": false,
+      "metric": "cfo_pat_latest",
+      "operator": ">=",
+      "resolve_by": "2018-10-27",
+      "statement": "Single-year CFO/PAT stays at or above 1.62 in the next annual report (it is 1.80 today).",
+      "threshold": 1.6171
+    },
+    {
+      "load_bearing": false,
+      "metric": "accrual_ratio_latest",
+      "operator": "<=",
+      "resolve_by": "2018-10-27",
+      "statement": "The accrual ratio stays at or below 0.10 (it is -0.051 today); above it, reported earnings are increasingly non-cash.",
+      "threshold": 0.1
+    }
+  ],
+  "line_item_coverage": 0.358974358974359,
+  "line_items": [
+    {
+      "answers": [
+        {
+          "citation": {
+            "doc_id": "derivation:(pnl:Sales FY17 / pnl:Sales FY12)^(1/5) - 1",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:revenue_cagr",
+            "grade": "A",
+            "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+          ],
+          "finding": "Revenue compounded at 22.8% across FY12-FY17 \u2014 fast enough that a 5x in 5-8 years does not require a re-rating.",
+          "gap": "NONE",
+          "metric": "revenue_cagr",
+          "needs": [],
+          "question": "At what rate did revenue actually compound, and over what window?",
+          "question_id": "revenue_rate",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 0.22756590947477218
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "tonnes / units sold per year (MD&A production-and-sales table, or the segment note)",
+            "realisation per unit (segment revenue / segment volume) to separate price from mix"
+          ],
+          "question": "Is the growth VOLUME or PRICE? A processor whose revenue rose on realisation has no compounding claim \u2014 the price reverses. One whose tonnage rose has a capacity story that can repeat.",
+          "question_id": "revenue_volume_or_price",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "customer-concentration disclosure (Ind AS 108 segment note: revenue from customers >10%)",
+            "trade-receivable concentration in the credit-risk note (Ind AS 107)"
+          ],
+          "question": "Is revenue concentrated in a few buyers? One customer at 30% of sales is not a customer, it is a counterparty risk with pricing power over the entire P&L.",
+          "question_id": "revenue_buyer_concentration",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "related-party transactions note (Ind AS 24) \u2014 sales-of-goods line, by party",
+            "the related-party balance outstanding at year end, to see whether the sale was ever collected"
+          ],
+          "question": "How much revenue is transacted with related parties? Revenue sold to an entity the promoter also controls is not third-party demand; it is a number the promoter can choose.",
+          "question_id": "revenue_related_party_share",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:Receivable days FY17 - FY16 (positive = collection is slowing)",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:receivable_days_delta",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY16, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY16",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16"
+          ],
+          "finding": "Receivable days moved 17.4 days year on year \u2014 collection is lengthening materially, which is what revenue booked to hit a number looks like on the balance sheet.",
+          "gap": "NONE",
+          "metric": "receivable_days_delta",
+          "needs": [],
+          "question": "Did receivables grow faster than revenue? Sales that turn into a receivable instead of cash are the classic signature of channel-stuffing and of revenue booked to hit a number.",
+          "question_id": "revenue_vs_receivables",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 17.42604335172853
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "business-combination note (Ind AS 103) \u2014 consideration paid, revenue acquired",
+            "consolidated-vs-standalone revenue gap, to size what the subsidiaries contribute"
+          ],
+          "question": "Is the growth organic, or did it arrive with an acquisition?",
+          "question_id": "revenue_organic_or_acquired",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "significant-accounting-policies note, revenue paragraph, compared across two annual reports"
+          ],
+          "question": "Did the revenue-recognition policy change during the window, and did the change flatter the trend? A policy change is disclosed exactly once and then never mentioned again.",
+          "question_id": "revenue_recognition_policy",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.2857142857142857,
+      "label": "Revenue \u2014 where the money actually comes from",
+      "line_item": "revenue",
+      "why": "Every other line depends on this one, and it is the easiest to inflate: revenue can be booked gross instead of net, recognised early, routed through a related party, or bought outright. Growth with no stated cause is the single most common way a promoter story survives contact with a spreadsheet."
+    },
+    {
+      "answers": [
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "opm_delta_window",
+          "needs": [],
+          "question": "Did the operating margin expand or compress across the window?",
+          "question_id": "margin_direction",
+          "reason": "the sources read do not disclose: pnl:Operating Profit FY12, pnl:Operating Profit FY17",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "expense_cagr",
+          "needs": [],
+          "question": "Did costs compound faster than revenue? That is margin compression, stated causally.",
+          "question_id": "cost_vs_revenue_growth",
+          "reason": "the sources read do not disclose: pnl:Expenses FY12, pnl:Expenses FY17",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:Cost of Materials Consumed/Sales FY17 - Cost of Materials Consumed/Sales FY12",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:material_cost_ratio_delta",
+            "grade": "A",
+            "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:pnl:Cost of Materials Consumed:FY12, AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY13-PCJ-AR-FY13.pdf:pnl:Cost of Materials Consumed:FY12",
+            "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+          ],
+          "finding": "The material cost ratio moved -14.0pp across FY12-FY17 against -3.1pp for other expenses.\n \u2014 the material ratio FELL materially, so any margin compression came from somewhere other than feedstock.",
+          "gap": "NONE",
+          "metric": "material_cost_ratio_delta",
+          "needs": [],
+          "question": "WHICH cost line moved \u2014 raw material, power, employee, or other expenses? \"Margins fell\" is not an analysis; \"the material cost ratio rose 400bps because the feedstock spread inverted\" is.",
+          "question_id": "margin_which_cost_line",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": -0.14046492934467103
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:Employee Benefits FY17 / pnl:Sales FY17",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:employee_cost_ratio",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+          ],
+          "finding": "Employee benefits are 1.0% of revenue, having moved 0.2% across FY12-FY17 \u2014 a very light cost base \u2014 the economics live entirely in the material spread.",
+          "gap": "NONE",
+          "metric": "employee_cost_ratio",
+          "needs": [],
+          "question": "What does the workforce cost as a share of revenue, and is that share rising? A processor whose employee ratio climbs while tonnage is flat is losing operating leverage.",
+          "question_id": "margin_employee_cost_share",
+          "reason": "",
+          "severity": "medium",
+          "status": "ANSWERED",
+          "value": 0.009831889663956225
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "segment-wise revenue and result (Ind AS 108) to separate mix from price",
+            "capacity and utilisation, to attribute the balance to operating leverage"
+          ],
+          "question": "If the margin expanded, was it price, mix, or scale? Only scale is durable at a commodity.",
+          "question_id": "margin_price_mix_or_scale",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.4,
+      "label": "Margins \u2014 whether the growth is worth having",
+      "line_item": "margins",
+      "why": "A margin is an outcome, not a decision. It moves because a cost line moved, because price moved, or because the mix moved \u2014 and only the first two are inside management's control. Growth bought with margin is how a commodity processor looks like a compounder for exactly one cycle."
+    },
+    {
+      "answers": [
+        {
+          "citation": {
+            "doc_id": "derivation:pnl:Other Income FY17 / pnl:Profit before tax FY17",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:other_income_share",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Income:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Profit before tax:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Income:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Profit before tax:FY17"
+          ],
+          "finding": "Other income is 17.5% of pre-tax profit \u2014 material enough to be understood, not large enough to be the story.",
+          "gap": "NONE",
+          "metric": "other_income_share",
+          "needs": [],
+          "question": "How much of pre-tax profit is other income rather than the business?",
+          "question_id": "other_income_weight",
+          "reason": "",
+          "severity": "medium",
+          "status": "ANSWERED",
+          "value": 0.17549399981954344
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "other-income breakup note (interest / dividend / forex / profit on sale of assets / other)",
+            "prior-year comparative for the same note, to see which components recur"
+          ],
+          "question": "WHAT is the other income \u2014 interest on real cash, a forex gain, a government incentive, or a one-off asset sale? Each has a completely different persistence.",
+          "question_id": "other_income_composition",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.5,
+      "label": "Other income \u2014 whether the profit is from the business",
+      "line_item": "other_income",
+      "why": "Other income is where a weak operating year gets rescued. It is also where a promoter parks treasury gains, forex swings and one-off asset sales without ever labelling them non-recurring."
+    },
+    {
+      "answers": [
+        {
+          "citation": {
+            "doc_id": "derivation:Borrowings FY17 - Borrowings FY12",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:debt_delta_window",
+            "grade": "A",
+            "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12",
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+          ],
+          "finding": "Borrowings moved \u20b9114 crore across FY12-FY17 \u2014 debt rose \u2014 the next two questions decide whether that is a problem.",
+          "gap": "NONE",
+          "metric": "debt_delta_window",
+          "needs": [],
+          "question": "Did borrowings rise or fall across the window, and by how much?",
+          "question_id": "debt_direction",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 114.39381960000003
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:\u0394Borrowings / -\u03a3 CFI, FY12-FY17 (share of the investment programme debt paid for)",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:debt_funded_investment_share",
+            "grade": "A",
+            "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17, AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12",
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+            "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+            "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+            "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+            "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+          ],
+          "finding": "Debt funded 15.9% of the FY12-FY17 investment programme \u2014 mostly funded from operations, with debt at the margin.",
+          "gap": "NONE",
+          "metric": "debt_funded_investment_share",
+          "needs": [],
+          "question": "What share of the investment programme did debt pay for? This is the direct answer to \"why is the debt increasing\" \u2014 it rose to buy assets, or it rose for something else.",
+          "question_id": "debt_what_it_funded",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 0.15934054147580054
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:\u03a3 CFO / -\u03a3 CFI, FY12-FY17 (>=1 means operations paid for the investment programme)",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:self_funding_ratio",
+            "grade": "A",
+            "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17, AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+            "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+            "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+            "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+            "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+            "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+            "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+            "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+          ],
+          "finding": "Operating cash covered 0.70x of the investment programme across FY12-FY17 \u2014 nearly self-funded \u2014 the shortfall is what debt or equity had to close.",
+          "gap": "NONE",
+          "metric": "self_funding_ratio",
+          "needs": [],
+          "question": "Did operations pay for the investment programme, or did someone else? A self-funded compounder is the entire premise of this firm; a company whose growth needs external capital every cycle is a different instrument with a different risk.",
+          "question_id": "debt_self_funding",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 0.7002335969674578
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "cost_of_debt_average",
+          "needs": [
+            "borrowings note \u2014 the interest rate stated per facility, which is the disclosed rate rather than an implied one"
+          ],
+          "question": "What is the implied cost of debt, and is it consistent with the company's standing?",
+          "question_id": "debt_cost_sanity",
+          "reason": "computes to 34.1%, outside the range in which this ratio carries information \u2014 the remaining borrowings are too small for the implied rate to mean anything \u2014 the average balance is a rounding artefact of a company that has repaid its debt, so the disclosed rate per facility in the borrowings note is the only honest source",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": 0.3414039280571131
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "interest_coverage_latest",
+          "needs": [
+            "borrowings note \u2014 to confirm the debt is genuinely immaterial rather than reclassified"
+          ],
+          "question": "Can operating profit service the interest?",
+          "question_id": "debt_coverage",
+          "reason": "the sources read do not disclose: pnl:Operating Profit FY17",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "borrowings note \u2014 repayment schedule by year, secured vs unsecured, and the interest rate on each tranche",
+            "current-vs-non-current split of borrowings from the balance sheet"
+          ],
+          "question": "When does the debt fall due? A company with a comfortable coverage ratio and a bullet repayment inside twelve months has a liquidity problem the ratio cannot see.",
+          "question_id": "debt_maturity_profile",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "borrowings note \u2014 nature of security, assets charged",
+            "CERSAI / ROC charge register for charges the notes do not mention",
+            "any covenant-breach or default disclosure, including the CARO clause on repayment defaults"
+          ],
+          "question": "What is pledged against the debt, and are there covenants close to breaching?",
+          "question_id": "debt_security_and_covenants",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "contingent liabilities note \u2014 guarantees given, by beneficiary",
+            "related-party note cross-check: is the beneficiary an entity the promoter controls?"
+          ],
+          "question": "What is owed that is not on the balance sheet? Guarantees given for a promoter entity are the cheapest way to move risk into a listed company without moving a rupee of reported debt.",
+          "question_id": "debt_off_balance_sheet",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.375,
+      "label": "Debt \u2014 not whether it rose, but what it bought",
+      "line_item": "debt",
+      "why": "Owner directive: rising debt is not a finding. Debt that funded capacity which then earned above its cost is good capital allocation; debt that funded dividends, working-capital leakage or interest on earlier debt is the beginning of a balance-sheet accident. The cash-flow identity distinguishes them deterministically, so there is no excuse for reporting the level and stopping."
+    },
+    {
+      "answers": [
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "incremental_roic_3y",
+          "needs": [],
+          "question": "What did the LAST cycle of capital actually earn? Average ROIC is a legacy number; the incremental figure is the one that says whether the next rupee should be deployed here.",
+          "question_id": "capital_incremental_return",
+          "reason": "the sources read do not disclose: a 4+ year run of Operating Profit, Depreciation, Tax %, Borrowings, Equity Capital and Reserves is required for a rolling 3-year incremental ROIC",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "dilution_drag",
+          "needs": [],
+          "question": "Did per-share value compound with the company, or was the growth bought with equity? The firm's question is a 5-10x PER SHARE; aggregate profit growth flatters a serial issuer.",
+          "question_id": "capital_dilution",
+          "reason": "the sources read do not disclose: pnl:EPS in Rs at FY12 and FY17",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": "payout_share_of_cfo",
+          "needs": [],
+          "question": "How much operating cash went out as dividend rather than into the business?",
+          "question_id": "capital_distribution_vs_reinvestment",
+          "reason": "no derivation for 'payout_share_of_cfo' exists in the pipeline yet, so this question was never put to the sources \u2014 a gap in the firm's extraction, not in the filing",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:-\u03a3 CFI, FY12-FY17",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:investing_outflow_cum",
+            "grade": "A",
+            "locator": "inputs AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+            "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+            "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+            "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+            "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+          ],
+          "finding": "Net investing outflow across FY12-FY17 was \u20b9718 crore.",
+          "gap": "NONE",
+          "metric": "investing_outflow_cum",
+          "needs": [],
+          "question": "How large was the investment programme in absolute terms?",
+          "question_id": "capital_programme_size",
+          "reason": "",
+          "severity": "low",
+          "status": "ANSWERED",
+          "value": 717.9203643999999
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "capex_to_depreciation",
+          "needs": [
+            "PPE note \u2014 additions by asset class, to split the expansion projects from replacement",
+            "MD&A or capex-guidance statement naming the expansion projects and their cost"
+          ],
+          "question": "How much of the capex was maintenance and how much was growth? Without the split, a negative incremental return cannot be distinguished from ordinary asset replacement \u2014 and that is the difference between a value-destroying expansion and a company simply keeping the lights on.",
+          "question_id": "capital_maintenance_vs_growth",
+          "reason": "the sources read do not disclose: cashflow:Purchase of PPE and pnl:Depreciation in the same year (the cash-flow capex line comes from the filing, not the screener)",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.2,
+      "label": "Capital allocation \u2014 what management did with the cash",
+      "line_item": "capital_allocation",
+      "why": "This is the only line item that measures management rather than the business. Over a decade the allocation record is the most reliable statement of intent a promoter ever makes, and it is arithmetic rather than an interview."
+    },
+    {
+      "answers": [
+        {
+          "citation": {
+            "doc_id": "derivation:balance_sheet:Trade Receivables FY17 / pnl:Sales FY17 x 365",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:receivable_days",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+          ],
+          "finding": "Receivable days stand at 66.2 days.",
+          "gap": "NONE",
+          "metric": "receivable_days",
+          "needs": [],
+          "question": "How long does the company take to collect, and is that lengthening?",
+          "question_id": "wc_receivable_days",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 66.20452736289073
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:balance_sheet:Inventories FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:inventory_days",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+          ],
+          "finding": "Inventory days stand at 214.6 days.",
+          "gap": "NONE",
+          "metric": "inventory_days",
+          "needs": [],
+          "question": "Is inventory building faster than sales, and is any of it obsolete?",
+          "question_id": "wc_inventory_days",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 214.64621008593363
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:balance_sheet:Trade Payables FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:payable_days",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+          ],
+          "finding": "Payable days stand at 153.6 days \u2014 long enough that suppliers are financing the business, which is a liquidity position rather than a negotiating win.",
+          "gap": "NONE",
+          "metric": "payable_days",
+          "needs": [],
+          "question": "Is the company funding itself by paying suppliers late? A stretching payable cycle is a liquidity signal that arrives before any ratio breaks.",
+          "question_id": "wc_payable_stretch",
+          "reason": "",
+          "severity": "medium",
+          "status": "ANSWERED",
+          "value": 153.6282565679064
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:Receivable days + Inventory days - Payable days, FY17 (days of cash tied up)",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:cash_conversion_cycle",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+          ],
+          "finding": "The cash conversion cycle ties up 127.2 days \u2014 a long cycle: growth consumes cash before it produces any, so revenue growth needs funding.",
+          "gap": "NONE",
+          "metric": "cash_conversion_cycle",
+          "needs": [],
+          "question": "Net of all three, how many days of cash does the operating cycle tie up \u2014 and does the company fund its own working capital or does someone else?",
+          "question_id": "wc_cash_cycle",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 127.22248088091797
+        }
+      ],
+      "coverage": 1.0,
+      "label": "Working capital \u2014 where cash hides before it disappears",
+      "line_item": "working_capital",
+      "why": "Working capital is the bridge between reported profit and cash, so it is where an inflated profit must eventually show up. Every question here needs three balance-sheet rows the screener does not carry \u2014 receivables, inventory and payables \u2014 so these are answerable only on a run that walked the audited annual report, and unanswerable on one that did not."
+    },
+    {
+      "answers": [
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "cash_yield_latest",
+          "needs": [
+            "cash-and-bank note \u2014 the split between current accounts, term deposits and margin money"
+          ],
+          "question": "Does the reported cash balance earn a plausible rate of interest?",
+          "question_id": "cash_earns_interest",
+          "reason": "the sources read do not disclose: cashflow:Interest Income FY17, balance_sheet:Cash Equivalents FY16",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": {
+            "doc_id": "derivation:Cash + Other Bank Balances - Borrowings, FY17",
+            "extractor_version": "core.compute@1.0.0",
+            "fact_id": "derived:net_cash_position",
+            "grade": "A",
+            "locator": "inputs AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Cash Equivalents:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Other Bank Balances:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+            "published_at": "2017-09-09"
+          },
+          "fact_ids": [
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Cash Equivalents:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Other Bank Balances:FY17",
+            "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+          ],
+          "finding": "Net cash after deducting all borrowings is \u20b9500 crore \u2014 net cash, so there is no borrow-and-hoard pattern to explain.",
+          "gap": "NONE",
+          "metric": "net_cash_position",
+          "needs": [],
+          "question": "Is the company holding cash while paying materially more to borrow?",
+          "question_id": "cash_alongside_costly_debt",
+          "reason": "",
+          "severity": "high",
+          "status": "ANSWERED",
+          "value": 499.9799999999998
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "cash-and-bank note \u2014 restricted balances, margin money, deposits under lien"
+          ],
+          "question": "Is the cash actually available? Margin money, unpaid-dividend accounts and lien-marked deposits are reported inside cash and cannot be spent.",
+          "question_id": "cash_restrictions",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.3333333333333333,
+      "label": "Cash \u2014 whether the balance is real",
+      "line_item": "cash",
+      "why": "The sharpest single test in the forensic library: cash that exists earns interest at a rate you can compute, and cash that does not exist earns nothing. A company holding a large balance while paying high interest on debt is either badly run or not holding the balance it reports."
+    },
+    {
+      "answers": [
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "DISCLOSURE",
+          "metric": "effective_tax_rate_latest",
+          "needs": [],
+          "question": "What is the effective tax rate, and how far is it from the statutory rate?",
+          "question_id": "tax_effective_rate",
+          "reason": "the sources read do not disclose: pnl:Tax % FY17",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "tax-reconciliation note (Ind AS 12) \u2014 statutory rate to effective rate, by cause",
+            "deferred-tax movement, and whether a deferred-tax asset is being recognised on losses"
+          ],
+          "question": "WHY does the effective rate differ from statutory, line by line?",
+          "question_id": "tax_reconciliation",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.0,
+      "label": "Tax \u2014 the cheapest cross-check on reported profit",
+      "line_item": "tax",
+      "why": "Tax is paid to a party with no interest in the share price. A profit that is reported but not taxed has to be explained by a disclosed incentive; if there is no such incentive, the profit is the thing in doubt."
+    },
+    {
+      "answers": [
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "related-party note (Ind AS 24) \u2014 sales, purchases, loans given/taken, guarantees, remuneration",
+            "the year-end outstanding balance per party, not just the transaction value"
+          ],
+          "question": "What is the total value of related-party transactions, by type and by party?",
+          "question_id": "rp_quantum",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "Schedule III mandatory row: loans and advances to promoters, directors and KMP",
+            "contingent liabilities note \u2014 guarantees given on behalf of related parties"
+          ],
+          "question": "Has the company lent money to, or guaranteed borrowing for, a promoter entity?",
+          "question_id": "rp_promoter_lending",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "high",
+          "status": "UNANSWERED",
+          "value": null
+        },
+        {
+          "citation": null,
+          "fact_ids": [],
+          "finding": "",
+          "gap": "CAPABILITY",
+          "metric": null,
+          "needs": [
+            "audit-committee report on related-party approvals",
+            "any transfer-pricing or independent-valuation reference in the notes"
+          ],
+          "question": "Were related-party transactions at arm's length, and who says so? The audit committee's approval is a governance fact; an independent valuation is evidence.",
+          "question_id": "rp_pricing",
+          "reason": "no extractor reads this yet \u2014 it requires the primary-source rows named below",
+          "severity": "medium",
+          "status": "UNANSWERED",
+          "value": null
+        }
+      ],
+      "coverage": 0.0,
+      "label": "Related parties \u2014 the channel every promoter-level fraud uses",
+      "line_item": "related_party",
+      "why": "Almost no Indian small-cap fraud is invented inside the audited statements; it is routed through an entity the promoter also controls, at a price nobody negotiated. This line item is unanswerable without the notes, which is precisely why an unwalked annual report cannot produce a clean verdict."
+    }
+  ],
+  "load_bearing_points": [
+    {
+      "citations": [
+        {
+          "doc_id": "derivation",
+          "extractor_version": "core.compute@1.0.0",
+          "fact_id": "derived:cum_cfo_pat",
+          "grade": "A",
+          "locator": "inputs listed in the numbers table",
+          "published_at": "2017-09-09"
+        }
+      ],
+      "kind": "observation",
+      "lowest_grade": "A",
+      "text": "Across the six-year window, cumulative operating cash flow was 0.24 [fact:derived:cum_cfo_pat] of cumulative profit after tax. Roughly three rupees of every four of reported profit did not arrive as cash from operations."
+    },
+    {
+      "citations": [
+        {
+          "doc_id": "derivation",
+          "extractor_version": "core.compute@1.0.0",
+          "fact_id": "derived:cum_cfo_pat",
+          "grade": "A",
+          "locator": "inputs listed in the numbers table",
+          "published_at": "2017-09-09"
+        }
+      ],
+      "kind": "observation",
+      "lowest_grade": "A",
+      "text": "The deterministic screen hard-fails on cumulative cash conversion: 0.24 [fact:derived:cum_cfo_pat] of cumulative reported profit arrived as operating cash across the window."
+    },
+    {
+      "citations": [
+        {
+          "doc_id": "derivation",
+          "extractor_version": "core.compute@1.0.0",
+          "fact_id": "derived:revenue_cagr",
+          "grade": "A",
+          "locator": "inputs listed in the numbers table",
+          "published_at": "2017-09-09"
+        },
+        {
+          "doc_id": "derivation",
+          "extractor_version": "core.compute@1.0.0",
+          "fact_id": "derived:pat_cagr",
+          "grade": "A",
+          "locator": "inputs listed in the numbers table",
+          "published_at": "2017-09-09"
+        }
+      ],
+      "kind": "observation",
+      "lowest_grade": "A",
+      "text": "Revenue compounded at 22.8% [fact:derived:revenue_cagr] across the window while profit compounded at 12.8% [fact:derived:pat_cagr] \u2014 growth has been bought at declining profitability per rupee of sales."
+    }
+  ],
+  "management_narrative": "No management or governance assessment is made in this report: `management_analyst`, `transcript_analyst` and `ownership_flows_analyst` did not run. Promoter-pledge, promise-vs-delivery and board-interlock findings are therefore absent rather than clean.",
+  "open_questions": [
+    "business_analyst: What share of revenue is export versus showroom, and who are the export counterparties? The segment note separates domestic from export revenue but the buyers behind the export receivables are not named.",
+    "business_analyst: How much of the gold inventory is held on leased gold (metal loans) versus owned, and at what price risk?",
+    "business_analyst: Same-store versus new-store growth split for the domestic showroom network is not disclosed.",
+    "financial_statement_analyst: The interest income earned on the cash and bank balances is not broken out of other income, so whether the reported balances behave like real, unencumbered cash cannot be tested from this read.",
+    "financial_statement_analyst: Purchase of property, plant and equipment is not separated in the cash-flow read, so capex versus the depreciation charge cannot be compared.",
+    "financial_statement_analyst: Operating profit is not derivable from the rows read this run, so return on capital and interest cover are not computed \u2014 the finance-cost anomaly is measured against borrowings instead.",
+    "forensic_accountant: Who are the export receivable counterparties, and what is their ageing? The receivables note read this run does not break them out by buyer.",
+    "forensic_accountant: What exactly do the bank balances secure? The other-bank-balances note and the borrowings security schedule would answer whether the cash is free.",
+    "forensic_accountant: The related-party note discloses rent paid to promoter directors that multiplied against the prior year; what changed in those lease arrangements, and on whose terms?",
+    "cash_interest_inconsistent: inputs not disclosed in the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+  ],
+  "rehabilitation_criteria": [
+    {
+      "load_bearing": true,
+      "metric": "cum_cfo_pat",
+      "operator": ">=",
+      "resolve_by": "2018-10-27",
+      "statement": "`cumulative_cfo_pat` clears: cum_cfo_pat >= 0.7 (currently 0.24), evidenced in the next annual report. Until then this remains the reason the verdict is withheld.",
+      "threshold": 0.7
+    },
+    {
+      "load_bearing": true,
+      "metric": "receivables_divergent",
+      "operator": "==",
+      "resolve_by": "2018-10-27",
+      "statement": "`receivables_divergent` clears: receivables_divergent == 0.0, evidenced in the next annual report. Until then this remains the reason the verdict is withheld.",
+      "threshold": 0.0
+    },
+    {
+      "load_bearing": true,
+      "metric": "checks_unavailable",
+      "operator": "<=",
+      "resolve_by": "2018-10-27",
+      "statement": "The company discloses the inputs for the checks that could not be run \u2014 `cash_interest_inconsistent` \u2014 in a filing readable as text. For a listed company these are public by law; the gap, not our patience, is what holds the verdict.",
+      "threshold": 0.0
+    }
+  ],
+  "replication_notes": [
+    "Re-run `python -m firm deep-dive --ticker PCJEWELLER --as-of 2017-12-31`; the run id is a content hash of the inputs, so the same facts reproduce this report byte-for-byte.",
+    "Every figure in \u00a74 lists its formula and input fact ids; each fact resolves to (doc_id, page/line, published_at, grade) in the fact store.",
+    "`cumulative_cfo_pat`: \u03a3CFO/\u03a3PAT 0.24 vs floor 0.70 (\u03a3 CFO / \u03a3 PAT, FY12-FY17) (grade A) \u2014 recompute from fact ids AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12, AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13, AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14, AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16, AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17, AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12, AR-FY14-PCJ-AR-FY14.pdf:pnl:Net Profit:FY13, AR-FY15-PCJ-AR-FY15.pdf:pnl:Net Profit:FY14, AR-FY16-PCJ-AR-FY16.pdf:pnl:Net Profit:FY15, AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY16, AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17.",
+    "`receivables_divergent`: receivables +57.6% vs revenue +16.1%, gap +41.5% vs limit 25% (AR) (grade A) \u2014 recompute from fact ids AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17, AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY16, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17, AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16."
+  ],
+  "run_id": "2017-12-31-cccdf1de45b8",
+  "sector_narrative": "",
+  "thesis": "PC Jeweller sells jewellery through two very different channels wearing one P&L. The domestic showroom half is a working-capital-heavy but cash-collecting retail business. The export half books revenue against receivables from unnamed overseas buyers. The filings this run read do not let the two be separated cleanly, and that separation is exactly where the analysis of this company should go next, because the cash-flow strain the financial-statement work surfaces has to live in one of those channels.",
+  "ticker": "PCJEWELLER",
+  "unavailable_items": [
+    "cash_interest_inconsistent: inputs not disclosed in the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+  ],
+  "valuation_narrative": "No valuation claim is made in this report. The valuation tier (reverse DCF, probability-weighted scenarios, sensitivity) is Phase 4 of the build; the feasibility gate below is a *self-funding* test, not a price judgment.",
+  "verdict": "FORENSIC_CAUTION"
+}

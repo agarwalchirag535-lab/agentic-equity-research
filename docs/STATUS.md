@@ -536,10 +536,22 @@ generalisations came out of observing the run, both landed:
   when the filing walk did not supply their inputs — five years of audited receivables sat in the store
   while the check reported UNAVAILABLE.
 
-**Still open from this run:** interest-income breakout (cash-yield check), notes/Schedule III/CARO walk
-for PCJ (the walker's note scanning still applies), `promoter_lending` inputs, no model matched (a
-RETAIL shape is a calibration question for the golden set), and the run has not yet been taken through
-agent narration to a published REJECT report — the dual-verdict directive wants that report to exist.
+**The REJECT report is published (2026-08-31, ADR-0047):** `reports/PCJEWELLER/2017-12-31-cccdf1de45b8/`
+— **FORENSIC_CAUTION**, confidence 0.38, three agents narrated, zero graph/publication violations,
+grade A throughout, kill/rehab criteria dated 2018-10-27 (history answered them: the collapse came
+first). Getting there forced three more pattern→reading fixes, all general: era-gated mandated
+disclosures (an FY17 filing was about to be charged with FY22 Schedule III rows and FY18 KAM — a false
+accusation), notes + related-party enumeration through the ADR-0046 propose/verify path (52/52 notes,
+100% coverage, note 37 read: no lending TO promoters), and `walk_filing(numeric_rows=False)` so the
+row-locator cannot re-poison a store a verified reading populated.
+
+**Still open from this run:** interest-income breakout (cash-yield check UNAVAILABLE, honestly); no
+business model matched (a RETAIL/jewellery shape is a golden-set calibration question);
+`cash_debt_paradox` reads cash-equivalents only while PCJ's encumbered-cash story lives in Other Bank
+Balances (₹780cr); CARO triage is era-blind (2016 vs 2020 clause numbering); feasibility gate cannot
+run without Operating Profit (compose it on the reading path); prediction resolver still never invoked
+— PCJ's FY18 filing is now the perfect resolution target (`resolver.py` + the FY18 AR would score the
+three logged predictions).
 
 ## 7. Suggested next step
 

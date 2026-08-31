@@ -1,0 +1,789 @@
+<!-- agent: business_analyst@1.0.0 · answer with ONE JSON object matching the schema at the end · save it as business_analyst.json in this directory -->
+
+# SYSTEM
+
+# House Analytical Standards
+
+Every agent inherits these. They are enforced by validators where possible (SPEC §9) and by review
+where not.
+
+1. **Numbers over adjectives.** "Margins improved" is banned. Required form: "EBITDA margin went
+   14.2% → 18.6% over FY22–FY25, driven ~60% by operating leverage and ~40% by mix." A `hedge_detector`
+   flags vague quantifiers ("strong growth", "healthy margins", "significant opportunity") and forces a
+   number.
+2. **State the base rate first.** Before claiming a company grows 30% for 7 years, state how many Indian
+   companies in this sector have ever done that.
+3. **Say "I don't know."** An explicit `unknown` with a note on what data would resolve it beats a
+   confident guess. Every output has an `open_questions` array — an empty array is suspicious.
+4. **Separate observation / inference / speculation.** Three distinct schema fields. Never blend them in
+   prose.
+5. **Confidence is numeric** and justified by evidence count and grade, not vibes.
+6. **Disconfirming search is mandatory.** Every agent actively looks for evidence against its own
+   emerging conclusion and records what it found or failed to find.
+7. **A management claim is data about management, not data about the business.** Tag it as grade C and
+   attribute it.
+8. **Cite the grade.** When a thesis pillar rests on grade C or D evidence, say so in the thesis body,
+   not a footnote.
+
+Numbers rule (Law 1): agents never compute or invent a figure. Every number an agent uses was produced
+by `core/compute/` and arrives with a `fact_id`. Agents reason about numbers; they do not make them.
+
+---
+
+# Epistemics — how to express uncertainty
+
+- **Confidence is a number in [0,1]**, and it must be defensible from evidence count × grade, not tone.
+  Two grade-A facts beat ten grade-D mentions.
+- **Three states, never two:** `supported` (evidence for), `refuted` (evidence against), `unknown` (no
+  sufficient evidence). "Unknown" is a first-class answer and often the correct one.
+- **Distinguish observation / inference / speculation** and never let a downstream agent read a
+  speculation as an observation. The schema forces separate fields; honour them.
+- **Every load-bearing claim is falsifiable.** If no future filing could prove it wrong, it is not a
+  claim, it is a vibe — demote it.
+- **Grade every input** (A audited / B exchange / C company-claim / D media). A thesis pillar may not
+  rest on grade D alone.
+- **Calibrate.** Predictions carry a probability; those probabilities are scored by Brier later
+  (SPEC §7). Systematic over/under-confidence is a defect the loop will surface — write probabilities
+  you would bet on.
+
+---
+
+# Forbidden — anti-patterns that fail a run
+
+- **Inventing or computing a number.** Any figure not carrying a `fact_id` from `core/compute/` is a
+  hard fail (Law 1).
+- **Vague quantifiers.** "Strong", "healthy", "significant", "robust", "meaningful" without a number.
+- **Unsourced claims.** Every factual assertion needs a citation token → `fact_id` (Law 2).
+- **Look-ahead.** Referencing anything with `published_at > as_of`. The query layer prevents this; an
+  agent that works around it fails the run (Law 3).
+- **Free-prose hand-offs.** Agents read each other's JSON, never each other's prose (Law 4).
+- **Reading raw HTML/PDF.** Agents read gold fact tables only (Law 7).
+- **Emitting "buy" / a target price as advice.** Output is a thesis with assumptions, probabilities, and
+  kill criteria — never a recommendation to transact (SPEC §1).
+- **Empty `open_questions` / no disconfirming search.** Treated as a quality failure, not a strength.
+- **Treating a management claim as fact.** It is grade-C data about management until an audited filing
+  confirms it.
+- **Building a thesis pillar on grade-D evidence alone.**
+
+# USER
+
+# business_analyst
+
+**Mandate.** Explain what the company actually does — so a non-expert follows the money flow — and
+honestly locate the moat, or admit there isn't one.
+
+**Inputs.** annual reports, investor presentations, `segments`, `related_party`, DRHP (for EMERGING).
+
+**Method.**
+1. Describe the product and who pays, in money-flow terms. Position in the value chain.
+2. Customer concentration; switching costs; where durable advantage comes from — or state its absence.
+3. **National Relevance Test:** does this sit on a structural need of a growing India (energy,
+   manufacturing depth, credit access, healthcare, logistics, digital rails, defence, water, food)?
+   A business with no tailwind can still be a good investment — but the thesis must then rest on
+   execution or re-rating, and say so explicitly.
+4. New-age businesses: what is the product, why now, what shift enabled it, what makes it obsolete.
+
+**Output.** `BusinessAnalystOutput` — `what_it_does`, `moat`, `customer_concentration`,
+`national_relevance`.
+
+**Definition of Done.** A reader who knew nothing now understands how the company earns a rupee and
+where the risk to that rupee is.
+
+**Known failure modes.** Narrating the brand story instead of the money flow; asserting a moat with no
+evidence.
+
+**Forbidden.** Claiming a moat without a mechanism; treating a management claim as fact.
+
+## Computed facts (from core/compute — treat every number as authoritative; DO NOT alter or invent numbers, Law 1)
+```json
+{
+  "ticker": "PCJEWELLER",
+  "as_of": "2017-12-31",
+  "history": "FY12-FY17 (5y)",
+  "business_models_detected": [
+    "none matched \u2014 universal checks only"
+  ],
+  "computed_metrics": {
+    "revenue_cagr": {
+      "value": 0.22756590947477218,
+      "formula": "(pnl:Sales FY17 / pnl:Sales FY12)^(1/5) - 1",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:revenue_cagr]",
+      "grade": "A"
+    },
+    "pat_cagr": {
+      "value": 0.12761605578796464,
+      "formula": "(pnl:Net Profit FY17 / pnl:Net Profit FY12)^(1/5) - 1",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+      ],
+      "cite_as": "[fact:derived:pat_cagr]",
+      "grade": "A"
+    },
+    "cum_cfo_pat": {
+      "value": 0.2421683487895578,
+      "formula": "\u03a3 CFO / \u03a3 PAT, FY12-FY17",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Net Profit:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:pnl:Net Profit:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:pnl:Net Profit:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:pnl:Net Profit:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+      ],
+      "cite_as": "[fact:derived:cum_cfo_pat]",
+      "grade": "A"
+    },
+    "cfo_pat_latest": {
+      "value": 1.7968219282202325,
+      "formula": "CFO FY17 / PAT FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17"
+      ],
+      "cite_as": "[fact:derived:cfo_pat_latest]",
+      "grade": "A"
+    },
+    "accrual_ratio_latest": {
+      "value": -0.051031599827800485,
+      "formula": "(PAT - CFO)(FY17) / avg Total Assets",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Net Profit:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Total Assets:FY16"
+      ],
+      "cite_as": "[fact:derived:accrual_ratio_latest]",
+      "grade": "A"
+    },
+    "other_income_share": {
+      "value": 0.17549399981954344,
+      "formula": "pnl:Other Income FY17 / pnl:Profit before tax FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Income:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Profit before tax:FY17"
+      ],
+      "cite_as": "[fact:derived:other_income_share]",
+      "grade": "A"
+    },
+    "cost_of_debt_latest": {
+      "value": 0.40271794130403354,
+      "formula": "Interest FY17 / Borrowings FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Interest:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+      ],
+      "cite_as": "[fact:derived:cost_of_debt_latest]",
+      "grade": "A"
+    },
+    "debt_delta_window": {
+      "value": 114.39381960000003,
+      "formula": "Borrowings FY17 - Borrowings FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+      ],
+      "cite_as": "[fact:derived:debt_delta_window]",
+      "grade": "A"
+    },
+    "cfo_cum_window": {
+      "value": 502.71195909999994,
+      "formula": "\u03a3 CFO, FY12-FY17",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:cfo_cum_window]",
+      "grade": "A"
+    },
+    "investing_outflow_cum": {
+      "value": 717.9203643999999,
+      "formula": "-\u03a3 CFI, FY12-FY17",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:investing_outflow_cum]",
+      "grade": "A"
+    },
+    "self_funding_ratio": {
+      "value": 0.7002335969674578,
+      "formula": "\u03a3 CFO / -\u03a3 CFI, FY12-FY17 (>=1 means operations paid for the investment programme)",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Operating Activity:FY17",
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:self_funding_ratio]",
+      "grade": "A"
+    },
+    "debt_funded_investment_share": {
+      "value": 0.15934054147580054,
+      "formula": "\u0394Borrowings / -\u03a3 CFI, FY12-FY17 (share of the investment programme debt paid for)",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:balance_sheet:Borrowings:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+        "AR-FY13-PCJ-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "AR-FY14-PCJ-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "AR-FY15-PCJ-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "AR-FY16-PCJ-AR-FY16.pdf:cashflow:Cash from Investing Activity:FY15",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:cashflow:Cash from Investing Activity:FY17"
+      ],
+      "cite_as": "[fact:derived:debt_funded_investment_share]",
+      "grade": "A"
+    },
+    "receivable_days": {
+      "value": 66.20452736289073,
+      "formula": "balance_sheet:Trade Receivables FY17 / pnl:Sales FY17 x 365",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:receivable_days]",
+      "grade": "A"
+    },
+    "inventory_days": {
+      "value": 214.64621008593363,
+      "formula": "balance_sheet:Inventories FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+      ],
+      "cite_as": "[fact:derived:inventory_days]",
+      "grade": "A"
+    },
+    "payable_days": {
+      "value": 153.6282565679064,
+      "formula": "balance_sheet:Trade Payables FY17 / (Materials + \u0394 FG/WIP) FY17 x 365",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+      ],
+      "cite_as": "[fact:derived:payable_days]",
+      "grade": "A"
+    },
+    "receivable_days_delta": {
+      "value": 17.42604335172853,
+      "formula": "Receivable days FY17 - FY16 (positive = collection is slowing)",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY16",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY16"
+      ],
+      "cite_as": "[fact:derived:receivable_days_delta]",
+      "grade": "A"
+    },
+    "cash_conversion_cycle": {
+      "value": 127.22248088091797,
+      "formula": "Receivable days + Inventory days - Payable days, FY17 (days of cash tied up)",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Receivables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Inventories:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Trade Payables:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Changes in Inventories:FY17"
+      ],
+      "cite_as": "[fact:derived:cash_conversion_cycle]",
+      "grade": "A"
+    },
+    "material_cost_ratio": {
+      "value": 0.8876379053133717,
+      "formula": "Cost of Materials Consumed FY17 / pnl:Sales FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:material_cost_ratio]",
+      "grade": "A"
+    },
+    "material_cost_ratio_delta": {
+      "value": -0.14046492934467103,
+      "formula": "Cost of Materials Consumed/Sales FY17 - Cost of Materials Consumed/Sales FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Cost of Materials Consumed:FY12",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Cost of Materials Consumed:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:material_cost_ratio_delta]",
+      "grade": "A"
+    },
+    "employee_cost_ratio": {
+      "value": 0.009831889663956225,
+      "formula": "Employee Benefits FY17 / pnl:Sales FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:employee_cost_ratio]",
+      "grade": "A"
+    },
+    "employee_cost_ratio_delta": {
+      "value": 0.001647534387983405,
+      "formula": "Employee Benefits/Sales FY17 - Employee Benefits/Sales FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Employee Benefits:FY12",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Employee Benefits:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:employee_cost_ratio_delta]",
+      "grade": "A"
+    },
+    "other_expense_ratio": {
+      "value": 0.02392933587277627,
+      "formula": "Other Expenses FY17 / pnl:Sales FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Expenses:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:other_expense_ratio]",
+      "grade": "A"
+    },
+    "other_expense_ratio_delta": {
+      "value": -0.03134482531993468,
+      "formula": "Other Expenses/Sales FY17 - Other Expenses/Sales FY12",
+      "fact_ids": [
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Other Expenses:FY12",
+        "AR-FY13-PCJ-AR-FY13.pdf:pnl:Sales:FY12",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Other Expenses:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:other_expense_ratio_delta]",
+      "grade": "A"
+    },
+    "net_cash_position": {
+      "value": 499.9799999999998,
+      "formula": "Cash + Other Bank Balances - Borrowings, FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Cash Equivalents:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Other Bank Balances:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17"
+      ],
+      "cite_as": "[fact:derived:net_cash_position]",
+      "grade": "A"
+    },
+    "cost_of_debt_average": {
+      "value": 0.3414039280571131,
+      "formula": "Interest FY17 / average Borrowings, FY16-FY17",
+      "fact_ids": [
+        "AR-FY17-PCJ-AR-FY17.pdf:pnl:Interest:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY17",
+        "AR-FY17-PCJ-AR-FY17.pdf:balance_sheet:Borrowings:FY16"
+      ],
+      "cite_as": "[fact:derived:cost_of_debt_average]",
+      "grade": "A"
+    }
+  },
+  "metrics_unavailable": {
+    "opm_latest": [
+      "pnl:Operating Profit FY17"
+    ],
+    "roic_latest": [
+      "pnl:Operating Profit FY17",
+      "pnl:Tax % FY17"
+    ],
+    "interest_coverage_latest": [
+      "pnl:Operating Profit FY17"
+    ],
+    "cwip_share_latest": [
+      "balance_sheet:CWIP FY17"
+    ],
+    "cfo_to_ebitda_latest": [
+      "pnl:Operating Profit FY17"
+    ],
+    "fcf_to_pat_cum": [
+      "cashflow:Free Cash Flow (no period with both FCF and PAT)"
+    ],
+    "eps_cagr": [
+      "pnl:EPS in Rs FY12"
+    ],
+    "dilution_drag": [
+      "pnl:EPS in Rs at FY12 and FY17"
+    ],
+    "expense_cagr": [
+      "pnl:Expenses FY12",
+      "pnl:Expenses FY17"
+    ],
+    "opm_delta_window": [
+      "pnl:Operating Profit FY12",
+      "pnl:Operating Profit FY17"
+    ],
+    "effective_tax_rate_latest": [
+      "pnl:Tax % FY17"
+    ],
+    "dividend_cum_window": [
+      "pnl:Dividend Payout % (no period with PAT)"
+    ],
+    "capex_cum_window": [
+      "cashflow:Purchase of PPE (no period in the window discloses it)"
+    ],
+    "capex_to_depreciation": [
+      "cashflow:Purchase of PPE and pnl:Depreciation in the same year (the cash-flow capex line comes from the filing, not the screener)"
+    ],
+    "cash_yield_latest": [
+      "cashflow:Interest Income FY17",
+      "balance_sheet:Cash Equivalents FY16"
+    ],
+    "incremental_roic_3y": [
+      "a 4+ year run of Operating Profit, Depreciation, Tax %, Borrowings, Equity Capital and Reserves is required for a rolling 3-year incremental ROIC"
+    ]
+  },
+  "forensic_screen": {
+    "verdict": "HARD_FAIL",
+    "hard_fail": true,
+    "flags": [
+      {
+        "name": "cumulative_cfo_pat_low",
+        "severity": "SEVERE",
+        "detail": "\u03a3CFO/\u03a3PAT 0.24 < 0.70"
+      },
+      {
+        "name": "receivables_divergent",
+        "severity": "HIGH",
+        "detail": "receivables outrunning revenue \u2014 channel-stuffing / fictitious-sales tell"
+      }
+    ]
+  },
+  "checklist": [
+    {
+      "check": "cumulative_cfo_pat",
+      "outcome": "FLAG",
+      "detail": "\u03a3CFO/\u03a3PAT 0.24 vs floor 0.70 (\u03a3 CFO / \u03a3 PAT, FY12-FY17) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "cfo_pat",
+      "outcome": "PASS",
+      "detail": "CFO/PAT 1.80 vs floor 0.70 (CFO FY17 / PAT FY17) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "cash_interest_inconsistent",
+      "outcome": "UNAVAILABLE",
+      "detail": "",
+      "reason": "inputs not disclosed in the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+    },
+    {
+      "check": "cash_debt_paradox",
+      "outcome": "PASS",
+      "detail": "cash/assets 5.6% at cost of debt 34.1% (paradox above 15% and 10%) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "disclosure_gap",
+      "outcome": "PASS",
+      "detail": "every mandated Schedule III / forensic section located in the filing",
+      "reason": ""
+    },
+    {
+      "check": "other_income_heavy",
+      "outcome": "PASS",
+      "detail": "other income 17.5% of PBT vs limit 25% (pnl:Other Income FY17 / pnl:Profit before tax FY17) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "promoter_lending",
+      "outcome": "PASS",
+      "detail": "related-party note read (AR-FY17-PCJ-AR-FY17.pdf note 37 p.165): categories disclosed = dividend, loans_taken, remuneration, rent; KMP remuneration \u20b96.95cr",
+      "reason": ""
+    },
+    {
+      "check": "receivables_divergent",
+      "outcome": "FLAG",
+      "detail": "receivables +57.6% vs revenue +16.1%, gap +41.5% vs limit 25% (AR) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "inventory_divergent",
+      "outcome": "PASS",
+      "detail": "inventory +8.3% vs revenue +16.1%, gap -7.8% vs limit 30% (AR) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "high_accruals",
+      "outcome": "PASS",
+      "detail": "accruals -0.051 vs limit \u00b10.10 ((PAT - CFO)(FY17) / avg Total Assets) (grade A)",
+      "reason": ""
+    }
+  ],
+  "notes_to_accounts": {
+    "enumerated": 52,
+    "coverage": 1.0,
+    "substantive_share": 0.25,
+    "disclosure_gaps": []
+  },
+  "peer_comparison": [],
+  "management_guidance": [],
+  "feasibility_gate": null,
+  "rules": [
+    "Do NOT compute, adjust or invent any number. Quote only the values above.",
+    "Every number you write in prose must be followed by its [fact:...] token.",
+    "Numeric schema fields must equal the computed value above, or be null.",
+    "open_questions must not be empty; disconfirming_search must describe a real search."
+  ]
+}
+```
+
+## Return ONLY a single JSON object matching this schema (Law 4). No prose outside the JSON; put your reasoning in the `narrative` field.
+```json
+{
+  "$defs": {
+    "Citation": {
+      "description": "Every numeric claim renders with one of these; a validator maps it to a fact (Law 2).",
+      "properties": {
+        "fact_id": {
+          "title": "Fact Id",
+          "type": "string"
+        },
+        "doc_id": {
+          "title": "Doc Id",
+          "type": "string"
+        },
+        "locator": {
+          "description": "page/paragraph within the source document",
+          "title": "Locator",
+          "type": "string"
+        },
+        "published_at": {
+          "format": "date",
+          "title": "Published At",
+          "type": "string"
+        },
+        "extractor_version": {
+          "title": "Extractor Version",
+          "type": "string"
+        },
+        "grade": {
+          "$ref": "#/$defs/Grade"
+        }
+      },
+      "required": [
+        "fact_id",
+        "doc_id",
+        "locator",
+        "published_at",
+        "extractor_version",
+        "grade"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "Claim": {
+      "description": "A single assertion tagged by epistemic status and cited.",
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "kind": {
+          "description": "one of: observation | inference | speculation (house style \u00a74)",
+          "title": "Kind",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Citations",
+          "type": "array"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "text",
+        "kind"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "Confidence": {
+      "description": "Numeric confidence, justified by evidence \u2014 never vibes (house style \u00a75).",
+      "properties": {
+        "value": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Value",
+          "type": "number"
+        },
+        "evidence_count": {
+          "minimum": 0,
+          "title": "Evidence Count",
+          "type": "integer"
+        },
+        "lowest_grade_relied_on": {
+          "$ref": "#/$defs/Grade"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "evidence_count",
+        "lowest_grade_relied_on",
+        "rationale"
+      ],
+      "title": "Confidence",
+      "type": "object"
+    },
+    "Grade": {
+      "description": "Source reliability grade (SPEC \u00a74). A thesis pillar may not rest on D alone.",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "title": "Grade",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "agent": {
+      "title": "Agent",
+      "type": "string"
+    },
+    "agent_version": {
+      "title": "Agent Version",
+      "type": "string"
+    },
+    "ticker": {
+      "title": "Ticker",
+      "type": "string"
+    },
+    "as_of": {
+      "format": "date",
+      "title": "As Of",
+      "type": "string"
+    },
+    "observations": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Observations",
+      "type": "array"
+    },
+    "inferences": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Inferences",
+      "type": "array"
+    },
+    "speculations": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Speculations",
+      "type": "array"
+    },
+    "open_questions": {
+      "description": "An empty array is suspicious (house style \u00a73).",
+      "items": {
+        "type": "string"
+      },
+      "title": "Open Questions",
+      "type": "array"
+    },
+    "disconfirming_search": {
+      "description": "What evidence against the emerging conclusion was sought, and what was found.",
+      "title": "Disconfirming Search",
+      "type": "string"
+    },
+    "narrative": {
+      "default": "",
+      "title": "Narrative",
+      "type": "string"
+    },
+    "what_it_does": {
+      "title": "What It Does",
+      "type": "string"
+    },
+    "moat": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Moat"
+    },
+    "customer_concentration": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Customer Concentration"
+    },
+    "national_relevance": {
+      "default": false,
+      "title": "National Relevance",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "agent",
+    "agent_version",
+    "ticker",
+    "as_of",
+    "disconfirming_search",
+    "what_it_does"
+  ],
+  "title": "BusinessAnalystOutput",
+  "type": "object"
+}
+```
