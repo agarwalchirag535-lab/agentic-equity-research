@@ -189,6 +189,32 @@ class CompanyFacts:
             f.fact_id for metric in self.series for f in self.series[metric].values()
         )
 
+    def fiscal_close_month(self, period: str) -> int | None:
+        """The month this company closed `period` in, when a source stated it; None otherwise.
+
+        Read from the facts, never inferred from the label — inferring a March close is the assumption
+        the field exists to stop making (ADR-0049)."""
+        months = {
+            int(f.period_end[5:7])
+            for metric in self.series
+            for p, f in self.series[metric].items()
+            if p == period and f.period_end
+        }
+        return months.pop() if len(months) == 1 else None
+
+    def fiscal_calendar_change(self, first: str, last: str) -> tuple[int, int] | None:
+        """`(from_month, to_month)` when the company moved its year-end between two periods, else None.
+
+        Symphony closed on 30 June through FY15 and on 31 March from FY17, so `FY13`-`FY18` is not five
+        years — it is four years and nine months, and a growth rate computed over it is not a growth
+        rate. Only periods whose close month is actually known participate: an unstated close is
+        unknown, never assumed to agree."""
+        window = [p for p in self.periods if first <= p <= last]
+        months = [m for m in (self.fiscal_close_month(p) for p in window) if m is not None]
+        if len(set(months)) <= 1:
+            return None
+        return months[0], months[-1]
+
 
 def load_company_facts(
     store: FactStore,
@@ -387,10 +413,27 @@ def derive_metrics(facts: CompanyFacts, *, forensic: Mapping[str, Any] | None = 
     span = int(fN[2:]) - int(f0[2:])
 
     # ---- growth + margins -----------------------------------------------------------------------
-    if (got := b.need("revenue_cagr", (SALES, f0), (SALES, fN))) is not None:
+    # A rate of change across a moved year-end compares windows that do not line up (ADR-0049). Refused
+    # with the reason rather than published with a plausible wrong number.
+    calendar_change = facts.fiscal_calendar_change(f0, fN) if f0 and fN else None
+    if calendar_change is not None:
+        from calendar import month_name
+
+        why = (
+            f"the company moved its financial year-end between {f0} and {fN} "
+            f"({month_name[calendar_change[0]]} close -> {month_name[calendar_change[1]]}), so the two "
+            "ends of the window are not the same twelve months and a rate of change over it would not "
+            "be one"
+        )
+        for metric in ("revenue_cagr", "pat_cagr", "eps_cagr", "expense_cagr", "dilution_drag",
+                       "opm_delta_window"):
+            b.missing.setdefault(metric, (why,))
+
+    if calendar_change is None and (
+            got := b.need("revenue_cagr", (SALES, f0), (SALES, fN))) is not None:
         b.add("revenue_cagr", _cagr(got[0].value, got[1].value, span),
               f"({SALES} {fN} / {SALES} {f0})^(1/{span}) - 1", got)
-    if (got := b.need("pat_cagr", (PAT, f0), (PAT, fN))) is not None:
+    if calendar_change is None and (got := b.need("pat_cagr", (PAT, f0), (PAT, fN))) is not None:
         b.add("pat_cagr", _cagr(got[0].value, got[1].value, span),
               f"({PAT} {fN} / {PAT} {f0})^(1/{span}) - 1", got)
     if (got := b.need("opm_latest", (OPERATING_PROFIT, fN), (SALES, fN))) is not None:
@@ -495,7 +538,7 @@ def derive_metrics(facts: CompanyFacts, *, forensic: Mapping[str, Any] | None = 
     # Per-share reality. Aggregate profit growth flatters a company that bought its growth with equity:
     # PAT can compound at 13% while EPS compounds at 9%, and the 4-point wedge is the shareholder's.
     # The firm's question is a 5-10x *per share*, so the wedge is load-bearing, not a footnote.
-    if (got := b.need("eps_cagr", (EPS, f0), (EPS, fN))) is not None:
+    if calendar_change is None and (got := b.need("eps_cagr", (EPS, f0), (EPS, fN))) is not None:
         b.add("eps_cagr", _cagr(got[0].value, got[1].value, span),
               f"({EPS} {fN} / {EPS} {f0})^(1/{span}) - 1", got)
     pat_c, eps_c = b.values.get("pat_cagr"), b.values.get("eps_cagr")
@@ -509,7 +552,7 @@ def derive_metrics(facts: CompanyFacts, *, forensic: Mapping[str, Any] | None = 
     # Cost growth against revenue growth: the deterministic half of "why did the margin move?". The other
     # half (which cost line moved — material, power, employee) needs the P&L expense breakup from the AR;
     # the screener collapses it to a single `Expenses` row, so that question is asked and left unanswered.
-    if (got := b.need("expense_cagr", (EXPENSES, f0), (EXPENSES, fN))) is not None:
+    if calendar_change is None and (got := b.need("expense_cagr", (EXPENSES, f0), (EXPENSES, fN))) is not None:
         b.add("expense_cagr", _cagr(got[0].value, got[1].value, span),
               f"({EXPENSES} {fN} / {EXPENSES} {f0})^(1/{span}) - 1", got)
     if (got := b.need("opm_delta_window", (OPERATING_PROFIT, f0), (SALES, f0),

@@ -35,7 +35,12 @@ CREATE TABLE IF NOT EXISTS facts (
     period    TEXT NOT NULL,           -- e.g. 'FY24', 'Q1FY25'
     value     REAL NOT NULL,
     unit      TEXT NOT NULL,
-    locator   TEXT NOT NULL            -- page/paragraph within the document
+    locator   TEXT NOT NULL,           -- page/paragraph within the document
+    -- ISO date the period ENDS, when the source stated it; '' when it did not. A period label is not a
+    -- period (ADR-0048/0049): Symphony reports June year-ends until FY15 and March after, so `FY15`
+    -- means 30-Jun-2015 for that company and 31-Mar-2015 for most others. Growth across a year-end
+    -- change compares windows that do not line up, and nothing could see it before this column.
+    period_end TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_facts_lookup ON facts(ticker, metric, period);
 """
@@ -67,6 +72,9 @@ class Fact:
     published_at: date
     grade: str
     extractor_version: str
+    #: ISO date the period ends, or '' when the source did not state it. Never inferred from the label:
+    #: inferring a March close is exactly the assumption this field exists to stop making.
+    period_end: str = ""
 
 
 class FactStore:
@@ -75,6 +83,11 @@ class FactStore:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA foreign_keys = ON")
         self._conn.executescript(_SCHEMA)
+        # A store written before period_end existed is still readable; the column arrives empty, which
+        # is the honest value for a fact whose source never stated its period end.
+        if "period_end" not in {r["name"] for r in self._conn.execute("PRAGMA table_info(facts)")}:
+            self._conn.execute("ALTER TABLE facts ADD COLUMN period_end TEXT NOT NULL DEFAULT ''")
+            self._conn.commit()
 
     def close(self) -> None:
         self._conn.close()
@@ -97,11 +110,13 @@ class FactStore:
 
     def add_fact(
         self, fact_id: str, doc_id: str, ticker: str, metric: str, period: str,
-        value: float, unit: str, locator: str,
+        value: float, unit: str, locator: str, period_end: str = "",
     ) -> None:
         self._conn.execute(
-            "INSERT OR REPLACE INTO facts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (fact_id, doc_id, ticker, metric, period, value, unit, locator),
+            "INSERT OR REPLACE INTO facts "
+            "(fact_id, doc_id, ticker, metric, period, value, unit, locator, period_end) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (fact_id, doc_id, ticker, metric, period, value, unit, locator, period_end),
         )
         self._conn.commit()
 
@@ -126,6 +141,7 @@ class FactStore:
             metric=row["metric"], period=row["period"], value=row["value"], unit=row["unit"],
             locator=row["locator"], published_at=date.fromisoformat(row["published_at"]),
             grade=row["grade"], extractor_version=row["extractor_version"],
+            period_end=(row["period_end"] if "period_end" in row.keys() else ""),
         )
 
     def query_fact(self, ticker: str, metric: str, period: str, as_of: date) -> Fact | None:

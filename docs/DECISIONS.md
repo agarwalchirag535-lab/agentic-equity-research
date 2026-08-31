@@ -1515,3 +1515,57 @@ self-consistent, but a CAGR spanning the June→March discontinuity is wrong, `r
 wrong filing date, and a peer comparison across differing year-ends compares different twelve-month
 windows. The real fix is periods as first-class objects `(start, end, months)`; this ADR delivers the
 `months` half, which is the half that was producing false positives.
+
+---
+
+### ADR-0049 — When a company closes its books is read, never assumed
+
+**Date** 2026-08-31 · **Status** accepted · **Completes** the open item ADR-0048 named
+
+**Context.** ADR-0048 fixed the *length* half of "a period label is not a period" and named the other
+half as open: Symphony Ltd closed on **30 June** through FY15 and on **31 March** from FY17, so `FY15`
+means a different twelve months for it than for almost every other Indian company. `FY{YY}` silently
+assumed a March close for everyone. The damage is narrower than the stub's — it does not manufacture a
+forensic flag — but it is real: a growth rate across the change compares windows that do not line up
+(Symphony FY14→FY18 is four years and nine months of trading wearing a five-year label), `resolve_by`
+dates a criterion against the wrong filing, and a peer comparison across differing year-ends compares
+different twelve-month windows while looking perfectly ordinary.
+
+**Decision.** The period end becomes a stored, verified property of a fact.
+
+* `facts.period_end` (ISO date, `''` when the source did not state it) with an `ALTER TABLE` migration,
+  so a store written before the column is still readable and its facts honestly say "unknown".
+* `ProposedColumn.ends`, verified by **V3c**: the declared end must be a date the column label or the
+  statement heading actually *names* — month and year, spelled ("30th June, 2015") or numeric
+  ("30/06/2015", matched as a whole date so a stray `06` elsewhere in a quote cannot vouch for a June
+  close) — and its year must agree with the column's own FY label.
+* `CompanyFacts.fiscal_close_month()` / `.fiscal_calendar_change()` read the calendar off the facts.
+  **Only periods whose close month is actually known participate**: an unstated close is unknown, never
+  assumed to agree, so a fact set with no end dates can never fabricate a change.
+* `derive_metrics` refuses every rate-of-change metric spanning a moved year-end — `revenue_cagr`,
+  `pat_cagr`, `eps_cagr`, `expense_cagr`, `dilution_drag`, `opm_delta_window` — with the reason naming
+  both months. Single-period metrics (days ratios, margins, single-year conversion) are untouched,
+  because a ratio of two figures from the *same* statement does not care when the year ended.
+
+**Why refuse rather than adjust.** The same reasoning as the stub: annualising or pro-rating is
+estimating a number that would carry a conclusion. A refusal with the reason printed is an honest gap
+that the report already knows how to publish.
+
+**Result on real filings.** Symphony FY14/FY15 register with `2014-06-30`/`2015-06-30` and FY17/FY18
+with March ends; `fiscal_calendar_change('FY14','FY18')` returns `(6, 3)` and all four growth metrics
+are refused, naming the June→March move. Every single-period metric still computes. All seven prior
+readings (PC Jeweller FY13–FY18, Alkyl Amines FY26) re-verify with zero violations and keep their
+CAGRs — their end dates are simply unstated, which the calendar logic treats as unknown.
+
+**And the affirm answer the run was after.** With the fuller, calendar-aware window,
+`cumulative_cfo_pat` reads **0.71 — a PASS** over FY14–FY18, against the **0.56 SEVERE** the two-year
+window produced before ADR-0048's floor. The arc is the case for both ADRs in one line: *HARD_FAIL
+(false positive) → REVIEW (window guard) → cumulative PASS (honest window)*. More correct data moved
+the verdict toward the truth, and the guards prevented a confident wrong answer in the meantime.
+Symphony still returns **REVIEW** on single-year `cfo_pat` 0.55 and `high_accruals` 0.126 — the treasury
+effect recorded as a calibration lesson for the golden set, deliberately not fixed by moving a
+threshold on one observation.
+
+**Open, and worth stating.** Refusing a CAGR across a calendar change is the safe answer, not the best
+one: a growth rate over the longest sub-window with a *consistent* calendar (Symphony FY17→FY18) is
+computable and would be more useful than nothing. Left for when a real run needs it.

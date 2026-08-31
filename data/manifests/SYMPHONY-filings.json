@@ -5,6 +5,17 @@
   "retrieved_at": "2026-08-31",
   "filings": [
     {
+      "file": "SYMPHONY-AR-FY15.pdf",
+      "period": "FY15",
+      "prior_period": "FY14",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/517385/5173850615.pdf",
+      "published_at": "2015-09-30",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "8117805703a1a6f113cafdd924416c896fed3c25306c2285bb768f09af61c50c",
+      "bytes": 4035141
+    },
+    {
       "file": "SYMPHONY-AR-FY18.pdf",
       "period": "FY18",
       "prior_period": "FY17",

@@ -13,11 +13,13 @@
    "columns": [
     {
      "period": "FY18",
-     "label_quote": "As at\n  31/03/2018"
+     "label_quote": "As at\n  31/03/2018",
+     "ends": "2018-03-31"
     },
     {
      "period": "FY17",
-     "label_quote": "As at 31/03/2017"
+     "label_quote": "As at 31/03/2017",
+     "ends": "2017-03-31"
     },
     {
      "period": null,
@@ -195,12 +197,14 @@
     {
      "period": "FY18",
      "label_quote": "Year Ended\n  31/03/2018",
-     "months": 12
+     "months": 12,
+     "ends": "2018-03-31"
     },
     {
      "period": "FY17",
      "label_quote": "Year Ended\n  31/03/2018  31/03/2017",
-     "months": 12
+     "months": 12,
+     "ends": "2017-03-31"
     }
    ],
    "figures": [
@@ -417,12 +421,14 @@
     {
      "period": "FY18",
      "label_quote": "Year Ended\n31/03/2018",
-     "months": 12
+     "months": 12,
+     "ends": "2018-03-31"
     },
     {
      "period": "FY17",
      "label_quote": "31/03/2017",
-     "months": 12
+     "months": 12,
+     "ends": "2017-03-31"
     }
    ],
    "figures": [

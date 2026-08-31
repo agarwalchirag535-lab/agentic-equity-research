@@ -615,6 +615,18 @@ year-ends — the `FY{YY}` label assumes a March close for every company. Period
 `(start, end, months)` is the real fix; ADR-0048 delivers the `months` half, the half producing false
 positives.
 
+**The end-date half landed the same day (ADR-0049).** `facts.period_end` (stored, migrated, `''` when
+unstated), **V3c** (a declared end must be a date the label or heading actually names, month and year),
+`CompanyFacts.fiscal_close_month()/.fiscal_calendar_change()`, and `derive_metrics` refusing every
+rate-of-change metric that spans a moved year-end with the reason naming both months. An unstated close
+is unknown, never assumed to agree — so the seven prior readings keep their CAGRs unchanged.
+
+**The affirm answer, finally.** With the fuller calendar-aware window Symphony's `cumulative_cfo_pat`
+reads **0.71 (PASS)** over FY14-FY18 against the **0.56 SEVERE** the two-year window gave before the
+floor: *HARD_FAIL -> REVIEW -> cumulative PASS*. It still returns REVIEW on single-year `cfo_pat` 0.55
+and `high_accruals` 0.126, which is the treasury effect held for golden-set calibration rather than
+fixed by moving a threshold on one observation.
+
 ## 7. Suggested next step
 
 Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):

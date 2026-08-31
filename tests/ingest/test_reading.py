@@ -262,12 +262,14 @@ def test_proposal_json_round_trip_and_malformed_errors():
     text = """{"statements": [{"statement": "balance_sheet", "basis": "standalone", "period": "FY17",
         "pages": [1], "heading_quote": "BaLancE sHEEt as at 31 march 2017",
         "unit_quote": "(` in crores)", "unit": "INR_cr",
-        "columns": [{"period": "FY17", "label_quote": "as at\\n31 march 2017"},
+        "columns": [{"period": "FY17", "label_quote": "as at\\n31 march 2017",
+                     "months": 12, "ends": "2017-03-31"},
                     {"period": null, "label_quote": "adjustments"}],
         "figures": [{"metric": "balance_sheet:Total Assets", "period": "FY17",
                      "value_printed": "6,153.30", "page": 1, "row_label": "total assets"}]}]}"""
     stmts = proposal_from_json(text)
     assert stmts[0].columns[1].period is None
+    assert stmts[0].columns[0].months == 12 and stmts[0].columns[0].ends == "2017-03-31"
     assert stmts[0].figures[0].value_printed == "6,153.30"
     with pytest.raises(ValueError, match="not valid JSON"):
         proposal_from_json("{nope")
@@ -490,3 +492,32 @@ def test_the_heading_supplies_the_length_when_a_column_label_does_not():
     reading = verify_statement(stmt, [page])
     assert reading.verified, reading.violations
     assert reading.figures[0].period_months == 12
+
+
+def test_a_period_end_must_be_named_by_the_filing_and_match_the_label():
+    """V3c: Symphony's June year-ends are read off the page, never assumed to be March."""
+    page = ("CONSOLIDATED BAL ANCE SHEET as at 30th June, 2015\n(H in lac)\n"
+            "As at As at\n  30/06/2015  30/06/2014\n"
+            "T O TA  L  44,486.78  39,333.05\n")
+    def _bs(ends: str, period: str = "FY15") -> ProposedStatement:
+        return ProposedStatement(
+            statement="balance_sheet", basis="consolidated", period=period, pages=(1,),
+            heading_quote="CONSOLIDATED BAL ANCE SHEET as at 30th June, 2015",
+            unit_quote="(H in lac)", unit="INR_lakh",
+            columns=(ProposedColumn(period=period, label_quote="As at As at\n  30/06/2015", ends=ends),),
+            figures=(
+                ProposedFigure("balance_sheet:Total Assets", period, "44,486.78", 1, "T O TA  L"),
+                ProposedFigure(VERIFY_TOTAL_EQ_LIAB, period, "44,486.78", 1, "T O TA  L"),
+            ),
+        )
+    good = verify_statement(_bs("2015-06-30"), [page])
+    assert good.verified, good.violations
+    assert good.figures[0].period_end == "2015-06-30"
+
+    # a March close the filing never names — the assumption this rule exists to stop
+    bad = verify_statement(_bs("2015-03-31"), [page])
+    assert any(v.rule == "V3c_period_end" and "never assumed" in v.detail for v in bad.violations)
+
+    # an end date in the wrong year for its label
+    wrong_year = verify_statement(_bs("2015-06-30", period="FY16"), [page])
+    assert any(v.rule == "V3c_period_end" for v in wrong_year.violations)

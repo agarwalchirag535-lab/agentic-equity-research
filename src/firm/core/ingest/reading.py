@@ -43,6 +43,7 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
 
 from firm.adapters.base.tables import parse_number
 from firm.core.facts.store import Document, FactStore
@@ -89,6 +90,34 @@ _MONTHS_WORD = re.compile(
     rf"\b({'|'.join(_MONTH_WORDS)})\s+months?\b", re.IGNORECASE)
 _MONTHS_DIGIT = re.compile(r"\b(\d{1,2})\s+months?\b", re.IGNORECASE)
 _FULL_YEAR = re.compile(r"\byear\s+ended", re.IGNORECASE)
+
+
+#: How a filing writes the month a period ends in: '30/06/2015', '30th June, 2015', 'June 30, 2015'.
+_MONTH_NAMES: Mapping[int, tuple[str, ...]] = {
+    1: ("january", "jan"), 2: ("february", "feb"), 3: ("march", "mar"), 4: ("april", "apr"),
+    5: ("may",), 6: ("june", "jun"), 7: ("july", "jul"), 8: ("august", "aug"),
+    9: ("september", "sep", "sept"), 10: ("october", "oct"), 11: ("november", "nov"),
+    12: ("december", "dec"),
+}
+
+
+def _names_month_and_year(text: str, ends: date) -> bool:
+    """True when `text` names the month and year `ends` falls in, spelled or numeric.
+
+    Numeric forms are matched as a whole date ('30/06/2015', '2015-06-30') so that a stray '06'
+    elsewhere in a quote cannot vouch for a June year-end."""
+    if str(ends.year) not in text:
+        return False
+    lowered = text.casefold()
+    if any(word in lowered for word in _MONTH_NAMES[ends.month]):
+        return True
+    y, m, d = ends.year, ends.month, ends.day
+    numeric = (
+        rf"\b{d:02d}\s*[/.-]\s*{m:02d}\s*[/.-]\s*{y}\b",      # 30/06/2015
+        rf"\b{y}\s*[/.-]\s*{m:02d}\s*[/.-]\s*{d:02d}\b",      # 2015-06-30
+        rf"\b{d}\s*[/.-]\s*{m}\s*[/.-]\s*{y}\b",              # 30/6/2015
+    )
+    return any(re.search(pat, text) for pat in numeric)
 
 
 def months_stated(text: str) -> int | None:
@@ -138,6 +167,11 @@ class ProposedColumn:
     #: the column label first, then the statement heading. A flow column whose length cannot be
     #: established either way is refused rather than assumed to be a year (V3b).
     months: int | None = None
+    #: ISO date the column's period ENDS ('2015-06-30'), when the proposer states it. Verified against
+    #: the label's own words (V3c): the label must name that month and year. Symphony closed its books
+    #: on 30 June until FY15 and on 31 March after, so `FY15` means different twelve months for it than
+    #: for almost every other Indian company, and a growth rate spanning the change is not a growth rate.
+    ends: str | None = None
 
 
 @dataclass(frozen=True)
@@ -181,6 +215,8 @@ class VerifiedFigure:
     #: Months the figure's period covers — 12 for an ordinary year, 9 for a transition stub, None for a
     #: stock figure (a balance sheet states an instant, not a length).
     period_months: int | None = None
+    #: ISO date the period ends, when the filing stated it and the verifier confirmed it; '' otherwise.
+    period_end: str = ""
 
 
 @dataclass(frozen=True)
@@ -266,6 +302,7 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
     heading_months = months_stated(stmt.heading_quote)
     declared_periods: set[str] = set()
     months_by_period: dict[str, int] = {}
+    ends_by_period: dict[str, str] = {}
     for col in stmt.columns:
         if col.period is None:
             continue
@@ -301,6 +338,26 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
         if not _find_letters_on_pages(col.label_quote, pages, stmt.pages):
             violations.append(Violation("V3_column", name,
                                         f"column label {col.label_quote!r} not found on pages {stmt.pages}"))
+        # V3c — a declared period end must be one the label actually names, in month and year.
+        if col.ends is not None:
+            try:
+                ends = date.fromisoformat(col.ends)
+            except ValueError:
+                violations.append(Violation("V3c_period_end", name,
+                                            f"column {col.period}: unparseable end date {col.ends!r}"))
+            else:
+                if not _names_month_and_year(col.label_quote, ends) and not _names_month_and_year(
+                        stmt.heading_quote, ends):
+                    violations.append(Violation(
+                        "V3c_period_end", name,
+                        f"column {col.label_quote!r} claimed to end {col.ends} but neither it nor the "
+                        f"heading names {ends:%B %Y} — a period end is read, never assumed"))
+                elif str(ends.year) != col_year:
+                    violations.append(Violation(
+                        "V3c_period_end", name,
+                        f"column {col.period} ends {col.ends}, which is not in {col_year}"))
+                else:
+                    ends_by_period[col.period] = col.ends
 
     # V4 + V9 — each figure: printed string on its page, parseable, plausible once converted.
     factor = UNIT_TO_CRORE.get(stmt.unit)
@@ -336,7 +393,8 @@ def verify_statement(stmt: ProposedStatement, pages: Sequence[str]) -> Statement
             continue
         by_metric[(fig.metric, fig.period)] = crore
         verified.append(VerifiedFigure(fig.metric, fig.period, crore, fig.page, fig.row_label,
-                                       printed, stmt.unit, months_by_period.get(fig.period)))
+                                       printed, stmt.unit, months_by_period.get(fig.period),
+                                       ends_by_period.get(fig.period, "")))
 
     # V5 — the balance sheet balances, for every period figures were actually transcribed for. A period
     # whose column was declared but not transcribed is simply absent — declaring the table's shape
@@ -448,11 +506,11 @@ def register_reading(
     fact_ids: list[str] = []
     skipped: list[str] = []
 
-    def write(metric: str, period: str, value: float, locator: str) -> None:
+    def write(metric: str, period: str, value: float, locator: str, period_end: str = "") -> None:
         fact_id = f"{reading.doc_id}:{metric}:{period}"
         unit = "INR" if metric in PER_SHARE_METRICS else "INR_cr"
         store.add_fact(fact_id=fact_id, doc_id=reading.doc_id, ticker=ticker, metric=metric,
-                       period=period, value=value, unit=unit, locator=locator)
+                       period=period, value=value, unit=unit, locator=locator, period_end=period_end)
         fact_ids.append(fact_id)
 
     for stmt in chosen:
@@ -467,7 +525,7 @@ def register_reading(
                 continue
             write(fig.metric, fig.period, fig.value_crore,
                   f"p.{fig.page} '{fig.row_label}' (as printed: {fig.value_printed} {fig.unit}; "
-                  f"{stmt.basis}; {stmt.heading_quote})")
+                  f"{stmt.basis}; {stmt.heading_quote})", fig.period_end)
         # Composed in trusted code, never by the proposer (ADR-0037 practice): a total the filing
         # prints only as parts is the sum of the printed rows, its locator naming both so a reader can
         # redo the addition. Borrowings (non-current + current) and trade payables (the Schedule III
@@ -488,7 +546,7 @@ def register_reading(
                         write(total_metric, period, a.value_crore + b.value_crore,
                               f"p.{a.page} '{a.row_label}' + p.{b.page} '{b.row_label}' "
                               f"(composed: {a.value_printed} + {b.value_printed} {a.unit}; "
-                              f"{stmt.basis})")
+                              f"{stmt.basis})", a.period_end)
     return tuple(fact_ids), tuple(skipped)
 
 
@@ -673,7 +731,11 @@ standalone AND consolidated where both exist), report:
 - `heading_quote`: the statement's heading verbatim, including the date it names
 - `unit_quote`: the printed unit declaration verbatim; `unit`: INR_cr | INR_lakh | INR (plain rupees)
 - `columns`: every figure column, each with its `label_quote` verbatim and its `period` (FY label), or
-  period null for a column that is NOT a reporting period (a GAAP-transition adjustment, a % column)
+  period null for a column that is NOT a reporting period (a GAAP-transition adjustment, a % column).
+  For a profit-and-loss or cash-flow column also give `months` (12 for a full year, 9 for a transition
+  stub — say what the filing says, never what you expect) and `ends` as the ISO date the period closes
+  ("2015-06-30"). Indian companies do not all close in March, and a company that moves its year-end
+  files a short period once; both are stated plainly in the filing and both must be read, not assumed
 - `figures`: for each vocabulary metric printed, {metric, period, value_printed EXACTLY as printed
   (keep commas, parentheses, dashes), page, row_label as printed}
 
@@ -723,6 +785,8 @@ def proposal_from_json(text: str) -> list[ProposedStatement]:
                 columns=tuple(ProposedColumn(
                     period=(None if c.get("period") in (None, "") else str(c["period"])),
                     label_quote=str(c["label_quote"]),
+                    months=(None if c.get("months") is None else int(c["months"])),
+                    ends=(None if c.get("ends") in (None, "") else str(c["ends"])),
                 ) for c in s["columns"]),
                 figures=tuple(ProposedFigure(
                     metric=str(f["metric"]), period=str(f["period"]),
