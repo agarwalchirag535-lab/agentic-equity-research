@@ -6,7 +6,7 @@
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0054). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0055). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -29,7 +29,7 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 773 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 784 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -710,6 +710,21 @@ were one semantic mapping (balance-sheet "Cash and Bank Balances" is NOT cash-an
 the cash-flow statement's own closing row is). Process fix, operational: **one session owns the
 trunk.** All readings re-verified against their sha256-pinned PDFs under the merged verifier: 0
 violations, every stored fact dated.
+
+## 6h. Symphony published, and the CLI owns the reading path (2026-08-31, ADR-0055)
+
+`firm read-packets` / `deep-dive --readings` / `packets --readings` now take any filings manifest to a
+published report with no hand-driven Python: sha256-pinned fetch, page-text verification at ingest,
+Law 3 at the document level, every non-contribution an explicit status. The acceptance run published
+**`reports/SYMPHONY/2018-12-31-65e0f6068121`** — verdict FORENSIC_CAUTION off the deterministic
+REVIEW (the treasury-conversion arithmetic, now the top golden-set calibration question) — and caught
+three defects on the way, all fixed with tests: a hardcoded `start_year=2015` amputating ingested
+history (0.64 SEVERE/HARD_FAIL manufactured against the clean company; the window now defaults to
+what the evidence covers), a wrong SA 701 effective year charging compliant FY18 filers with a
+disclosure gap (KAM is owed from FY19; verified against the Deloitte-audited filing, not memory), and
+a citation grammar that still could not cite the space-bearing ids most audited rows carry (third
+instance of that class; the delimiter is now the bracket). The discipline gates rejected four drafts
+of the run's own agent answers before passing the fifth — the gate works on its own author.
 
 ## 7. Suggested next step
 

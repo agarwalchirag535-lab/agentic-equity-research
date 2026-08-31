@@ -1,0 +1,426 @@
+{
+  "ticker": "SYMPHONY",
+  "as_of": "2018-12-31",
+  "history": "FY12-FY18 (6y)",
+  "business_models_detected": [
+    "none matched \u2014 universal checks only"
+  ],
+  "computed_metrics": {
+    "revenue_cagr": {
+      "value": 0.17653586449706826,
+      "formula": "(pnl:Sales FY18 / pnl:Sales FY12)^(1/5.7496) - 1",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:pnl:Sales:FY12",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:revenue_cagr]",
+      "grade": "A"
+    },
+    "pat_cagr": {
+      "value": 0.25112966369606293,
+      "formula": "(pnl:Net Profit FY18 / pnl:Net Profit FY12)^(1/5.7496) - 1",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:pnl:Net Profit:FY12",
+        "SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY18"
+      ],
+      "cite_as": "[fact:derived:pat_cagr]",
+      "grade": "A"
+    },
+    "cum_cfo_pat": {
+      "value": 0.7880239564119585,
+      "formula": "\u03a3 CFO / \u03a3 PAT, FY12-FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "SYMPHONY-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "SYMPHONY-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "SYMPHONY-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY17",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY18",
+        "SYMPHONY-AR-FY13.pdf:pnl:Net Profit:FY12",
+        "SYMPHONY-AR-FY14.pdf:pnl:Net Profit:FY13",
+        "SYMPHONY-AR-FY15.pdf:pnl:Net Profit:FY14",
+        "SYMPHONY-AR-FY16.pdf:pnl:Net Profit:FY15",
+        "SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY17",
+        "SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY18"
+      ],
+      "cite_as": "[fact:derived:cum_cfo_pat]",
+      "grade": "A"
+    },
+    "cfo_pat_latest": {
+      "value": 0.5549774057629976,
+      "formula": "CFO FY18 / PAT FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY18"
+      ],
+      "cite_as": "[fact:derived:cfo_pat_latest]",
+      "grade": "A"
+    },
+    "accrual_ratio_latest": {
+      "value": 0.12585034538138454,
+      "formula": "(PAT - CFO)(FY18) / avg Total Assets",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:pnl:Net Profit:FY18",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Total Assets:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Total Assets:FY17"
+      ],
+      "cite_as": "[fact:derived:accrual_ratio_latest]",
+      "grade": "A"
+    },
+    "other_income_share": {
+      "value": 0.20444487411250362,
+      "formula": "pnl:Other Income FY18 / pnl:Profit before tax FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:pnl:Other Income:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Profit before tax:FY18"
+      ],
+      "cite_as": "[fact:derived:other_income_share]",
+      "grade": "A"
+    },
+    "eps_cagr": {
+      "value": 0.10901698375903468,
+      "formula": "(pnl:EPS in Rs FY18 / pnl:EPS in Rs FY12)^(1/5.7496) - 1",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:pnl:EPS in Rs:FY12",
+        "SYMPHONY-AR-FY18.pdf:pnl:EPS in Rs:FY18"
+      ],
+      "cite_as": "[fact:derived:eps_cagr]",
+      "grade": "A"
+    },
+    "cfo_cum_window": {
+      "value": 546.6337,
+      "formula": "\u03a3 CFO, FY12-FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "SYMPHONY-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "SYMPHONY-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "SYMPHONY-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY17",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY18"
+      ],
+      "cite_as": "[fact:derived:cfo_cum_window]",
+      "grade": "A"
+    },
+    "investing_outflow_cum": {
+      "value": 349.1472,
+      "formula": "-\u03a3 CFI, FY12-FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "SYMPHONY-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "SYMPHONY-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Investing Activity:FY17",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Investing Activity:FY18"
+      ],
+      "cite_as": "[fact:derived:investing_outflow_cum]",
+      "grade": "A"
+    },
+    "self_funding_ratio": {
+      "value": 1.5656253293739717,
+      "formula": "\u03a3 CFO / -\u03a3 CFI, FY12-FY18 (>=1 means operations paid for the investment programme)",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:cashflow:Cash from Operating Activity:FY12",
+        "SYMPHONY-AR-FY14.pdf:cashflow:Cash from Operating Activity:FY13",
+        "SYMPHONY-AR-FY15.pdf:cashflow:Cash from Operating Activity:FY14",
+        "SYMPHONY-AR-FY16.pdf:cashflow:Cash from Operating Activity:FY15",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY17",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Operating Activity:FY18",
+        "SYMPHONY-AR-FY13.pdf:cashflow:Cash from Investing Activity:FY12",
+        "SYMPHONY-AR-FY14.pdf:cashflow:Cash from Investing Activity:FY13",
+        "SYMPHONY-AR-FY15.pdf:cashflow:Cash from Investing Activity:FY14",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Investing Activity:FY17",
+        "SYMPHONY-AR-FY18.pdf:cashflow:Cash from Investing Activity:FY18"
+      ],
+      "cite_as": "[fact:derived:self_funding_ratio]",
+      "grade": "A"
+    },
+    "receivable_days": {
+      "value": 28.12393165337621,
+      "formula": "balance_sheet:Trade Receivables FY18 / pnl:Sales FY18 x 365",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Receivables:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:receivable_days]",
+      "grade": "A"
+    },
+    "inventory_days": {
+      "value": 75.3717356252545,
+      "formula": "balance_sheet:Inventories FY18 / (Cost of Materials Consumed + Purchases of Stock-in-Trade + Changes in Inventories) FY18 x 365",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Inventories:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Changes in Inventories:FY18"
+      ],
+      "cite_as": "[fact:derived:inventory_days]",
+      "grade": "A"
+    },
+    "payable_days": {
+      "value": 55.26951812509944,
+      "formula": "balance_sheet:Trade Payables FY18 / (Cost of Materials Consumed + Purchases of Stock-in-Trade + Changes in Inventories) FY18 x 365",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Payables:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Changes in Inventories:FY18"
+      ],
+      "cite_as": "[fact:derived:payable_days]",
+      "grade": "A"
+    },
+    "receivable_days_delta": {
+      "value": 3.1580132680162443,
+      "formula": "Receivable days FY18 - FY17 (positive = collection is slowing)",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Receivables:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Receivables:FY17",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY17"
+      ],
+      "cite_as": "[fact:derived:receivable_days_delta]",
+      "grade": "A"
+    },
+    "cash_conversion_cycle": {
+      "value": 48.22614915353128,
+      "formula": "Receivable days + Inventory days - Payable days, FY18 (days of cash tied up)",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Receivables:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Inventories:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Changes in Inventories:FY18",
+        "SYMPHONY-AR-FY18.pdf:balance_sheet:Trade Payables:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Changes in Inventories:FY18"
+      ],
+      "cite_as": "[fact:derived:cash_conversion_cycle]",
+      "grade": "A"
+    },
+    "material_cost_ratio": {
+      "value": 0.11761762695982295,
+      "formula": "Cost of Materials Consumed FY18 / pnl:Sales FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:material_cost_ratio]",
+      "grade": "A"
+    },
+    "material_cost_ratio_delta": {
+      "value": -0.22255398995763145,
+      "formula": "Cost of Materials Consumed/Sales FY18 - Cost of Materials Consumed/Sales FY12",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:pnl:Cost of Materials Consumed:FY12",
+        "SYMPHONY-AR-FY13.pdf:pnl:Sales:FY12",
+        "SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:material_cost_ratio_delta]",
+      "grade": "A"
+    },
+    "employee_cost_ratio": {
+      "value": 0.09105842810782776,
+      "formula": "Employee Benefits FY18 / pnl:Sales FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:pnl:Employee Benefits:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:employee_cost_ratio]",
+      "grade": "A"
+    },
+    "employee_cost_ratio_delta": {
+      "value": 0.0007652667529613744,
+      "formula": "Employee Benefits/Sales FY18 - Employee Benefits/Sales FY12",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:pnl:Employee Benefits:FY12",
+        "SYMPHONY-AR-FY13.pdf:pnl:Sales:FY12",
+        "SYMPHONY-AR-FY18.pdf:pnl:Employee Benefits:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:employee_cost_ratio_delta]",
+      "grade": "A"
+    },
+    "other_expense_ratio": {
+      "value": 0.11040952478188347,
+      "formula": "Other Expenses FY18 / pnl:Sales FY18",
+      "fact_ids": [
+        "SYMPHONY-AR-FY18.pdf:pnl:Other Expenses:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:other_expense_ratio]",
+      "grade": "A"
+    },
+    "other_expense_ratio_delta": {
+      "value": -0.13909536506886894,
+      "formula": "Other Expenses/Sales FY18 - Other Expenses/Sales FY12",
+      "fact_ids": [
+        "SYMPHONY-AR-FY13.pdf:pnl:Other Expenses:FY12",
+        "SYMPHONY-AR-FY13.pdf:pnl:Sales:FY12",
+        "SYMPHONY-AR-FY18.pdf:pnl:Other Expenses:FY18",
+        "SYMPHONY-AR-FY18.pdf:pnl:Sales:FY18"
+      ],
+      "cite_as": "[fact:derived:other_expense_ratio_delta]",
+      "grade": "A"
+    }
+  },
+  "metrics_unavailable": {
+    "opm_latest": [
+      "pnl:Operating Profit FY18"
+    ],
+    "roic_latest": [
+      "balance_sheet:Borrowings FY18",
+      "pnl:Operating Profit FY18",
+      "pnl:Tax % FY18"
+    ],
+    "interest_coverage_latest": [
+      "pnl:Operating Profit FY18"
+    ],
+    "cost_of_debt_latest": [
+      "balance_sheet:Borrowings FY18"
+    ],
+    "cwip_share_latest": [
+      "balance_sheet:CWIP FY18"
+    ],
+    "cfo_to_ebitda_latest": [
+      "pnl:Operating Profit FY18"
+    ],
+    "fcf_to_pat_cum": [
+      "cashflow:Free Cash Flow (no period with both FCF and PAT)"
+    ],
+    "dilution_drag": [
+      "equity share capital moved 6.9957 -> 13.9914 (2.00x) across FY12-FY18, so the share base behind EPS is not comparable; whether that is a bonus/split (cosmetic for holders) or an issuance (real dilution) is a corporate-action disclosure the EPS series cannot answer"
+    ],
+    "expense_cagr": [
+      "pnl:Expenses FY12",
+      "pnl:Expenses FY18"
+    ],
+    "opm_delta_window": [
+      "pnl:Operating Profit FY12",
+      "pnl:Operating Profit FY18"
+    ],
+    "effective_tax_rate_latest": [
+      "pnl:Tax % FY18"
+    ],
+    "debt_delta_window": [
+      "balance_sheet:Borrowings FY12",
+      "balance_sheet:Borrowings FY18"
+    ],
+    "dividend_cum_window": [
+      "pnl:Dividend Payout % (no period with PAT)"
+    ],
+    "capex_cum_window": [
+      "cashflow:Purchase of PPE (no period in the window discloses it)"
+    ],
+    "capex_to_depreciation": [
+      "cashflow:Purchase of PPE and pnl:Depreciation in the same year (the cash-flow capex line comes from the filing, not the screener)"
+    ],
+    "cash_yield_latest": [
+      "cashflow:Interest Income FY18"
+    ],
+    "net_cash_position": [
+      "balance_sheet:Borrowings FY18"
+    ],
+    "cost_of_debt_average": [
+      "balance_sheet:Borrowings FY18",
+      "balance_sheet:Borrowings FY17"
+    ],
+    "incremental_roic_3y": [
+      "a 4+ year run of Operating Profit, Depreciation, Tax %, Borrowings, Equity Capital and Reserves is required for a rolling 3-year incremental ROIC"
+    ]
+  },
+  "forensic_screen": {
+    "verdict": "REVIEW",
+    "hard_fail": false,
+    "flags": [
+      {
+        "name": "cfo_pat_low",
+        "severity": "HIGH",
+        "detail": "CFO/PAT 0.55 < 0.70"
+      },
+      {
+        "name": "high_accruals",
+        "severity": "MEDIUM",
+        "detail": "|accruals| 0.13 > 0.10"
+      }
+    ]
+  },
+  "checklist": [
+    {
+      "check": "cumulative_cfo_pat",
+      "outcome": "PASS",
+      "detail": "\u03a3CFO/\u03a3PAT 0.79 vs floor 0.70 (\u03a3 CFO / \u03a3 PAT, FY12-FY18) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "cfo_pat",
+      "outcome": "FLAG",
+      "detail": "CFO/PAT 0.55 vs floor 0.70 (CFO FY18 / PAT FY18) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "cash_interest_inconsistent",
+      "outcome": "UNAVAILABLE",
+      "detail": "",
+      "reason": "this check could not be run on the sources read as-of this run: interest income earned on cash (not broken out of other income)"
+    },
+    {
+      "check": "cash_debt_paradox",
+      "outcome": "UNAVAILABLE",
+      "detail": "",
+      "reason": "this check could not be run on the sources read as-of this run: balance_sheet:Borrowings FY18, balance_sheet:Borrowings FY18"
+    },
+    {
+      "check": "disclosure_gap",
+      "outcome": "PASS",
+      "detail": "every mandated Schedule III / forensic section located in the filing",
+      "reason": ""
+    },
+    {
+      "check": "other_income_heavy",
+      "outcome": "PASS",
+      "detail": "other income 20.4% of PBT vs limit 25% (pnl:Other Income FY18 / pnl:Profit before tax FY18) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "promoter_lending",
+      "outcome": "UNAVAILABLE",
+      "detail": "",
+      "reason": "inputs not disclosed in the sources read as-of this run: loans and advances to promoters/KMP (Schedule III row)"
+    },
+    {
+      "check": "receivables_divergent",
+      "outcome": "PASS",
+      "detail": "receivables +17.6% vs revenue +4.4%, gap +13.2% vs limit 25% (AR) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "inventory_divergent",
+      "outcome": "PASS",
+      "detail": "inventory +2.9% vs revenue +4.4%, gap -1.5% vs limit 30% (AR) (grade A)",
+      "reason": ""
+    },
+    {
+      "check": "high_accruals",
+      "outcome": "FLAG",
+      "detail": "accruals +0.126 vs limit \u00b10.10 ((PAT - CFO)(FY18) / avg Total Assets) (grade A)",
+      "reason": ""
+    }
+  ],
+  "notes_to_accounts": {
+    "enumerated": 43,
+    "coverage": 1.0,
+    "substantive_share": 0.11627906976744186,
+    "disclosure_gaps": []
+  },
+  "peer_comparison": [],
+  "management_guidance": [],
+  "feasibility_gate": null,
+  "rules": [
+    "Do NOT compute, adjust or invent any number. Quote only the values above.",
+    "Every number you write in prose must be followed by its [fact:...] token.",
+    "Numeric schema fields must equal the computed value above, or be null.",
+    "open_questions must not be empty; disconfirming_search must describe a real search."
+  ]
+}

@@ -302,7 +302,8 @@ def compare(
 
 
 def load_peer_comparisons(
-    store: FactStore, subject: str, peers: Sequence[str], as_of: date, *, start_year: int = 2015
+    store: FactStore, subject: str, peers: Sequence[str], as_of: date, *,
+    start_year: int | None = None
 ) -> list[PeerComparison]:
     """Compare ``subject`` against each of ``peers``, reading every side point-in-time (Law 3).
 

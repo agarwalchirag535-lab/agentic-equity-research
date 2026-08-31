@@ -864,3 +864,183 @@ def proposal_from_json(text: str) -> list[ProposedStatement]:
         except (KeyError, TypeError, ValueError) as err:
             raise ValueError(f"statements[{i}] malformed: {err}") from err
     return out
+
+
+# --------------------------------------------------------------------------------------------------
+# Manifest-driven ingest — the CLI path (ADR-0055). Everything above existed only as hand-driven
+# Python; this is what lets `firm` go from a filings manifest to verified, dated, grade-A facts.
+# --------------------------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ReadingIngestResult:
+    """What one manifest filing contributed through the reading path — or exactly why it could not.
+
+    `status` is one of:
+    - `registered`   — verified against the page text and written to the store
+    - `refused`      — the reading exists but the verifier rejected it (violations attached)
+    - `no_reading`   — no `{file}.reading.json` yet; `firm read-packets` writes the packet to answer
+    - `pdf_mismatch` — the local/downloaded bytes do not hash to the manifest's sha256; NOTHING was
+                       read from them — a document that is not the pinned document is not the document
+    - `not_yet_published` — Law 3: the filing postdates `as_of` and was not opened at all
+    """
+
+    file: str
+    period: str
+    status: str
+    fact_ids: tuple[str, ...] = ()
+    skipped_stub_flows: tuple[str, ...] = ()
+    violations: tuple[Violation, ...] = ()
+    detail: str = ""
+
+
+def _pinned_pdf(
+    entry: Mapping[str, object], bronze, fetcher=None
+) -> tuple[bytes | None, str]:
+    """The manifest filing's bytes, integrity-checked; `(None, why)` when they cannot be had.
+
+    Order: the bronze copy at `{bronze}/{file}` if present, else `fetcher(source_url)` (written to
+    bronze on success so the fetch happens once). Either way, when the manifest pins a sha256 the
+    bytes must hash to it — a silent substitution (a portal re-uploading a corrected PDF, a truncated
+    download) must fail loudly, not flow into grade-A facts.
+    """
+    import hashlib
+    from pathlib import Path
+
+    path = Path(bronze) / str(entry["file"])
+    pinned = str(entry.get("sha256", "") or "")
+    if path.exists():
+        payload = path.read_bytes()
+    elif fetcher is not None:
+        try:
+            payload = fetcher(str(entry["source_url"]))
+        except Exception as err:  # noqa: BLE001 - the reason travels to the result, never swallowed
+            return None, f"fetch failed: {err}"
+    else:
+        return None, f"no PDF at {path} and no fetcher supplied"
+    if pinned and hashlib.sha256(payload).hexdigest() != pinned:
+        return None, (f"bytes do not hash to the manifest's sha256 {pinned[:12]}… — refusing to read "
+                      "a document that is not the pinned document")
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+    return payload, ""
+
+
+def ingest_readings_manifest(
+    store: FactStore,
+    manifest: Mapping[str, object],
+    *,
+    readings_dir,
+    bronze,
+    as_of,
+    fetcher=None,
+    extract=None,
+) -> list[ReadingIngestResult]:
+    """Register every manifest filing's verified reading, oldest first. Nothing is guessed:
+
+    a filing with no reading, a reading the verifier refuses, and a PDF that fails its hash all come
+    back as explicit statuses for the caller to print — never a silent skip (owner directive 2).
+    Law 3 applies at ingest: a filing disseminated after ``as_of`` is not even opened, because
+    extracting it would leak its statements into the run before they existed.
+    """
+    from pathlib import Path
+
+    if extract is None:
+        from firm.adapters.base.extract import extract_document
+
+        def extract(payload):
+            return extract_document(payload).pages
+
+    ticker = str(manifest["ticker"])
+    out: list[ReadingIngestResult] = []
+    for entry in sorted(manifest["filings"], key=lambda e: str(e["period"])):
+        file, period = str(entry["file"]), str(entry["period"])
+        published = date.fromisoformat(str(entry["published_at"]))
+        if as_of is not None and published > as_of:
+            out.append(ReadingIngestResult(file, period, "not_yet_published"))
+            continue
+        reading_path = Path(readings_dir) / f"{Path(file).stem}.reading.json"
+        if not reading_path.exists():
+            out.append(ReadingIngestResult(
+                file, period, "no_reading",
+                detail=f"no {reading_path.name} — run `firm read-packets` and answer the packet"))
+            continue
+        payload, why = _pinned_pdf(entry, bronze, fetcher)
+        if payload is None:
+            out.append(ReadingIngestResult(file, period, "pdf_mismatch", detail=why))
+            continue
+        pages = extract(payload)
+        reading = verify_proposal(file, proposal_from_json(reading_path.read_text()), pages)
+        if reading.violations:
+            out.append(ReadingIngestResult(
+                file, period, "refused", violations=reading.violations))
+            continue
+        fact_ids, skipped = register_reading(
+            store, ticker, reading,
+            source_url=str(entry["source_url"]), published_at=published,
+            sha256=str(entry.get("sha256", "") or ""), grade=str(entry.get("grade", "A")))
+        out.append(ReadingIngestResult(
+            file, period, "registered", fact_ids=fact_ids, skipped_stub_flows=skipped))
+    return out
+
+
+def write_reading_packets(
+    manifest: Mapping[str, object],
+    *,
+    bronze,
+    out_dir,
+    readings_dir,
+    as_of=None,
+    fetcher=None,
+    extract=None,
+) -> list[str]:
+    """Write one reading packet per manifest filing that has no answered reading yet.
+
+    Returns the paths written. The packet is the complete proposer prompt (instructions + vocabulary +
+    numbered page text); the answer goes to `{readings_dir}/{file stem}.reading.json` and
+    `ingest_readings_manifest` picks it up. Law 3 applies here too — a packet must not be written for
+    a filing the run date could not have seen.
+    """
+    from pathlib import Path
+
+    if extract is None:
+        from firm.adapters.base.extract import extract_document
+
+        def extract(payload):
+            return extract_document(payload).pages
+
+    out = Path(out_dir)
+    written: list[str] = []
+    for entry in sorted(manifest["filings"], key=lambda e: str(e["period"])):
+        file = str(entry["file"])
+        published = date.fromisoformat(str(entry["published_at"]))
+        if as_of is not None and published > as_of:
+            continue
+        if (Path(readings_dir) / f"{Path(file).stem}.reading.json").exists():
+            continue
+        payload, why = _pinned_pdf(entry, bronze, fetcher)
+        if payload is None:
+            raise FileNotFoundError(f"{file}: {why}")
+        out.mkdir(parents=True, exist_ok=True)
+        packet = out / f"{Path(file).stem}.reading-packet.md"
+        packet.write_text(build_reading_packet(file, extract(payload)))
+        written.append(str(packet))
+    return written
+
+
+def fetch_pdf(url: str) -> bytes:  # pragma: no cover - thin network wrapper
+    """Default `BytesFetcher` for the CLI: browser headers (NSE/BSE refuse bare clients), cert bundle."""
+    import ssl
+    import urllib.request
+
+    try:
+        import certifi
+
+        ctx = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        ctx = ssl.create_default_context()
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+               "Referer": "https://www.bseindia.com/"}
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+        return resp.read()

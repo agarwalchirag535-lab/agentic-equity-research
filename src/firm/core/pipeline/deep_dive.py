@@ -650,7 +650,9 @@ def run_deep_dive(
     #: Tickers to compare against, for `sector_analyst`. Their facts are read point-in-time like the
     #: subject's, and a named peer with no facts as-of the date is reported as a coverage gap.
     peers: Sequence[str] = (),
-    start_year: int = 2015,
+    #: None (default) = the window is what the evidence covers (ADR-0055); an explicit
+    #: year deliberately narrows the record and is never how the record is defined.
+    start_year: int | None = None,
     write: bool = True,
     max_citation_retries: int = 1,
     #: ADR-0046 walk options: a verified reading already covers the numeric rows (so the row-locator must

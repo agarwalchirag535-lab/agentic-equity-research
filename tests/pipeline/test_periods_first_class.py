@@ -156,3 +156,29 @@ def test_a_side_with_no_stated_closes_is_not_refused_for_our_own_gap():
                                 date(2018, 12, 31), start_year=2015)
     result = PE.compare(subject, peer, periods_policy=PERIODS_POLICY)
     assert any(m.metric == "sales_cagr" for m in result.metrics)
+
+
+# ---- the analysis window is what the evidence covers (ADR-0055) -----------------------------------
+
+def test_the_window_is_the_evidence_not_a_hardcoded_year():
+    """The acceptance run's catch: FY12-FY14 sat in the store at grade A while the old
+    `start_year=2015` default computed every cumulative metric over the amputated tail — Symphony's
+    cumulative cash conversion read 0.64 (SEVERE) truncated against 0.79 (PASS) whole. The default
+    window must be the ingested record, and an explicit year must still narrow it deliberately."""
+    rows = {}
+    for fy, sales, pat, cfo in (("FY12", 313.47, 53.10, 84.31), ("FY13", 377.76, 60.11, 67.07),
+                                ("FY18", 764.75, 192.55, 106.86)):
+        rows[(D.SALES, fy)] = sales
+        rows[(D.PAT, fy)] = pat
+        rows[(D.CFO, fy)] = cfo
+    store = _store(rows)
+    wide = D.load_company_facts(store, "T", date(2018, 12, 31))
+    assert wide.periods[0] == "FY12"          # the record, not a constant
+    narrowed = D.load_company_facts(store, "T", date(2018, 12, 31), start_year=2018)
+    assert narrowed.periods == ("FY18",)      # explicit narrowing still works
+
+
+def test_an_empty_store_yields_an_honestly_empty_window():
+    store = _store({})
+    facts = D.load_company_facts(store, "T", date(2018, 12, 31))
+    assert facts.periods == ()

@@ -31,9 +31,11 @@ def _cagr(first: float, last: float, n: int) -> float | None:
 
 
 def compute_company_metrics(
-    store: FactStore, ticker: str, as_of: date, start_year: int = 2015
+    store: FactStore, ticker: str, as_of: date, start_year: int | None = None
 ) -> dict[str, Any]:
     latest_fy = as_of.year if as_of.month >= 4 else as_of.year - 1
+    if start_year is None:  # the window is what the evidence covers (ADR-0055)
+        start_year = store.earliest_annual_year(ticker, as_of) or latest_fy
     years = [f"FY{y % 100:02d}" for y in range(start_year, latest_fy + 1)]
 
     def S(metric: str) -> dict[str, float]:

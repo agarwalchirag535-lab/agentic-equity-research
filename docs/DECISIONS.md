@@ -1858,3 +1858,59 @@ were adapted to the trunk semantics rather than dropped — the calendar-change 
 narration even where the rate is computable. The trunk's ADR-0050 dilution-drag guard and the
 sibling's ADR-0053 gap-kind fix overlap in spirit (both stop a firm-side gap reading as a company-side
 finding); neither subsumes the other.
+
+### ADR-0055 — The reading path reaches the CLI, and the acceptance run caught three defects green tests never would
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0046/0050/0054 · **Source** wiring
+`firm read-packets` / `--readings` and then actually driving Symphony through it to a published report
+
+**The wiring.** `ingest_readings_manifest` takes a filings manifest to verified, dated, grade-A facts:
+bronze-cached PDFs fetched from the manifest's `source_url` when absent and REFUSED unless they hash
+to its pinned sha256; every reading verified against the actual page text at ingest (a reading that
+fails today's verifier never registers, however it got on disk); Law 3 at the document level (a filing
+after `as_of` is not even opened); every non-contribution an explicit status — `no_reading`,
+`refused` (violations attached), `pdf_mismatch`, `not_yet_published` — never a silent skip.
+`firm read-packets` writes proposer packets for exactly the filings that lack readings;
+`deep-dive --readings` and `packets --readings` share the ingest and set `walk_numeric_rows=False`,
+so the walker cannot re-register unverified rows beside verified ones and the agent packet remains
+the run's evidence, not a variant of it.
+
+**Defect 1 — a hardcoded window amputated the evidence (the serious one).** `start_year: int = 2015`
+in `load_company_facts` (and four siblings) silently excluded Symphony's ingested FY12–FY14 filings.
+Cumulative cash conversion computed over the truncated tail: **0.64, SEVERE, screen HARD_FAIL** — a
+fraud-class flag against the clean company, out of a store that held the full passing history at
+grade A. The three-period minimum ADR-0048 added could not see this: the truncated window HAS three
+periods; the defect is exclusion, not brevity. Fixed: `start_year=None` now means **the window is
+what the evidence covers** (`FactStore.earliest_annual_year`, Law-3-filtered); an explicit year
+narrows deliberately; the constant is gone from every default. Full run: 0.79, PASS, screen REVIEW.
+
+**Defect 2 — a wrong statutory date, charging compliance as concealment.** The mandated-disclosure
+scan flagged Symphony FY18 for missing Key Audit Matters. SA 701 was deferred by ICAI to audits of
+periods beginning on/after 1 April 2018 — FY19 is the first AR that owes a KAM section — and the
+empirical check settles it: Symphony's Deloitte-audited FY18 report contains zero occurrences of the
+phrase, and a Big-4 auditor does not skip a mandatory section. `DISCLOSURE_EFFECTIVE_FY` corrected to
+2019. A statutory date is a fact to verify against filings, not to recall from memory.
+
+**Defect 3 — the citation grammar excluded most audited rows (third instance of its class).** The
+`[fact:...]` token's character class had already been widened once for the colons every namespaced id
+carries; it still excluded SPACES, and most raw filing metrics are multi-word
+(`pnl:Cost of Materials Consumed`) — so an agent quoting an audited row verbatim could not cite it at
+all, and the validator was once again satisfiable only by not writing such numbers. The delimiter is
+now the bracket, not a character class; unknown ids still fail loudly, and the value check is
+untouched.
+
+**The acceptance run** (`reports/SYMPHONY/2018-12-31-65e0f6068121`, packets under
+`runs/SYMPHONY-packets/`): six filings, 284 verified facts, stub flows refused, six re-presentations
+quarantined, 43 notes enumerated, three agents through every discipline gate — the gates rejected
+four successive drafts of this run's own answers (uncitable space-bearing ids, policy thresholds
+written as digits, a citation to the filing the resolver does not serve) before passing the fifth.
+Verdict **FORENSIC_CAUTION** off the deterministic REVIEW + one HIGH flag. That flag,
+`cfo_pat_low` 0.55, is the treasury-classification arithmetic named in ADR-0048's residue: a
+treasury-heavy company converts below the floor in any single year while converting 0.79
+cumulatively. The verdict is conservative in the right direction and the prose carries the benign
+explanation, but the class — every treasury-heavy clean company earning FORENSIC_CAUTION — is now the
+**top golden-set calibration question**, recorded again rather than threshold-hacked on n=1.
+
+**Residue:** ROIC and the cash-interest check stay unrunnable through the reading vocabulary (no
+operating-profit/tax/interest-income rows), which caps Symphony's evaluable playbook at 70% and its
+note substantive share at 12% — the report says so on its face.

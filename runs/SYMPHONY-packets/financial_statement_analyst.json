@@ -1,0 +1,214 @@
+{
+ "agent": "financial_statement_analyst",
+ "agent_version": "1.0.0",
+ "ticker": "SYMPHONY",
+ "as_of": "2018-12-31",
+ "observations": [
+  {
+   "text": "Across the six readable years profit converted to cash at 0.79 [fact:derived:cum_cfo_pat] cumulatively \u2014 above the policy floor \u2014 but the latest year alone converted at only 0.55 [fact:derived:cfo_pat_latest], and accruals ran at 0.126 [fact:derived:accrual_ratio_latest] of average assets.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cum_cfo_pat",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:cfo_pat_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:accrual_ratio_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 3,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics over the full window"
+   }
+  },
+  {
+   "text": "Working capital is short and stable: a 48.2 [fact:derived:cash_conversion_cycle] day cycle, receivables collected in 28.1 [fact:derived:receivable_days] days and moving only 3.2 [fact:derived:receivable_days_delta] days in the latest year \u2014 nothing in the working-capital lines is absorbing paper profit.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cash_conversion_cycle",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:receivable_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:receivable_days_delta",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 3,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics"
+   }
+  },
+  {
+   "text": "The printed cost-ratio moves across the window are presentation, not economics: materials consumed reads 11.8% [fact:derived:material_cost_ratio] of revenue in the latest year, but the earliest year's filing lumped traded-goods purchases into the materials line and later filings split them, so the window-level ratio deltas mix two disclosure bases and must not be read as a real cost migration.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:material_cost_ratio",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.8,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A ratio; the basis change is documented by the cross-filing re-presentation quarantine in this run"
+   }
+  },
+  {
+   "text": "Aggregate profit compounded at 25.1% [fact:derived:pat_cagr] while as-filed earnings per share compounded at 10.9% [fact:derived:eps_cagr]; share capital moved from 6.9957 [fact:SYMPHONY-AR-FY17.pdf:balance_sheet:Equity Capital:FY16] to 13.9914 [fact:SYMPHONY-AR-FY18.pdf:balance_sheet:Equity Capital:FY17] crore at unchanged face value, so the share count doubled inside the window.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:pat_cagr",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:eps_cagr",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "SYMPHONY-AR-FY17.pdf:balance_sheet:Equity Capital:FY16",
+     "doc_id": "SYMPHONY-AR-FY17.pdf",
+     "locator": "p.151",
+     "published_at": "2017-09-12",
+     "extractor_version": "llm-read@1.0.0+verified",
+     "grade": "A"
+    },
+    {
+     "fact_id": "SYMPHONY-AR-FY18.pdf:balance_sheet:Equity Capital:FY17",
+     "doc_id": "SYMPHONY-AR-FY18.pdf",
+     "locator": "p.133",
+     "published_at": "2018-08-31",
+     "extractor_version": "llm-read@1.0.0+verified",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 4,
+    "lowest_grade_relied_on": "A",
+    "rationale": "two grade-A derived metrics and two grade-A balance-sheet rows"
+   }
+  }
+ ],
+ "inferences": [
+  {
+   "text": "The single-year conversion shortfall at 0.55 [fact:derived:cfo_pat_latest] is most plausibly classification, not quality: other income is 20.4% [fact:derived:other_income_share] of pre-tax profit and an indirect-method cash flow parks investment income under investing, so a treasury-heavy company systematically converts below one in any single year while converting fine cumulatively at 0.79 [fact:derived:cum_cfo_pat]. This is a hypothesis the interest-received line of the cash flow would confirm; it is not confirmed in this fact set.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:cfo_pat_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:other_income_share",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:cum_cfo_pat",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.65,
+    "evidence_count": 3,
+    "lowest_grade_relied_on": "A",
+    "rationale": "consistent arithmetic story, but the confirming row is not in the read set"
+   }
+  },
+  {
+   "text": "The profit-versus-EPS wedge is almost certainly capital structure, not dilution economics: doubled share capital at constant face value with per-share profit still compounding at 10.9% [fact:derived:eps_cagr] fits a bonus issue, under which existing holders keep every new share and the wedge is cosmetic. Whether it was a bonus or an issuance is a corporate-action fact this run's sources do not carry, so the wedge is left unscored rather than asserted either way.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:eps_cagr",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.6,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "the capital doubling is grade-A; the corporate action behind it is not in the fact set"
+   }
+  }
+ ],
+ "speculations": [],
+ "open_questions": [
+  "What does the cash flow's own interest-received line show? That single row would settle how much of the conversion shortfall is investing-classified treasury income.",
+  "Was the share-capital doubling a bonus issue? The corporate-action disclosure or the reserves note would answer in one line.",
+  "Return on capital cannot be computed from this fact set \u2014 the operating-profit and tax rows are not in the reading vocabulary \u2014 so capital efficiency rests on the cash-flow evidence alone here."
+ ],
+ "disconfirming_search": "Tried to break the 'cash is fine' reading: the sharpest attack is the latest year at 0.55 [fact:derived:cfo_pat_latest] with accruals at 0.126 [fact:derived:accrual_ratio_latest]. Against it stand the cumulative 0.79 [fact:derived:cum_cfo_pat], receivables moving 3.2 [fact:derived:receivable_days_delta] days, and inventory growth trailing revenue growth in the stock-flow checks \u2014 the fraud shapes that make a conversion gap sinister are absent. What survives is a real, unresolved classification question, named above.",
+ "narrative": "The statements describe a business whose profit is real by the cumulative cash test at 0.79 [fact:derived:cum_cfo_pat] but whose latest-year optics are muddied by treasury classification at 0.55 [fact:derived:cfo_pat_latest], whose working capital at 48.2 [fact:derived:cash_conversion_cycle] days is short and calm, and whose per-share record at 10.9% [fact:derived:eps_cagr] against 25.1% [fact:derived:pat_cagr] aggregate is dominated by a share-capital event the sources read here do not explain. The window-level cost-ratio deltas are contaminated by a disclosure-basis change and are deliberately not narrated as cost moves.",
+ "incremental_roic": null,
+ "cfo_to_ebitda": null,
+ "fcf_to_pat": null,
+ "working_capital_days": 48.22614915353128
+}

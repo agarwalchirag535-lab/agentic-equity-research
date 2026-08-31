@@ -198,6 +198,29 @@ class FactStore:
         ).fetchall()
         return [self._row_to_fact(row) for row in rows]
 
+    def earliest_annual_year(self, ticker: str, as_of: date) -> int | None:
+        """The first fiscal year any fact visible as-of ``as_of`` covers, or None with no facts.
+
+        This is what makes an evidence-driven analysis window possible (ADR-0055): the window should be
+        what the ingested record actually covers, not a year someone hardcoded. A truncating default
+        silently excluded three ingested Symphony filings and turned a 0.79 cumulative cash conversion
+        (PASS over FY12-FY18) into a 0.64 SEVERE over the amputated window — a fraud-class flag
+        manufactured entirely by a window constant. Law 3 applies: only periods from documents
+        published on/before ``as_of`` count.
+        """
+        import re
+
+        rows = self._conn.execute(
+            """
+            SELECT DISTINCT f.period FROM facts f JOIN documents d ON f.doc_id = d.doc_id
+            WHERE f.ticker = ? AND d.published_at <= ?
+            """,
+            (ticker, as_of.isoformat()),
+        ).fetchall()
+        years = [2000 + int(m.group(1)) for row in rows
+                 if (m := re.fullmatch(r"FY(\d{2})", row["period"]))]
+        return min(years) if years else None
+
     def query_metric_prefix(self, ticker: str, prefix: str, as_of: date) -> list[Fact]:
         """Point-in-time read (Law 3) of EVERY fact whose metric starts with ``prefix``.
 

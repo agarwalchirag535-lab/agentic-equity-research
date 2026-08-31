@@ -29,9 +29,13 @@ from typing import Mapping
 # The lookbehind excludes only a preceding digit or dot, so a decimal is never split — but a number
 # glued to letters ("Rs9999") IS a claim (see design point 2 above).
 _NUMBER = re.compile(r"(?<![\d.])[-+]?\d[\d,]*(?:\.\d+)?%?")
-# Fact ids are namespaced with colons and may carry dots/dashes: derived:cum_cfo_pat,
-# screener-ALKYLAMINE-2026-07-23:pnl:Sales:FY26.
-_CITE = re.compile(r"\[fact:([A-Za-z0-9_.:\-]+)\]")
+# Fact ids are whatever the store says they are; the DELIMITER is the bracket, not a character
+# class. This is the third instance of the same defect (ADR-0055): the original grammar excluded the
+# colons every namespaced id carries, then the widened class still excluded the SPACES most raw
+# filing metrics carry ("pnl:Cost of Materials Consumed") — so an agent quoting an audited row
+# verbatim could not cite it at all, and the validator was again satisfiable only by writing no such
+# number. Anything but a closing bracket is the id; an id the run does not know still fails loudly.
+_CITE = re.compile(r"\[fact:([^\]\s][^\]]*)\]")
 # Tokens that look numeric but are labels, not claims.
 _LABEL = re.compile(r"\b(FY\d{2,4}|Q[1-4]FY\d{2,4})\b", re.IGNORECASE)
 

@@ -1,0 +1,211 @@
+{
+ "agent": "business_analyst",
+ "agent_version": "1.0.0",
+ "ticker": "SYMPHONY",
+ "as_of": "2018-12-31",
+ "observations": [
+  {
+   "text": "The cost base is bought, not made: the company purchases 293.14 [fact:SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18] crore of finished stock-in-trade against 93.89 [fact:SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18] crore of materials consumed \u2014 an outsourced-manufacturing model where the company owns the brand, the design and the distribution while contract vendors own the factories.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "SYMPHONY-AR-FY18.pdf:pnl:Purchases of Stock-in-Trade:FY18",
+     "doc_id": "SYMPHONY-AR-FY18.pdf",
+     "locator": "p.134",
+     "published_at": "2018-08-31",
+     "extractor_version": "llm-read@1.0.0+verified",
+     "grade": "A"
+    },
+    {
+     "fact_id": "SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18",
+     "doc_id": "SYMPHONY-AR-FY18.pdf",
+     "locator": "p.134",
+     "published_at": "2018-08-31",
+     "extractor_version": "llm-read@1.0.0+verified",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "two grade-A rows from the audited FY18 consolidated P&L"
+   }
+  },
+  {
+   "text": "Operations more than fund the investment programme: cumulative operating cash of 546.6 [fact:derived:cfo_cum_window] crore against 349.1 [fact:derived:investing_outflow_cum] crore of investing outflow, a self-funding ratio of 1.57 [fact:derived:self_funding_ratio] \u2014 growth here has not needed outside capital.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cfo_cum_window",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:investing_outflow_cum",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:self_funding_ratio",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 3,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics over the full six-year window"
+   }
+  },
+  {
+   "text": "The working-capital cycle is light for a consumer-durables maker: 28.1 [fact:derived:receivable_days] receivable days and 75.4 [fact:derived:inventory_days] inventory days against 55.3 [fact:derived:payable_days] payable days \u2014 48.2 [fact:derived:cash_conversion_cycle] days of cash tied up, consistent with selling through trade channels that pay quickly while vendors finance part of the stock.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:receivable_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:inventory_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:payable_days",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:cash_conversion_cycle",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 4,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics from the audited FY18 statements"
+   }
+  },
+  {
+   "text": "Revenue compounded at 17.7% [fact:derived:revenue_cagr] and profit at 25.1% [fact:derived:pat_cagr] across the window \u2014 profitability grew faster than sales, the opposite of a discount-led land grab.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:revenue_cagr",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:pat_cagr",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.8,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics; note the window spans a fiscal-calendar change the exponent already corrects for"
+   }
+  }
+ ],
+ "inferences": [
+  {
+   "text": "An asset-light cooling business in a hot, electrifying country sits on a real structural need, but the moat mechanism visible in these figures is brand-and-distribution economics (high return on a small owned-asset base), not a technology or switching-cost barrier: a vendor-manufactured appliance can be imitated, so the durable advantage must live in the brand and the dealer network, neither of which this fact set measures directly.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:self_funding_ratio",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.6,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "inferred from the cost structure and self-funding; the moat itself is not directly evidenced here"
+   }
+  },
+  {
+   "text": "Reported earnings lean on treasury: other income is 20.4% [fact:derived:other_income_share] of pre-tax profit, so roughly a fifth of what shareholders earn is investment return on the cash pile rather than cooler margin \u2014 the operating business is smaller than the P&L bottom line suggests.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:other_income_share",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.75,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived share; the split of other income is not itself broken out"
+   }
+  }
+ ],
+ "speculations": [
+  {
+   "text": "Seasonality likely dominates the intra-year cash pattern \u2014 an air-cooler maker sells into the summer \u2014 but no quarterly series is in this fact set, so the shape of the season is unmeasured here.",
+   "kind": "speculation",
+   "citations": [],
+   "confidence": {
+    "value": 0.4,
+    "evidence_count": 0,
+    "lowest_grade_relied_on": "A",
+    "rationale": "domain knowledge, no facts in this run speak to it"
+   }
+  }
+ ],
+ "open_questions": [
+  "What share of revenue is domestic versus export, and does the brand carry the same price premium outside India? The segment note would answer this; it is not read in this run.",
+  "Who are the contract manufacturers, and is any of them related to the promoter group? The related-party note discloses remuneration channels only in the sources read here.",
+  "Volume versus realisation: how many coolers were sold? The production/sales quantity table is not in the read fact set, so price-versus-volume growth cannot be split.",
+  "Share capital doubled during the window \u2014 a bonus issue or an issuance? The corporate-action disclosure would settle whether per-share compounding tracked aggregate compounding."
+ ],
+ "disconfirming_search": "Looked for signs the growth was bought rather than earned: receivable and inventory growth both trail revenue growth (the stock-flow checks pass), the programme is self-funded at 1.57 [fact:derived:self_funding_ratio], and no borrowing base appears. What I could NOT disconfirm is concentration risk \u2014 customer, channel or vendor concentration is simply not disclosed in the rows read here, so its absence from this narrative is a gap, not evidence of diversification.",
+ "narrative": "Symphony designs and sells air coolers under its own brand and has vendors build them: the money flow is brand price-premium in, vendor invoices and dealer margins out, with the residual compounding at 25.1% [fact:derived:pat_cagr] while revenue compounded 17.7% [fact:derived:revenue_cagr]. The balance sheet's job here is to hold the treasury, not the factories. The honest caveats are that a fifth of pre-tax profit is treasury income at 20.4% [fact:derived:other_income_share] of PBT, and that the questions a brand thesis turns on \u2014 volume versus price, channel concentration, export share \u2014 are asked and unanswered in this run's sources.",
+ "what_it_does": "Designs, brands and distributes air coolers; manufacturing is outsourced to contract vendors, so the company's own capital sits in brand, distribution and a large treasury rather than plant.",
+ "moat": "Plausibly brand plus dealer distribution \u2014 consistent with the self-funded high-return pattern in the figures, but not directly measured by any fact in this run; asserted here only as the mechanism that WOULD have to exist for the economics to persist.",
+ "customer_concentration": null,
+ "national_relevance": true
+}

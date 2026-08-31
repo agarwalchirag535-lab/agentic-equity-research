@@ -77,10 +77,15 @@ REQUIRED_DISCLOSURES: frozenset[str] = frozenset(
     {"auditors_opinion", "related_party", "contingent_liabilities", "key_audit_matters"}
 )
 
-#: First fiscal year each requirement applies to. Key Audit Matters is SA 701, effective for audits of
-#: periods beginning on/after 1 April 2017 — the FY18 annual report is the first that must carry it.
-#: An FY17 filing without KAM is compliant, and calling it a gap is a false accusation (PC Jeweller run).
-DISCLOSURE_EFFECTIVE_FY: dict[str, int] = {"key_audit_matters": 2018}
+#: First fiscal year each requirement applies to. Key Audit Matters is SA 701, originally effective
+#: for periods beginning on/after 1 April 2017 but DEFERRED by ICAI by one year — audits of periods
+#: beginning on/after 1 April 2018, so the year ended 31 March 2019 (FY19) is the first AR that must
+#: carry it. Verified empirically, not from memory (ADR-0055): Symphony's FY18 report, audited by
+#: Deloitte and signed May 2018, contains zero occurrences of "key audit matter" — a Big-4 auditor
+#: does not skip a mandatory section, so the earlier 2018 value here was flagging every compliant
+#: FY18 filer with a disclosure_gap. A wrong statutory date turns the law into a false accusation
+#: in whichever direction it is wrong.
+DISCLOSURE_EFFECTIVE_FY: dict[str, int] = {"key_audit_matters": 2019}
 
 
 def disclosure_gaps(sections: dict[str, str], fiscal_year: int | None = None) -> tuple[list[str], bool]:

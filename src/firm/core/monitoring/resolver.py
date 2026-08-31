@@ -45,7 +45,7 @@ def resolve_due(
     ticker: str,
     as_of,
     *,
-    start_year: int = 2015,
+    start_year: int | None = None,
 ) -> list[Resolution]:
     """Close the memory loop (SPEC §7.2): score every due, unresolved prediction for `ticker` against
     the metric AS THE FIRM COMPUTES IT from the point-in-time fact store at `as_of`, and rewrite the

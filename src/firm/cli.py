@@ -277,6 +277,12 @@ def deep_dive(
              "annual report published on/before --as-of as grade-A facts and walks the latest one's notes. "
              "Without this the run rests on a grade-B screener snapshot (ADR-0024)."),
     bronze: str = typer.Option("data/bronze", "--bronze", help="where the manifest's PDFs live"),
+    readings: str = typer.Option(
+        "", "--readings",
+        help="directory of verified reading answers ({file stem}.reading.json, ADR-0046/0055). With "
+             "--filings, numeric facts come from the READING path — every figure verified against the "
+             "page text, every period dated — and the walker only scans the latest filing's notes. A "
+             "filing with no reading is reported, never silently walked."),
     phase: int = typer.Option(
         2, "--phase",
         help="build phase (SPEC §11). Selects the agent roster from config/roster.yaml; agents above this "
@@ -333,23 +339,52 @@ def deep_dive(
             from firm.core.pipeline.filing import COMPOSED_ROWS, FILING_ROWS
 
             manifest = load_manifest(filings)
-            ingested = ingest_manifest(store, manifest, bronze=bronze, as_of=run_date)
-            typer.echo(f"  filings: ingested {len(ingested)} annual report(s) as grade-A facts")
-            # THE FILINGS CHECK EACH OTHER. Each report restates the prior year in its comparative
-            # column, so consecutive filings assert the same figure twice from two independent
-            # publications. Where they disagree by more than any restatement explains, neither read is
-            # trusted and both go (ADR-0036) — the alternative is a misread row sitting in the store at
-            # grade A, out-ranking the very screener figure that would have contradicted it.
-            dropped = quarantine_extraction_errors(
-                store, ticker, ingested,
-                tuple(FILING_ROWS) + tuple(COMPOSED_ROWS),
-                load_thresholds()["reconciliation"],
-            )
-            for overlap in dropped:
-                typer.echo(
-                    f"  ⚠ quarantined {overlap.metric} {overlap.period}: "
-                    f"{overlap.against_filing} says {overlap.against_value:,.2f}, "
-                    f"{overlap.from_filing} says {overlap.from_value:,.2f} — neither stored")
+            if readings:
+                # THE READING PATH (ADR-0046/0055): every figure verified against the page text before
+                # it may be stored, every period dated by its filing's own words. A manifest filing
+                # with no answered reading is a named gap, never a silent fallback to the walker.
+                from firm.core.ingest.filings import quarantine_store_contradictions
+                from firm.core.ingest.reading import fetch_pdf, ingest_readings_manifest
+
+                results = ingest_readings_manifest(
+                    store, manifest, readings_dir=readings, bronze=bronze, as_of=run_date,
+                    fetcher=fetch_pdf)
+                registered = [r for r in results if r.status == "registered"]
+                typer.echo(f"  readings: {len(registered)} of {len(results)} filings registered "
+                           f"({sum(len(r.fact_ids) for r in registered)} verified facts)")
+                for r in results:
+                    for stub in r.skipped_stub_flows[:2]:
+                        typer.echo(f"    {r.file}: refused stub flow — {stub}")
+                    if r.status == "refused":
+                        typer.echo(f"  ✗ {r.file}: reading REFUSED — "
+                                   f"{r.violations[0].rule}: {r.violations[0].detail[:100]}")
+                    elif r.status in ("no_reading", "pdf_mismatch"):
+                        typer.echo(f"  ⚠ {r.file}: {r.status} — {r.detail[:120]}")
+                for rec in quarantine_store_contradictions(
+                        store, ticker, run_date, load_thresholds()["reconciliation"]):
+                    o = rec.overlap
+                    typer.echo(
+                        f"  ⚠ {rec.kind} {o.metric} {o.period}: {o.against_value:,.2f} vs "
+                        f"{o.from_value:,.2f} — neither stored")
+                ingested = []
+            else:
+                ingested = ingest_manifest(store, manifest, bronze=bronze, as_of=run_date)
+                typer.echo(f"  filings: ingested {len(ingested)} annual report(s) as grade-A facts")
+                # THE FILINGS CHECK EACH OTHER. Each report restates the prior year in its comparative
+                # column, so consecutive filings assert the same figure twice from two independent
+                # publications. Where they disagree by more than any restatement explains, neither read
+                # is trusted and both go (ADR-0036) — the alternative is a misread row sitting in the
+                # store at grade A, out-ranking the very screener figure that would have contradicted it.
+                dropped = quarantine_extraction_errors(
+                    store, ticker, ingested,
+                    tuple(FILING_ROWS) + tuple(COMPOSED_ROWS),
+                    load_thresholds()["reconciliation"],
+                )
+                for overlap in dropped:
+                    typer.echo(
+                        f"  ⚠ quarantined {overlap.metric} {overlap.period}: "
+                        f"{overlap.against_filing} says {overlap.against_value:,.2f}, "
+                        f"{overlap.from_filing} says {overlap.from_value:,.2f} — neither stored")
             usable = [
                 entry for entry in sorted(manifest["filings"], key=lambda e: str(e["period"]))
                 if date.fromisoformat(str(entry["published_at"])) <= run_date
@@ -422,6 +457,10 @@ def deep_dive(
             agents=roster_agents, coverage_gaps=coverage_gaps, peers=peer,
             company_name=company or ticker, model=model, reports_root=reports_root,
             write=not force,
+            # A verified reading already covers the numeric rows; the walker re-registering them would
+            # put unverified row-locator figures beside verified ones under the same grade (ADR-0055).
+            # The latest filing's notes/CARO/section scanning still runs either way.
+            walk_numeric_rows=not readings,
         )
     finally:
         store.close()
@@ -454,6 +493,41 @@ def deep_dive(
     raise typer.Exit(1)
 
 
+@app.command("read-packets")
+def read_packets(
+    ticker: str = typer.Option(..., "--ticker"),
+    filings: str = typer.Option(..., "--filings",
+                                help="filings manifest (data/manifests/{TICKER}-filings.json)"),
+    as_of: str = typer.Option("", "--as-of", help="Law 3: no packet for a filing after this date"),
+    bronze: str = typer.Option("data/bronze", "--bronze",
+                               help="PDF cache; missing files are fetched from the manifest's "
+                                    "source_url and refused unless they hash to its sha256"),
+    readings: str = typer.Option("", "--readings",
+                                 help="where answered readings live; default "
+                                      "data/manifests/{TICKER}-readings"),
+    out: str = typer.Option("", "--out", help="default runs/{TICKER}-reading-packets"),
+) -> None:
+    """Write one reading packet per manifest filing that has no answered reading yet (ADR-0046/0055).
+
+    The packet is the complete proposer prompt — instructions, metric vocabulary, and the filing's
+    numbered page text. Answer each as `{file stem}.reading.json` in the readings directory, then run
+    `firm deep-dive --readings` (or re-run this command to see what is still unanswered).
+    """
+    from firm.core.ingest.filings import load_manifest
+    from firm.core.ingest.reading import fetch_pdf, write_reading_packets
+
+    manifest = load_manifest(filings)
+    readings_dir = readings or f"data/manifests/{ticker}-readings"
+    written = write_reading_packets(
+        manifest, bronze=bronze, out_dir=out or f"runs/{ticker}-reading-packets",
+        readings_dir=readings_dir,
+        as_of=date.fromisoformat(as_of) if as_of else None, fetcher=fetch_pdf)
+    if not written:
+        typer.echo(f"nothing to do: every filing in {filings} already has a reading in {readings_dir}")
+    for path in written:
+        typer.echo(f"wrote {path}")
+
+
 @app.command("packets")
 def packets(
     ticker: str = typer.Option(..., "--ticker"),
@@ -474,6 +548,11 @@ def packets(
         help="filings manifest. Pass the SAME one `deep-dive` will get: without it the packet tells the "
              "agents no annual report was walked, while the run walks one."),
     bronze: str = typer.Option("data/bronze", "--bronze", help="where the manifest's PDFs live"),
+    readings: str = typer.Option(
+        "", "--readings",
+        help="directory of verified reading answers (ADR-0055). Pass the SAME one `deep-dive` will "
+             "get: the packet's numeric facts then come from the reading path and the walker only "
+             "scans notes — the same rule that keeps the packet the run's evidence, not a variant."),
 ) -> None:
     """Write the planned agents' prompt packets (computed facts included) for the Claude-in-the-loop path.
 
@@ -518,12 +597,27 @@ def packets(
         from firm.core.pipeline.filing import walk_filing
 
         manifest = load_manifest(filings)
+        if readings:
+            # Same ingest `deep-dive --readings` performs (idempotent), so the packet's facts ARE the
+            # run's facts — and the walker must not re-register unverified numeric rows beside them.
+            from firm.core.config import load_thresholds as _load_thresholds
+            from firm.core.ingest.filings import quarantine_store_contradictions
+            from firm.core.ingest.reading import fetch_pdf, ingest_readings_manifest
+
+            results = ingest_readings_manifest(
+                store, manifest, readings_dir=readings, bronze=bronze, as_of=run_date,
+                fetcher=fetch_pdf)
+            typer.echo(f"  readings: {sum(1 for r in results if r.status == 'registered')} of "
+                       f"{len(results)} filings registered")
+            quarantine_store_contradictions(
+                store, ticker, run_date, _load_thresholds()["reconciliation"])
         usable = [
             entry for entry in sorted(manifest["filings"], key=lambda e: str(e["period"]))
             if date.fromisoformat(str(entry["published_at"])) <= run_date
         ]
         if usable:
-            walk = walk_filing(store, ticker, filing_from_manifest(usable[-1], bronze))
+            walk = walk_filing(store, ticker, filing_from_manifest(usable[-1], bronze),
+                               numeric_rows=not readings)
             typer.echo(f"  walked {usable[-1]['file']}: {len(walk.notes)} notes enumerated")
     facts = D.load_company_facts(store, ticker, run_date)
     guidance = store.query_metric_prefix(ticker, "guidance:", run_date)

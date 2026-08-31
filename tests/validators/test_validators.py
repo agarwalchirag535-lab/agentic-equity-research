@@ -45,6 +45,23 @@ def test_citation_accepts_the_namespaced_fact_ids_the_system_actually_produces()
         "sales were 1,050 [fact:screener-ABC-2026-07-23:pnl:Sales:FY26]", known) == []
 
 
+def test_citation_accepts_the_space_bearing_ids_most_filing_rows_carry():
+    """Third instance of the id-grammar defect (ADR-0055): most raw filing metrics are multi-word
+    ("pnl:Cost of Materials Consumed"), so the widened-but-still-charclass grammar made every such
+    audited row uncitable — the delimiter is the bracket, not a character class."""
+    known = {"SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18": 93.89}
+    ok = citation.validate(
+        "materials consumed were 93.89 [fact:SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18]",
+        set(known), values=known)
+    assert ok == []
+    misquoted = citation.validate(
+        "materials consumed were 99.99 [fact:SYMPHONY-AR-FY18.pdf:pnl:Cost of Materials Consumed:FY18]",
+        set(known), values=known)
+    assert [p.reason for p in misquoted] == ["value_mismatch"]
+    unknown = citation.validate("consumed 93.89 [fact:pnl:Cost of Nothing:FY18]", set(known))
+    assert [p.reason for p in unknown] == ["unknown_fact_id"]
+
+
 def test_citation_catches_a_number_glued_to_a_preceding_word():
     """'Rs9999 crore' is ordinary Indian financial prose and was how a fabricated figure slipped past."""
     problems = citation.validate("Revenue grew to Rs9999 crore last year.", {"f1"})

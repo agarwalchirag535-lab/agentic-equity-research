@@ -230,17 +230,27 @@ def load_company_facts(
     ticker: str,
     as_of: date,
     *,
-    start_year: int = 2015,
+    start_year: int | None = None,
     metrics: Sequence[str] = READ_METRICS,
     quarterly_metrics: Sequence[str] = QUARTERLY_METRICS,
 ) -> CompanyFacts:
     """Read the known metric set for ``ticker`` as-of ``as_of``. Absent metrics are simply absent.
+
+    ``start_year=None`` (the default) means **the window is what the evidence covers**: the earliest
+    annual period any visible fact carries (ADR-0055). The old hardcoded 2015 silently amputated
+    ingested filings — Symphony's FY12-FY14 sat in the store at grade A while every cumulative and
+    growth metric was computed over the truncated tail, turning a passing cash-conversion history into
+    a SEVERE flag. Pass an explicit year only to deliberately narrow the record, never to define it.
 
     Two passes, because two cadences. Annual metrics are read against fiscal years; the SEBI shareholding
     pattern is filed quarterly, so its facts carry quarter labels (`Q2FY25`) that an annual-only scan never
     queries. Before the second pass the governance facts existed in the store, loaded into nothing, and
     `ownership_flows_analyst` abstained for want of anything it could cite (ADR-0035).
     """
+    if start_year is None:
+        # No facts at all -> the current fiscal year, which yields an honestly empty view.
+        start_year = store.earliest_annual_year(ticker, as_of) or (
+            as_of.year if as_of.month >= 4 else as_of.year - 1)
     series: dict[str, dict[str, Fact]] = {}
     periods_with_data: list[str] = []
     for period in fiscal_years(as_of, start_year):

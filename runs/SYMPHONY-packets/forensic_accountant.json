@@ -1,0 +1,111 @@
+{
+ "agent": "forensic_accountant",
+ "agent_version": "1.0.0",
+ "ticker": "SYMPHONY",
+ "as_of": "2018-12-31",
+ "observations": [
+  {
+   "text": "The deterministic screen returns REVIEW on two flags: single-year cash conversion at 0.55 [fact:derived:cfo_pat_latest] below the policy floor, and accruals at 0.126 [fact:derived:accrual_ratio_latest] above the policy limit. Every stock-flow divergence check passes: receivables and inventory both grew more slowly, relative to revenue, than the configured limits allow.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cfo_pat_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:accrual_ratio_latest",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.9,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "the screen is deterministic; these are its own grade-A inputs"
+   }
+  },
+  {
+   "text": "The cumulative test the fraud pattern fails is passed here: 0.79 [fact:derived:cum_cfo_pat] over six years, and the two flags above are single-year figures on a company whose other income is 20.4% [fact:derived:other_income_share] of pre-tax profit \u2014 the arithmetic signature of investing-classified treasury income, not of receivables absorbing fictitious sales, which the passing divergence checks independently corroborate.",
+   "kind": "observation",
+   "citations": [
+    {
+     "fact_id": "derived:cum_cfo_pat",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    },
+    {
+     "fact_id": "derived:other_income_share",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.85,
+    "evidence_count": 2,
+    "lowest_grade_relied_on": "A",
+    "rationale": "grade-A derived metrics; the classification reading is corroborated by passing stock-flow checks"
+   }
+  },
+  {
+   "text": "The cross-filing control worked and found history, not fraud: consecutive filings re-presented several figures (traded-goods purchases moved out of the materials line; discounts renetted from revenue), and where two audited filings printed irreconcilable figures for the same year, both were quarantined rather than either being trusted.",
+   "kind": "observation",
+   "citations": [],
+   "confidence": {
+    "value": 0.8,
+    "evidence_count": 0,
+    "lowest_grade_relied_on": "A",
+    "rationale": "run-level control outcome; the specific quarantined pairs are in the run log, not citable fact rows"
+   }
+  }
+ ],
+ "inferences": [
+  {
+   "text": "Nothing in the readable evidence supports a manipulation hypothesis: the flags that fired are the known arithmetic of a treasury-heavy balance sheet, the checks that catch stuffed revenue and stuffed inventory pass, and the nine-month transition period was excluded from every annual series rather than distorting one. The honest characterisation is a clean company the firm cannot yet fully read, not a suspect one.",
+   "kind": "inference",
+   "citations": [
+    {
+     "fact_id": "derived:cum_cfo_pat",
+     "doc_id": "derivation",
+     "locator": "inputs listed in the numbers table",
+     "published_at": "2018-08-31",
+     "extractor_version": "core.compute@1.0.0",
+     "grade": "A"
+    }
+   ],
+   "confidence": {
+    "value": 0.75,
+    "evidence_count": 1,
+    "lowest_grade_relied_on": "A",
+    "rationale": "the totality of the checklist; conviction is bounded by the unread notes"
+   }
+  }
+ ],
+ "speculations": [],
+ "open_questions": [
+  "The cash-reality test (interest earned versus cash held) could not be run \u2014 the interest-income row is not in the reading vocabulary. It is the sharpest remaining test and it is the firm's gap, not the company's.",
+  "The related-party note beyond remuneration is unread in this run; promoter lending cannot be cleared, only not-flagged.",
+  "Contingent liabilities and the guarantees note are enumerated but not substantively dispositioned in this run."
+ ],
+ "disconfirming_search": "Hunted for the fraud shape directly: profit rising with cash flat (absent \u2014 cumulative 0.79 [fact:derived:cum_cfo_pat]), receivables outrunning sales (absent \u2014 the divergence check passes with revenue growing faster), inventory building against demand (absent), a stub period inflating a growth rate (excluded by construction). The two fired flags have a benign arithmetic explanation that the unread interest-received row could confirm or destroy; until it is read, REVIEW is the correct posture and PASS would be overclaiming.",
+ "narrative": "REVIEW, and honestly so: two single-year flags with a plausible classification explanation on one side, and on the other a six-year cumulative conversion of 0.79 [fact:derived:cum_cfo_pat], passing divergence checks, quiet working capital, and a cross-filing control that surfaced re-presentations rather than misreads. No veto: the deterministic screen's verdict stands, and nothing in the narrative evidence argues it should be worse.",
+ "verdict": "REVIEW",
+ "flags": [
+  "cfo_pat_low",
+  "high_accruals"
+ ],
+ "veto": false
+}
