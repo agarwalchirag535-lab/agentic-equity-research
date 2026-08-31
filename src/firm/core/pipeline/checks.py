@@ -40,6 +40,20 @@ CHECK_TO_FIELD: Mapping[str, str] = {
     "beneish_manipulator": "beneish_m",
 }
 
+#: What a lender check needs that the FACE of the statements does not carry. Named individually so a
+#: report distinguishes "we cannot read this yet" from "the company did not disclose it" — the two are
+#: different findings and only one of them is about the company.
+_LENDER_NOTE_INPUTS: Mapping[str, str] = {
+    "gnpa_drift": "gross NPA ratio for two consecutive years (asset-quality note / RBI disclosures, not "
+                  "the face of the statements)",
+    "provision_coverage_low": "impairment allowance and gross NPA amount (asset-quality note)",
+    "restructured_book_high": "restructured advances and gross advances (asset-quality note)",
+    "gain_on_sale_reliant": "gain on derecognition / assignment income broken out (revenue note) — a "
+                            "lender that does not sell loans has none, which is a different answer",
+    "held_for_sale_no_reserve": "loans classified held-for-sale and their reserve treatment "
+                                "(classification note)",
+}
+
 #: The name `forensic_screen` gives a fired check, where it differs from the playbook name.
 CHECK_TO_FLAG: Mapping[str, str] = {
     "cumulative_cfo_pat": "cumulative_cfo_pat_low",
@@ -219,6 +233,7 @@ def evaluate_checks(
     model_specific: Mapping[str, float],
     external: ExternalInputs | None = None,
     check_inputs: Mapping[str, float] | None = None,
+    lender: Mapping[str, float] | None = None,
 ) -> CheckEvaluation:
     """Evaluate every check the playbook selects, and mark every suppressed check NOT_APPLICABLE.
 
@@ -232,6 +247,10 @@ def evaluate_checks(
         from firm.core.config import check_input_thresholds
 
         check_inputs = check_input_thresholds()
+    if lender is None:
+        from firm.core.config import originate_to_sell_thresholds
+
+        lender = originate_to_sell_thresholds()
     ext = backfill_external_inputs(external or ExternalInputs(), facts)
     # Grades of every fact in scope, so each record can report the provenance span it rests on (ADR-0028).
     grades = {
@@ -446,6 +465,46 @@ def evaluate_checks(
                 r.ran(check, flagged,
                       f"loans to promoters/KMP {share:.1%} of advances vs limit "
                       f"{model_specific['promoter_loan_max_share']:.0%}", ext.ids(check))
+
+        # ---- lender checks (ADR-0002/0012; first wired to real filings by ADR-0050) ---------------
+        # Two of the seven are computable from the FACE of a lender's statements — the credit-cost line
+        # and the loan book are both printed there. The other five need note-level disclosure (asset
+        # quality, ECL stages, assignment income), so they name what they need rather than reporting the
+        # generic "no evaluator wired": a reader must be able to tell a check we cannot run from a
+        # disclosure the company did not make.
+        elif check in ("provision_book_divergent", "reserve_suppression"):
+            impairment = _consecutive_pair(facts, D.IMPAIRMENT)
+            book = _consecutive_pair(facts, D.LOAN_BOOK)
+            if impairment is None or book is None:
+                r.unavailable(check, tuple(
+                    name for name, got in ((f"{D.IMPAIRMENT} (two consecutive years)", impairment),
+                                           (f"{D.LOAN_BOOK} (two consecutive years)", book))
+                    if got is None))
+            elif check == "provision_book_divergent":
+                pg, bg, flagged = quality.provision_book_divergence(
+                    impairment[0].value, impairment[1].value, book[0].value, book[1].value,
+                    lender["provision_book_divergence_max"])
+                r.ran(check, flagged,
+                      f"impairment {pg:+.1%} vs loan book {bg:+.1%}, gap {abs(pg - bg):.2f} vs limit "
+                      f"{lender['provision_book_divergence_max']:.2f} "
+                      f"({impairment[1].period}->{impairment[0].period})",
+                      tuple(f.fact_id for f in (*impairment, *book)))
+            else:
+                rate_now = impairment[0].value / book[0].value if book[0].value else 0.0
+                rate_before = impairment[1].value / book[1].value if book[1].value else 0.0
+                flagged = quality.reserve_suppression_flag(
+                    rate_now, rate_before, lender["reserve_suppression_min_drop"])
+                # Direction is the whole point (ADR-0012): reserves RISING is honest recognition of
+                # stress, and only a material CUT into a book is the fraud tell.
+                r.ran(check, flagged,
+                      f"credit cost {rate_before:.2%} -> {rate_now:.2%} of the book "
+                      f"({'cut' if rate_now < rate_before else 'raised'}); flags only a cut beyond "
+                      f"{lender['reserve_suppression_min_drop']:.2%}",
+                      tuple(f.fact_id for f in (*impairment, *book)))
+
+        elif check in ("gnpa_drift", "provision_coverage_low", "restructured_book_high",
+                       "gain_on_sale_reliant", "held_for_sale_no_reserve"):
+            r.unavailable(check, (_LENDER_NOTE_INPUTS[check],))
 
         else:
             # A check the playbook selects that this evaluator does not implement must be VISIBLE.

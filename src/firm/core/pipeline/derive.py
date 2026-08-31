@@ -86,6 +86,13 @@ MATERIALS = "pnl:Cost of Materials Consumed"
 #: stock-in-trade, so a cost base of materials alone put inventory days at 315 against a true ~75 and
 #: payable days at 231 against ~68 — turnover ratios wrong by 4x on a company doing nothing unusual.
 PURCHASES_STOCK_IN_TRADE = "pnl:Purchases of Stock-in-Trade"
+#: A lender's statements name different things. The loan book is the asset base (not a receivable), the
+#: credit cost is an expense line, and interest is revenue rather than a financing charge. Without these
+#: the shape detector could never see a lender at all, so `detect_models` never returned LENDER and the
+#: whole ADR-0002 branch — suppression included — was unreachable from a real filing.
+LOAN_BOOK = "balance_sheet:Loans"
+IMPAIRMENT = "pnl:Impairment on Financial Instruments"
+INTEREST_INCOME_PNL = "pnl:Interest Income"
 INVENTORY_CHANGE = "pnl:Changes in Inventories"
 EMPLOYEE_COST = "pnl:Employee Benefits"
 OTHER_EXPENSES = "pnl:Other Expenses"
@@ -129,7 +136,7 @@ READ_METRICS: tuple[str, ...] = (
     CASH, RECEIVABLES, INVENTORY,
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
     TOTAL_INCOME, MATERIALS, PURCHASES_STOCK_IN_TRADE, INVENTORY_CHANGE, EMPLOYEE_COST, OTHER_EXPENSES,
-    TOTAL_EXPENSES,
+    TOTAL_EXPENSES, LOAN_BOOK, IMPAIRMENT, INTEREST_INCOME_PNL,
     TOTAL_TAX, OTHER_BANK, PAYABLES, CFF, CAPEX, DIVIDEND_PAID, INTEREST_PAID, INTEREST_INCOME,
     *BALANCE_SHEET_REMAINDER,
 )

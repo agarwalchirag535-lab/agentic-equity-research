@@ -1569,3 +1569,71 @@ threshold on one observation.
 **Open, and worth stating.** Refusing a CAGR across a calendar change is the safe answer, not the best
 one: a growth rate over the longest sub-window with a *consistent* calendar (Symphony FY17→FY18) is
 computable and would be more useful than nothing. Left for when a real run needs it.
+
+---
+
+### ADR-0050 — The lender path was asserted, not built; and cash conversion is not an earnings-quality test for a lender
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0002/0012 · **Source** the CreditAccess
+Grameen FY25 run — the first lender's filing the firm has ever read
+
+**Context.** `quality.py` has carried seven lender checks since ADR-0002/0012, `config/forensic_playbooks.yaml`
+has selected them by business model, and `VALIDATION_TIER0.md` has been cited as evidence the firm works
+on lenders. All of that was true of the *check functions*. The *pipeline* could not read a lender at all,
+in three independent places:
+
+1. the reading vocabulary had no loan book, no credit-cost line, no lender borrowings family;
+2. `statement_shape` never computed `loan_book_to_assets` or `interest_income_to_revenue`, so
+   `detect_models` could not return LENDER however plainly a filing said so — the entire ADR-0002
+   branch, suppression included, was unreachable from a real document;
+3. `checks.py` had **no evaluator for any of the seven**, so each fell through to the
+   "no evaluator wired for this check" branch.
+
+The honest reading of the old state: the firm reported lender checks as UNAVAILABLE and could never have
+done otherwise.
+
+**Decision — build the path.** Lender line items in the reading vocabulary
+(`balance_sheet:Loans`, `pnl:Impairment on Financial Instruments`, `pnl:Interest Income`, and the
+`Debt Securities` / `Borrowings (other than debt securities)` / `Subordinated Liabilities` family, which
+compose into `balance_sheet:Borrowings` — the composition rule generalised to N parts and ordered so the
+three-part lender form is tried before the current/non-current one). `statement_shape` computes the two
+lender ratios. `checks.py` evaluates the two checks whose inputs are on the **face** of the statements —
+`provision_book_divergent` and `reserve_suppression`, both needing only the credit-cost line and the loan
+book — and gives the other five a **specific** reason naming the note that would answer them, because
+"we cannot read this yet" and "the company did not disclose it" are different findings and only one is
+about the company.
+
+**Result: the pipeline independently reproduced the hand-computed verdict.** Reading the audited
+consolidated statements, with no figure typed in:
+
+| `VALIDATION_TIER0` (hand-fed, investor presentation) | this run (read from the AR) |
+|---|---|
+| provision divergence gap 3.30 ≫ 0.50 → FLAG | impairment **+327.1%** vs book **−3.3%**, gap **3.30** → FLAG |
+| reserve suppression: rate rose → no flag | **1.80% → 7.95%** (raised) → PASS |
+| gain-on-sale → UNAVAILABLE | UNAVAILABLE, naming the revenue note |
+| **REVIEW** | **REVIEW** |
+
+The small differences are a real and worth-recording sourcing choice: `VALIDATION_TIER0` used gross loan
+portfolio (25,948 → 25,948/26,714, −2.9%) from the presentation; the pipeline uses **net loans from the
+audited balance sheet** (24,274.45 → 25,104.99, −3.3%). The audited figure is the better source and the
+conclusion is identical. LENDER was detected at a loan book **87% of assets**, and the five ADR-0002
+suppressions appeared as NOT_APPLICABLE on a real filing for the first time.
+
+**And the defect the run found.** `cumulative_cfo_pat` and `cfo_pat` were UNIVERSAL, so they applied to
+lenders. Under Ind AS 7 a lender's loan disbursement and collection **are** its operating activity, so
+CFO/PAT measures book growth, not earnings conversion. CreditAccess reads:
+
+* FY25: CFO 1,125.24 / PAT 531.40 = **+2.12** — a comfortable PASS, and only because the book *shrank* 3.3%;
+* FY24: CFO −4,733.78 / PAT 1,445.93 = **−3.27** — far below the 0.70 floor, on a lender doing nothing
+  but growing.
+
+Same company, same accounting, opposite verdicts, decided entirely by the direction of the book — and
+`cumulative_cfo_pat_low` is a **SEVERE** flag, so *every growing lender* would be flagged for growing.
+Both are now suppressed for LENDER and BANK, which is ADR-0002's own reasoning ("Beneish and accruals are
+invalid for a lender") applied to the check that had escaped it. A lender-appropriate earnings-quality
+measure is a golden-set calibration question and is recorded as such rather than invented here.
+
+**A note on the verifier.** Three of my own transcription errors were caught before anything reached the
+store: a column-label quote that did not appear on the page, and four cash-flow rows I attributed to the
+wrong page. The propose/verify split is doing its job on its author, which is the strongest evidence it
+will do it on a model.

@@ -627,6 +627,34 @@ floor: *HARD_FAIL -> REVIEW -> cumulative PASS*. It still returns REVIEW on sing
 and `high_accruals` 0.126, which is the treasury effect held for golden-set calibration rather than
 fixed by moving a threshold on one observation.
 
+## 6e. The CreditAccess run (2026-08-31) — the lender path was asserted, not built
+
+The first lender's filing the firm has ever read (CreditAccess Grameen FY25, `as_of 2025-12-31`). Full
+autopsy in **ADR-0050**. The headline: `quality.py` has carried seven lender checks since ADR-0002/0012
+and `VALIDATION_TIER0.md` has been cited as proof the firm handles lenders — but the **pipeline could
+not read a lender at all**, broken in three independent places: no lender line items in the reading
+vocabulary, `statement_shape` never computing `loan_book_to_assets` (so LENDER was undetectable however
+plainly a filing said so, making the whole ADR-0002 branch unreachable), and **no evaluator for any of
+the seven checks** in `checks.py`.
+
+All three are now built. The payoff: **the pipeline independently reproduced the hand-computed
+VALIDATION_TIER0 verdict** from the audited statements with no figure typed in — provision-book
+divergence FLAG (impairment +327.1% vs book -3.3%, gap 3.30), reserve-suppression PASS (1.80% -> 7.95%,
+raised, so correctly NOT the fraud tell), gain-on-sale UNAVAILABLE, screen **REVIEW**. LENDER detected at
+a loan book **87% of assets**, and the five ADR-0002 suppressions appeared as NOT_APPLICABLE on a real
+filing for the first time. The five note-level checks now name the specific note that would answer them,
+so "we cannot read this yet" never reads like "the company did not disclose it".
+
+**The defect the run found:** `cumulative_cfo_pat`/`cfo_pat` were UNIVERSAL and therefore applied to
+lenders. Under Ind AS 7 loan disbursement and collection ARE a lender's operating activity, so CFO/PAT
+measures BOOK GROWTH: CreditAccess reads **+2.12 in FY25 (book shrank 3.3%)** and **-3.27 in FY24 (book
+grew)** — same company, same accounting, opposite verdicts — and the cumulative form is a SEVERE flag, so
+**every growing lender would be flagged for growing**. Both are now suppressed for LENDER and BANK. A
+lender-appropriate replacement measure is a golden-set calibration question, recorded rather than invented.
+
+**Also worth knowing:** the verifier caught three of *my own* transcription errors (a column-label quote
+absent from the page, four cash-flow rows attributed to the wrong page) before anything reached the store.
+
 ## 7. Suggested next step
 
 Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):
