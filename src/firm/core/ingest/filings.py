@@ -23,6 +23,7 @@ the FY17-FY26 receivables chain reconciles exactly at every join.
 from __future__ import annotations
 
 import json
+from itertools import pairwise
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -223,3 +224,64 @@ def crosscheck_overlaps(
                 against_filing=prior.file, against_value=reported,
             ))
     return overlaps
+
+
+@dataclass(frozen=True)
+class Restatement:
+    """One figure a later filing quietly revised (Overlap class 'restated', lesson 3 of the first
+    prediction resolution). Not an extraction error — those are quarantined — and not rounding: a real
+    change the company made to an already-published number, which is exactly the quiet-change material
+    (FORENSIC_METHODOLOGY P5) a reader should see in one place."""
+
+    metric: str
+    period: str
+    earlier_doc: str
+    earlier_value: float
+    later_doc: str
+    later_value: float
+
+    @property
+    def delta(self) -> float:
+        return self.later_value - self.earlier_value
+
+    @property
+    def relative(self) -> float:
+        scale = max(abs(self.earlier_value), abs(self.later_value)) or 1.0
+        return self.delta / scale
+
+
+def restatement_log(
+    store: FactStore,
+    ticker: str,
+    metrics: Sequence[str] | None,
+    as_of: date,
+    policy: Mapping[str, float],
+) -> list[Restatement]:
+    """Every quiet revision between documents visible as-of the run date, oldest first.
+
+    Reads the store directly rather than ingest results, so it works at report time for facts however
+    they arrived (walker or ADR-0046 reading), and respects Law 3: a restatement made by a filing
+    published after `as_of` does not exist yet. Adjacent-publication pairs only — a figure revised twice
+    is two restatements, which is how the reader should see it. PC Jeweller's first entry is the FY18
+    filing revising FY17 operating cash flow from 756.48 to 794.35 while current-year cash collapsed.
+    """
+    if metrics is None:
+        metrics = sorted({f.metric for f in store.query_metric_prefix(ticker, "", as_of)
+                          if not f.metric.startswith("guidance:")})
+    out: list[Restatement] = []
+    for metric in metrics:
+        periods = {
+            fact.period
+            for fact in store.query_metric_prefix(ticker, metric, as_of)
+            if fact.metric == metric
+        }
+        for period in sorted(periods):
+            visible = [f for f in store.facts_for(ticker, metric, period) if f.published_at <= as_of]
+            for earlier, later in pairwise(visible):
+                overlap = Overlap(metric=metric, period=period,
+                                  from_filing=later.doc_id, from_value=later.value,
+                                  against_filing=earlier.doc_id, against_value=earlier.value)
+                if overlap.classify(policy) == "restated":
+                    out.append(Restatement(metric, period, earlier.doc_id, earlier.value,
+                                           later.doc_id, later.value))
+    return out

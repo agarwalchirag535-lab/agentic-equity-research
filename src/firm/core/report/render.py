@@ -181,6 +181,19 @@ def render_markdown(report: ResearchReport) -> str:
     if r.forensic_narrative:
         out += [r.forensic_narrative, ""]
 
+    if r.restatements:
+        out += ["### Restatement log — what later filings changed", "",
+                "_Every figure a later filing revised, from the same deterministic overlap classifier "
+                "that quarantines misreads. A restatement is a fact to explain, not an accusation — an "
+                "accounting-standard transition legitimately rewrites a year — but a company revising "
+                "its history is something a reader sees here in one place, or never._", "",
+                "| metric | period | earlier filing said | later filing says | revised by |",
+                "|---|---|---|---|---|"]
+        for line in r.restatements:
+            out += [f"| `{line.metric}` | {line.period} | {line.earlier_value:,.2f} | "
+                    f"{line.later_value:,.2f} | `{line.later_doc}` |"]
+        out += [""]
+
     # 4b. sector, macro and unit economics — comparative work, printed before the company-only sections
     if r.sector_narrative:
         out += ["## Sector and competitive position", "", r.sector_narrative, ""]

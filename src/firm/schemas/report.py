@@ -164,6 +164,19 @@ class ReportClaim(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
 
 
+class RestatementLine(BaseModel):
+    """A figure a later filing revised (quiet-change material, FORENSIC_METHODOLOGY P5). A restatement
+    is a fact to explain, not an accusation — the Ind AS transition legitimately rewrites a whole year —
+    but the reader sees every revision in one place instead of never."""
+
+    metric: str
+    period: str
+    earlier_doc: str
+    earlier_value: float
+    later_doc: str
+    later_value: float
+
+
 class ResearchReport(BaseModel):
     """The full publishable artifact (REPORT_ARCHITECTURE §3). Rendered to markdown + JSON."""
 
@@ -199,6 +212,9 @@ class ResearchReport(BaseModel):
     # 5. forensic — including the passes
     checklist: VerifiedCleanChecklist = Field(default_factory=VerifiedCleanChecklist)
     forensic_narrative: str = ""
+    #: Every figure a later visible filing revised (point-in-time: revisions published after `as_of`
+    #: do not exist yet). Deterministic, from the same overlap classifier that quarantines misreads.
+    restatements: list[RestatementLine] = Field(default_factory=list)
 
     # 4b. sector and business context — the agents whose work is comparative rather than company-only.
     # Added because `sector_analyst`, `macro_strategist` and `unit_economics_analyst` were validating,

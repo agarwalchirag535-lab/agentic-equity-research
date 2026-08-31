@@ -561,6 +561,18 @@ miscalibrates); CFS comparative restatements are a signal (FY18 restated FY17 CF
 column fails the V7 tie). Also caught: the FY18 bonus issue halves comparative EPS and the quarantine
 cannot distinguish that from a misread (per-share restatement handling is open).
 
+**Lesson 3 is closed (2026-08-31): the restatement log is a report section.** `restatement_log()`
+(core/ingest/filings.py) reads the store point-in-time — a revision published after `as_of` does not
+exist yet — classifies every same-(metric, period) disagreement with the quarantine's own classifier,
+and the 'restated' class renders as "Restatement log — what later filings changed"
+(`ResearchReport.restatements`). Republished PCJ report
+`reports/PCJEWELLER/2017-12-31-c511ee43f25b/` carries 29 rows: the FY17 filing's Ind AS transition
+rewrote FY16 wholesale (Interest +12.2%, Other Expenses −11.7% — ₹30cr moved between lines), and the
+FY14/FY15 filings quietly revised each other's CFO/CFF. NOTE the succession: this run supersedes
+`2017-12-31-cccdf1de45b8` (same verdict; the fact set changed because the FY18 ingest's EPS quarantine
+removed FY17 EPS — see the per-share open item; quarantine deletion is extraction-trust semantics, not
+point-in-time semantics, which is documented and acceptable but worth remembering).
+
 ## 7. Suggested next step
 
 Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):

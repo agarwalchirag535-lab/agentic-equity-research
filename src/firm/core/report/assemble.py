@@ -21,9 +21,10 @@ filings contradict themselves; the weakest is that you have not seen enough yet.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.core.compute.models import BusinessModel
 from firm.core.compute.multibagger import FeasibilityResult, GateVerdict
@@ -42,6 +43,7 @@ from firm.schemas.report import (
     LineItemSection,
     ReportClaim,
     ResearchReport,
+    RestatementLine,
     Verdict,
     VerifiedCleanChecklist,
 )
@@ -350,6 +352,8 @@ def assemble_report(
     #: Agents the roster planned but could not staff (ADR-0030/0033). Published as the
     #: FIRM's gaps, never as the company's, and they reach no verdict.
     coverage_gaps: Sequence[str] = (),
+    #: Quiet revisions between visible filings (`restatement_log`), rendered as their own section.
+    restatements: Sequence[Any] = (),
 ) -> ResearchReport:
     """Build the report object. Publication gates run separately (`core/report/render.write_report`).
 
@@ -386,6 +390,12 @@ def assemble_report(
         open_questions=list(dict.fromkeys(narration.open_questions)),
         replication_notes=list(narration.replication_notes),
         unavailable_items=_unavailable_items(evaluation, coverage_gaps),
+        restatements=[
+            RestatementLine(metric=r.metric, period=r.period,
+                            earlier_doc=r.earlier_doc, earlier_value=r.earlier_value,
+                            later_doc=r.later_doc, later_value=r.later_value)
+            for r in restatements
+        ],
     )
 
     if report.is_positive:

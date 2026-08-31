@@ -74,18 +74,18 @@ from firm.core.config import (
     universal_forensic_thresholds,
 )
 from firm.core.facts.store import Fact, FactStore
+from firm.core.ingest.filings import restatement_log
 from firm.core.llm.cache import make_key
 from firm.core.llm.provider import Provider, StaticProvider
 from firm.core.monitoring.predictions import Prediction, log_report_predictions
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs, evaluate_checks
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
-from firm.core.pipeline.peers import PeerComparison
-from firm.core.pipeline.peers import citable_values as peer_citable_values
-from firm.core.pipeline.peers import load_peer_comparisons
-from firm.core.pipeline.peers import payload_rows as peer_payload_rows
 from firm.core.pipeline.filing import FilingSource, FilingWalk, disposition_notes, walk_filing
 from firm.core.pipeline.interrogate import Interrogation, interrogate
+from firm.core.pipeline.peers import PeerComparison, load_peer_comparisons
+from firm.core.pipeline.peers import citable_values as peer_citable_values
+from firm.core.pipeline.peers import payload_rows as peer_payload_rows
 from firm.core.report.assemble import (
     Narration,
     NotesReview,
@@ -813,6 +813,11 @@ def run_deep_dive(
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
         interrogation=interrogation,
         coverage_gaps=coverage_gaps,
+        # Quiet revisions between visible filings (lesson 3 of the first prediction resolution): every
+        # figure a later filing changed, point-in-time, from the overlap classifier. Deterministic; the
+        # Ind AS transition legitimately produces a cluster, which is why the section explains itself.
+        restatements=restatement_log(
+            store, ticker, None, as_of, thresholds["reconciliation"]),
     )
 
     publication_violations = tuple(validate_report(report))
