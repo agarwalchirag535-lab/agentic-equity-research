@@ -144,6 +144,9 @@ class GoldenCase:
     label: str                     # 'fraud' | 'clean'
     manifest: str
     expectation: Expectation
+    #: Directory of ADR-0046 verified readings; when set, the replay ingests through the reading path
+    #: (every figure verified against the page) and the walker contributes notes only (ADR-0055/0058).
+    readings: str = ""
     verified_facts: tuple[VerifiedFact, ...] = ()
     negative_class: str = ""
     label_event: Mapping[str, Any] | None = None
@@ -212,7 +215,7 @@ def parse_case(raw: Mapping[str, Any], *, source: str = "") -> GoldenCase:
     exp = raw.get("expectation") or {}
     return GoldenCase(
         case_id=str(raw["case_id"]), ticker=str(raw["ticker"]), as_of=as_of, label=label,
-        manifest=str(raw["manifest"]),
+        manifest=str(raw["manifest"]), readings=str(raw.get("readings", "")),
         expectation=Expectation(
             screen_at_worst=str(exp["screen_at_worst"]),
             screen_at_best=str(exp.get("screen_at_best", "PASS")),

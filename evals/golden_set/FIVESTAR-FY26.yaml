@@ -6,7 +6,10 @@ negative_class: hard_model_mismatch
 manifest: evals/manifests/FIVESTAR.json
 human_signed_off: false
 known_failure: >-
-  PORT-1 (ADR-0057) — same IRACP extraction gap as CREDITACC-FY26; gnpa_drift cannot fire without the staging series.
+  PORT-1b (ADR-0058) — Five-Star's FY25/FY26 verified readings are not yet authored, so the staging
+  series is unread and the screen honestly refuses (INSUFFICIENT). Behind that sits the case's real
+  question: a provision-coverage floor calibrated on microfinance applied to a secured lender
+  (hard_model_mismatch) — expected to remain a recorded calibration question even once the facts read.
 
 # HARD IN TWO WAYS AT ONCE. The book is 99.98% secured, so an unsecured-book provision floor reads its
 # collateral as under-provisioning (ADR-0058); and its asset quality genuinely deteriorated, so the case

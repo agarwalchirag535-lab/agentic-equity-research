@@ -154,6 +154,12 @@ class CheckEvaluation:
         return [r for r in self.records if r.name in self.expected]
 
     @property
+    def ran(self) -> int:
+        """How many checks actually EVALUATED — PASS or FLAG, never UNAVAILABLE/NOT_APPLICABLE. This is
+        what the screen needs to refuse a verdict on an empty read (EVAL-1, ADR-0058)."""
+        return sum(r.outcome in (CheckOutcome.PASS, CheckOutcome.FLAG) for r in self.records)
+
+    @property
     def unavailable_share(self) -> float:
         """Share of *applicable* checks that could not run, for ANY reason. Drives confidence: whoever
         the gap belongs to, the firm knows less because of it."""
@@ -537,13 +543,25 @@ def evaluate_checks(
                 # The Schedule III row is absent but the Ind AS 24 note was read, and it is the better
                 # source anyway: Schedule III reports a balance, the note reports the transactions. A note
                 # listing only director remuneration is the strongest statement a promoter group can make.
-                disclosed = ext.promoter_lending_disclosed
                 categories = ", ".join(ext.related_party_categories) or "none"
                 pay = (f"; KMP remuneration ₹{ext.kmp_remuneration_cr:,.2f}cr"
                        if ext.kmp_remuneration_cr is not None else "")
-                r.ran(check, disclosed,
-                      f"related-party note read ({ext.locator(check) or 'AR'}): categories disclosed = "
-                      f"{categories}{pay}", ext.ids(check))
+                if ext.promoter_lending_disclosed:
+                    # A CATEGORY is not a finding (ADR-0058). The pattern reader saying "the note
+                    # mentions guarantees/lending" carries no amount and no direction — CreditAccess's
+                    # note lists its own parent's relationship and KMP salaries, and the old
+                    # `flagged=disclosed` turned that into a SEVERE siphoning accusation. Until the
+                    # amounts are read (the Schedule III row, or an ADR-0056 verified note read), the
+                    # honest record is: channel disclosed, magnitude unread — the firm's gap.
+                    r.unavailable(check, (
+                        f"the related-party note discloses {categories} channels "
+                        f"({ext.locator(check) or 'AR'}){pay}, but the AMOUNTS and direction are not "
+                        "read at category level — a siphoning flag needs the figures",
+                    ), GapKind.CAPABILITY)
+                else:
+                    r.ran(check, False,
+                          f"related-party note read ({ext.locator(check) or 'AR'}): categories "
+                          f"disclosed = {categories}{pay}", ext.ids(check))
             elif ext.promoter_loans is None:
                 # Only a DISCLOSURE gap if we actually walked the filing and the mandated row was not
                 # there. With no filing walked we simply never looked, which is ours (ADR-0051).
@@ -584,15 +602,28 @@ def evaluate_checks(
             else:
                 rate_now = impairment[0].value / book[0].value if book[0].value else 0.0
                 rate_before = impairment[1].value / book[1].value if book[1].value else 0.0
+                # Direction is the whole point (ADR-0012), and BOTH directions matter: reserves RISING
+                # is honest recognition of stress, and a cut while the impaired share is FALLING is a
+                # release (ADR-0058 — the staging notes supply the half this check always needed).
+                stage3 = _consecutive_pair(facts, D.STAGE3_GROSS)
+                gross = _consecutive_pair(facts, D.GROSS_LOANS)
+                shares = (None, None)
+                stage_ids: tuple[str, ...] = ()
+                if stage3 is not None and gross is not None and gross[0].value and gross[1].value:
+                    shares = (stage3[0].value / gross[0].value, stage3[1].value / gross[1].value)
+                    stage_ids = tuple(f.fact_id for f in (*stage3, *gross))
                 flagged = quality.reserve_suppression_flag(
-                    rate_now, rate_before, lender["reserve_suppression_min_drop"])
-                # Direction is the whole point (ADR-0012): reserves RISING is honest recognition of
-                # stress, and only a material CUT into a book is the fraud tell.
+                    rate_now, rate_before, lender["reserve_suppression_min_drop"],
+                    impaired_share_curr=shares[0], impaired_share_prior=shares[1],
+                    stress_relief_min_drop=lender.get("reserve_release_stress_drop"))
+                stress_note = ("" if shares[0] is None else
+                               f"; impaired share {shares[1]:.2%} -> {shares[0]:.2%}")
                 r.ran(check, flagged,
                       f"credit cost {rate_before:.2%} -> {rate_now:.2%} of the book "
-                      f"({'cut' if rate_now < rate_before else 'raised'}); flags only a cut beyond "
-                      f"{lender['reserve_suppression_min_drop']:.2%}",
-                      tuple(f.fact_id for f in (*impairment, *book)))
+                      f"({'cut' if rate_now < rate_before else 'raised'}){stress_note}; flags only a "
+                      f"cut beyond {lender['reserve_suppression_min_drop']:.2%} without matching "
+                      "stress relief",
+                      tuple(f.fact_id for f in (*impairment, *book)) + stage_ids)
 
         # Asset quality, from the loans and ECL-staging notes (ADR-0052). Under Ind AS 109 the Stage 3
         # book is the gross-NPA equivalent; a filing that reports NPA under the older RBI form would be

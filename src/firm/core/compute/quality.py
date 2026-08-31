@@ -251,14 +251,31 @@ def provision_book_divergence(
 
 
 def reserve_suppression_flag(
-    provision_rate_curr: float, provision_rate_prior: float, min_rate_drop: float
+    provision_rate_curr: float, provision_rate_prior: float, min_rate_drop: float,
+    *,
+    impaired_share_curr: float | None = None,
+    impaired_share_prior: float | None = None,
+    stress_relief_min_drop: float | None = None,
 ) -> bool:
     """Loan-loss provision RATE cut materially year-on-year — profit may be reserve-driven, not real.
 
     Sezzle converted a quarterly loss to a profit partly by cutting provisions from 3.5% to 1.2% of
-    underlying merchant sales. Flags when the rate falls by at least ``min_rate_drop`` (in rate points).
+    underlying merchant sales — INTO RISING DELINQUENCY, which is the half of the tell this function
+    could not see until the staging notes became readable (ADR-0056/0058). A rate cut while the
+    impaired share of the book FELL materially is a reserve *release* — the honest accounting of a
+    book that got better — and the golden set's hard_recovery case (CreditAccess FY26: credit cost
+    7.95% -> 6.36% while Stage-3 fell 4.79% -> 3.18%) is a clean lender this flag was punishing for
+    fixing its book. Flags a rate cut of at least ``min_rate_drop`` UNLESS both impaired shares are
+    supplied and their fall meets ``stress_relief_min_drop``; with no staging data the cut alone still
+    flags, which is the conservative direction and the only one Sezzle-era inputs allow.
     """
-    return (provision_rate_prior - provision_rate_curr) >= min_rate_drop
+    if (provision_rate_prior - provision_rate_curr) < min_rate_drop:
+        return False
+    if (impaired_share_curr is not None and impaired_share_prior is not None
+            and stress_relief_min_drop is not None
+            and (impaired_share_prior - impaired_share_curr) >= stress_relief_min_drop):
+        return False
+    return True
 
 
 def held_for_sale_reserve_flag(
@@ -438,6 +455,12 @@ class ForensicVerdict(str, Enum):
     PASS = "PASS"
     REVIEW = "REVIEW"
     HARD_FAIL = "HARD_FAIL"
+    #: Nothing was actually evaluated, so no verdict about the COMPANY exists (EVAL-1, ADR-0058). Every
+    #: `ForensicMetrics` field defaults to "not evaluated", which means an empty read produced zero
+    #: flags and the screen said PASS — the exact boolean ambiguity the checks layer fixed long ago
+    #: ("a default cannot tell you a check never ran"), surviving at the one boundary where the verdict
+    #: is minted. PASS is a claim of looking and finding nothing; this is not having looked.
+    INSUFFICIENT = "INSUFFICIENT"
 
 
 @dataclass(frozen=True)
@@ -491,14 +514,32 @@ class ForensicScreenResult:
 
 
 def forensic_screen(
-    sector_class: SectorClass, metrics: ForensicMetrics, thresholds: ForensicThresholds
+    sector_class: SectorClass, metrics: ForensicMetrics, thresholds: ForensicThresholds,
+    *, checks_ran: int | None = None, checks_expected: int | None = None,
+    min_ran_share: float | None = None,
 ) -> ForensicScreenResult:
     """Aggregate deterministic signals into a Gate-B verdict.
 
     Hard-fail = any SEVERE flag, or two-or-more HIGH-severity flags. The LLM forensic_accountant
     (Stage 4/5) still holds an absolute veto downstream, but this deterministic screen is what runs on
     the ~400-company Gate-B subset (ADR-0005).
+
+    ``checks_ran`` is how many checks actually EVALUATED (PASS or FLAG) to produce ``metrics``
+    (EVAL-1, ADR-0058): with zero, the screen returns INSUFFICIENT rather than mistaking an empty read
+    for a clean company. The golden set then showed zero is not enough: on PC Jeweller FY21 the
+    pipeline read one check in ten — a text-section scan — and the screen minted PASS from that
+    sliver. So the screen also refuses when the RAN share of ``checks_expected`` falls below
+    ``min_ran_share`` (policy from `config/thresholds.yaml:forensic.screen_min_ran_share`, provisional
+    until the golden set calibrates it). A verdict about a company is a claim about how much was
+    looked at, and the screen now carries that claim itself instead of leaning on the ladder above it.
+    ``None`` on any of the three preserves the legacy contract for callers that assembled ``metrics``
+    by hand and know their own evidence.
     """
+    if checks_ran == 0:
+        return ForensicScreenResult(verdict=ForensicVerdict.INSUFFICIENT, hard_fail=False, flags=[])
+    if (checks_ran is not None and checks_expected and min_ran_share is not None
+            and checks_ran / checks_expected < min_ran_share):
+        return ForensicScreenResult(verdict=ForensicVerdict.INSUFFICIENT, hard_fail=False, flags=[])
     flags: list[Flag] = []
 
     if sector_class is SectorClass.NON_FINANCIAL:

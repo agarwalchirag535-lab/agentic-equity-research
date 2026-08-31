@@ -3,9 +3,8 @@ ticker: PCJEWELLER
 as_of: 2022-08-15
 label: adverse
 manifest: evals/manifests/PCJEWELLER.json
+readings: data/manifests/PCJEWELLER-readings
 human_signed_off: false
-known_failure: >-
-  PORT-2 + EVAL-1 (ADR-0057) — the FY19-FY21 PC Jeweller filings yield zero facts through the trunk row-locator (the sibling's geometry extraction read them; a verified reading would too). The empty read also exposed EVAL-1: the bare screen returns PASS with no facts — only the verdict ladder above it refuses — so a screen-level insufficiency guard is an open question.
 
 # THE FIRST POSITIVE. Selected from a register, not from memory (ADR-0062): every "Resignation of
 # Statutory Auditors" announcement filed with BSE over 24 months — 404 distinct company-events — filtered

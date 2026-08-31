@@ -29,7 +29,8 @@ def run_case(case: GoldenCase, *, bronze: str | Path, db: str = ":memory:") -> C
 
     store = FactStore(db)
     try:
-        run = deterministic_run(store, case.ticker, case.as_of, filings=case.manifest, bronze=bronze)
+        run = deterministic_run(store, case.ticker, case.as_of, filings=case.manifest, bronze=bronze,
+                                readings_dir=case.readings or None)
         facts = {
             (metric, period): fact.value
             for metric, series in run.facts.series.items()

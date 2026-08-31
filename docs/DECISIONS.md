@@ -2034,3 +2034,59 @@ weakened bands:
 geometry-anchored extraction and its lender/classify implementation overlap the trunk's chosen
 propose→verify architecture and the ADR-0052/0056 lender path. Merging three lender implementations
 silently is how ADR-0054 happened. The branch stays intact for that decision.
+
+### ADR-0058 — What the golden set's first diagnostic pass taught the architecture
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0057 · **Method** observe → diagnose →
+generalize → fix → re-run, once per failure, bands never touched
+
+**EVAL-1, in two layers (the safety one).** The bare forensic screen minted PASS on an empty read —
+and then, with the zero-floor fix in, minted PASS again on a 1-of-10 read where the single evaluated
+check was a text-section scan. Root cause: `ForensicMetrics`' not-evaluated defaults erase the
+evidence-quantity information exactly at the boundary where the verdict is minted — the same boolean
+ambiguity the checks layer fixed long ago, surviving one level up. The screen now carries the claim
+itself: INSUFFICIENT on zero checks ran (unconditional), and below
+`forensic.screen_min_ran_share` (0.25, provisional) of the applicable playbook. The fix converted two
+live wrong verdicts at once: PC Jeweller's false PASS and CreditAccess's false HARD_FAIL (lender
+misread as a non-financial, judged on the sliver that ran).
+
+**PORT-2 closed through the trunk's own architecture.** PC Jeweller FY19–FY21 verified readings —
+198 figures, all page-anchored, all V-checks — took the positive case from "zero facts, screen PASS"
+to **extraction 6/6 and HARD_FAIL inside the pre-registered band**: cumulative CFO/PAT deeply
+negative with inventory absorbing the gap, the exact pre-collapse pattern. The set's one positive is
+now caught from primary sources, not from memory of the story.
+
+**PORT-1 closed the same way, and the diagnosis ran three layers deep.** CreditAccess FY26 authored
+as statements + loans + staging notes through the ADR-0056 reconciliation gate (64 figures). Then,
+in order: (1) `reserve_suppression` fired on a credit-cost cut into a book whose Stage-3 share FELL
+a third — the check's own spec (ADR-0012: Sezzle cut into RISING delinquency) always needed the
+stress direction, and the staging series the trunk now reads finally supplies it; with no staging
+the cut alone still flags, the conservative direction. (2) `promoter_lending` turned a regex
+category read ("the note mentions guarantees") into a SEVERE siphoning accusation with no amount
+and no direction — ground truth on p.167 is KMP salaries of ₹2.57cr and the parent relationship. A
+category is not a finding: category-only now reports a CAPABILITY gap naming what a flag would
+need; disclosed-nothing-but-remuneration still PASSes (the real Alkyl finding). (3) `disclosure_gap`
+charged an NBFC for CWIP and trade-receivables ageing schedules — rows its Division III balance
+sheet does not carry; an ageing schedule is owed only for a face row the company has, answered from
+the store. Case ends **REVIEW, in band, extraction 6/6**, with the expected disclosure_gap on
+undisclosed_income intact.
+
+**The pin system paid for itself.** Two different documents both named `CREDITACC-AR-FY25.pdf` —
+the eval manifest pinned one, the verified reading was authored against the other — and the
+refuse-on-hash-mismatch gate held: nothing wrong was read, the reading refused loudly, the manifest
+was re-pinned to the document the reading reads. Also fixed en route: glued header text
+("As atMarch 31, 2026") defeated the date parser's word boundary — a full month name as a glued
+token's suffix now parses.
+
+**Scorecard: 4/7 → 5/7 in band, positives 1/1, hard_recovery 1/1, zero regressions.** Open and
+tracked, not hidden: CAL-1 (the FY23 cash-yield floor missed by 0.05pp — a threshold question the
+invariants forbid resolving on one observation) and PORT-1b (Five-Star's readings unauthored; behind
+them a provision-coverage floor calibrated on microfinance applied to a secured lender). Every
+verified fact in the closed cases was re-verified against pages during authoring; human sign-off on
+all seven remains open for the owner.
+
+**The architecture lesson.** Every judgment failure decomposed into a MISSING INPUT, not a wrong
+threshold: the screen lacked evidence-quantity; reserve_suppression lacked stress direction;
+promoter_lending lacked amounts; disclosure_gap lacked face-row existence. The golden set's real
+output is a list of inputs the verdict layer was silently doing without — which is exactly what a
+calibration instrument should find before anyone tunes a number.

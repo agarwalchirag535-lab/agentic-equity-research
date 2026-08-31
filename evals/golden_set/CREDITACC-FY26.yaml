@@ -4,50 +4,49 @@ as_of: 2026-08-30
 label: clean
 negative_class: hard_recovery
 manifest: evals/manifests/CREDITACC.json
+readings: data/manifests/CREDITACC-readings
 human_signed_off: false
-known_failure: >-
-  PORT-1 (ADR-0057) — the RBI IRACP asset-quality table extraction lives on the unported third line; the trunk reads staging via notes:Stage 3 (ADR-0056) under different metric ids and has no FY26 reading. Closes when the asset-quality inputs reach the trunk.
 
 # HARD BECAUSE THE METRICS ARE IMPROVING OFF A BAD YEAR. The provision rate was cut 1.27pp while the book
 # grew 13.5% — the Sezzle signature read on its own — and the only thing that separates it from
 # suppression is that stress was FALLING at the same time (ADR-0052). A checker missing that half flags
 # the lender that fixed its book.
 verified_facts:
-  - metric: balance_sheet:Gross NPA
+  - metric: notes:Stage 3 Gross
     period: FY26
     value: 922.25
     unit: INR_cr
-    locator: p.129 l.92 (RBI Ind AS 109 / IRACP table)
+    locator: ECL staging tables, group book p.153 (836.46) + individual book p.154 (85.79)
     method: arithmetic_identity
     source: >-
-      the row prints gross 922.25, allowance 606.66 and net 316.62 adjacently and the filing's own
-      identity gross - allowance = net holds on it
-  - metric: balance_sheet:Gross Advances
+      the two staged books' printed Stage-3 rows sum to 922.25, and the same figure appears as the
+      IRACP table's gross NPA (p.129) where the filing's own gross - allowance = net identity holds
+  - metric: notes:Gross Loans
     period: FY26
     value: 29038.31
     unit: INR_cr
-    locator: p.129 l.105
+    locator: "note 7 (Loans) p.153 Total-Gross row; also IRACP p.129 l.105"
     method: arithmetic_identity
     source: >-
       29,038.31 - 1,115.58 = 27,922.73, which is the Loans line on the face of the balance sheet (p.94),
       read by a different extractor from a different page
-  - metric: balance_sheet:Loan Loss Allowance
+  - metric: notes:Impairment Allowance
     period: FY26
     value: 1115.58
     unit: INR_cr
-    locator: p.129
+    locator: "note 7 (Loans) p.153 Less-Impairment-loss-allowance row; also IRACP p.129"
     method: arithmetic_identity
     source: same identity against the balance sheet's net Loans
   # THE ONE THAT WAS WRONG FOR MONTHS (ADR-0054). Asserted here from two independent documents so the
   # regression cannot come back: the FY25 report's own table, and the FY26 report's comparative column.
-  - metric: balance_sheet:Gross Advances
+  - metric: notes:Gross Loans
     period: FY25
     value: 25583.08
     unit: INR_cr
     locator: FY25 AR p.123 l.55; restated in FY26 AR note 22 (Loans) comparative column
     method: cross_filing_overlap
     source: two filings published a year apart assert it identically
-  - metric: balance_sheet:Loan Loss Allowance
+  - metric: notes:Impairment Allowance
     period: FY25
     value: 1308.63
     unit: INR_cr

@@ -456,7 +456,16 @@ def walk_filing(
     fiscal_year = 2000 + int(filing.period[2:]) if filing.period.startswith("FY") else None
     text = "\n".join(filing.pages)
     sections_missing, _ = disclosure_gaps(forensic_sections(text), fiscal_year)
-    schedule_missing, _ = schedule_iii_gaps(scan_schedule_iii(filing.pages), fiscal_year)
+    # An ageing schedule is owed only for a face row the company carries (ADR-0058): the store answers
+    # whether it does, from whichever line registered the row — walker or verified reading.
+    from firm.adapters.india.notes import AGEING_REQUIRES_FACE_ROW
+
+    face_present = {
+        row: store.query_fact(ticker, metric, filing.period, as_of=filing.published_at) is not None
+        for row, metric in AGEING_REQUIRES_FACE_ROW.items()
+    }
+    schedule_missing, _ = schedule_iii_gaps(
+        scan_schedule_iii(filing.pages), fiscal_year, face_rows_present=face_present)
     caro = tuple(caro_candidate_flags(parse_caro_clauses(text)))
     # A row found but unusable is a disclosure/extraction gap in its own right, and must surface rather
     # than vanish into a silently shorter `rows` mapping.

@@ -633,7 +633,9 @@ def packets(
         **({"external": walk.external} if walk is not None else {}),
     )
     screen = quality.forensic_screen(
-        quality.SectorClass.NON_FINANCIAL, evaluation.metrics, forensic_thresholds())
+        quality.SectorClass.NON_FINANCIAL, evaluation.metrics, forensic_thresholds(),
+        checks_ran=evaluation.ran, checks_expected=len(evaluation.applicable),
+                                    min_ran_share=float(thresholds["forensic"].get("screen_min_ran_share", 0)))
 
     from firm.core.pipeline.deep_dive import feasibility_at_target
     from firm.core.pipeline.filing import disposition_notes

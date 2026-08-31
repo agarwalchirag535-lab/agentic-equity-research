@@ -6,7 +6,7 @@
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0057). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0058). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -27,9 +27,9 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 3 — full roster + orchestrator | ✅ **complete — acceptance run published 2026-08-01 (§6b)**: 9 of 9 agents staffed and rendered, every data prerequisite satisfiable (ADR-0030–0044) |
 | 4 — judgment tier | ⚠️ prompts exist as markdown; numeric fields now registered null-only (ADR-0043) so wiring cannot open a Law-1 hole; **needs the owner's explicit go per CLAUDE.md build order** |
 | 5 — memory loop | ⚠️ half-built (see §3) |
-| 6 — evaluation / golden set | ⚠️ **harness live (ADR-0057)**: `firm eval`, 7 cases, 4 in band; PORT-1/PORT-2/EVAL-1/CAL-1 open |
+| 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0058)**: 7 cases, 5 in band, positives 1/1, 0 regressions; CAL-1 + PORT-1b tracked |
 
-**Tests:** 790 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 827 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -763,6 +763,18 @@ by the trunk row-locator), EVAL-1 (the bare screen returns PASS on an empty read
 refuses). All 17 case PDFs re-fetched against their sha256 pins; five stub source_urls repaired with
 URLs that reproduce the pins. `deterministic.py` now holds the ONE deterministic sequence the eval
 replays — the same one deep-dive and packets should be refactored onto (their ADR-0060 lesson).
+
+## 6k. The diagnostic pass (2026-08-31, ADR-0058)
+
+One loop per failure, bands untouched: EVAL-1 fixed at the screen itself (INSUFFICIENT on zero-ran
+and on a sub-25% ran-share — it converted PC Jeweller's false PASS and CreditAccess's false
+HARD_FAIL in one move); PC Jeweller FY19-21 verified readings (198 figures) put the positive case in
+band — HARD_FAIL from primary sources on the pre-collapse pattern; CreditAccess FY26 authored through
+the reconciliation gate and three judgment defects rooted out (reserve_suppression got the stress
+direction its spec always needed; a regex category can no longer be a SEVERE accusation; ageing
+schedules are owed only for face rows the company carries). Scorecard 5/7, positives 1/1,
+hard_recovery 1/1, 0 regressions. The lesson: every judgment failure was a missing INPUT, not a wrong
+threshold. Open: CAL-1, PORT-1b, and human sign-off on all seven cases.
 
 ## 7. Suggested next step
 

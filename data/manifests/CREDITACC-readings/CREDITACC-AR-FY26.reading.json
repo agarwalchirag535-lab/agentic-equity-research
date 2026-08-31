@@ -1,0 +1,567 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "consolidated",
+   "period": "FY26",
+   "pages": [
+    145
+   ],
+   "heading_quote": "Consolidated Balance Sheet  Consolidated Statement of Profit and Loss\nas at March 31, 2026",
+   "unit_quote": "H in crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "As atMarch 31, 2026"
+    },
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2025"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY26",
+     "value_printed": "1,151.58",
+     "page": 145,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY25",
+     "value_printed": "1,271.49",
+     "page": 145,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY26",
+     "value_printed": "175.42",
+     "page": 145,
+     "row_label": "Bank balance other than cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY25",
+     "value_printed": "171.47",
+     "page": 145,
+     "row_label": "Bank balance other than cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Loans",
+     "period": "FY26",
+     "value_printed": "27,922.73",
+     "page": 145,
+     "row_label": "Loans"
+    },
+    {
+     "metric": "balance_sheet:Loans",
+     "period": "FY25",
+     "value_printed": "24,274.45",
+     "page": 145,
+     "row_label": "Loans"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY26",
+     "value_printed": "160.20",
+     "page": 145,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY25",
+     "value_printed": "159.72",
+     "page": 145,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY26",
+     "value_printed": "7,682.05",
+     "page": 145,
+     "row_label": "Other equity"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY25",
+     "value_printed": "6,796.25",
+     "page": 145,
+     "row_label": "Other equity"
+    },
+    {
+     "metric": "balance_sheet:Debt Securities",
+     "period": "FY26",
+     "value_printed": "912.25",
+     "page": 145,
+     "row_label": "Debt securities"
+    },
+    {
+     "metric": "balance_sheet:Debt Securities",
+     "period": "FY25",
+     "value_printed": "1,541.75",
+     "page": 145,
+     "row_label": "Debt securities"
+    },
+    {
+     "metric": "balance_sheet:Borrowings (Other than Debt Securities)",
+     "period": "FY26",
+     "value_printed": "22,728.88",
+     "page": 145,
+     "row_label": "Borrowings (other than debt securities)"
+    },
+    {
+     "metric": "balance_sheet:Borrowings (Other than Debt Securities)",
+     "period": "FY25",
+     "value_printed": "18,878.73",
+     "page": 145,
+     "row_label": "Borrowings (other than debt securities)"
+    },
+    {
+     "metric": "balance_sheet:Subordinated Liabilities",
+     "period": "FY26",
+     "value_printed": "-",
+     "page": 145,
+     "row_label": "Subordinated liabilities"
+    },
+    {
+     "metric": "balance_sheet:Subordinated Liabilities",
+     "period": "FY25",
+     "value_printed": "25.29",
+     "page": 145,
+     "row_label": "Subordinated liabilities"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY26",
+     "value_printed": "31,930.23",
+     "page": 145,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY25",
+     "value_printed": "27,802.45",
+     "page": 145,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY26",
+     "value_printed": "31,930.23",
+     "page": 145,
+     "row_label": "Total liabilities and equity"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY25",
+     "value_printed": "27,802.45",
+     "page": 145,
+     "row_label": "Total liabilities and equity"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "consolidated",
+   "period": "FY26",
+   "pages": [
+    145
+   ],
+   "heading_quote": "Consolidated Statement of Profit and Loss\nas at March 31, 2026  for the year ended March 31, 2026",
+   "unit_quote": "H in crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "For the year endedMarch 31, 2026"
+    },
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2025"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Interest Income",
+     "period": "FY26",
+     "value_printed": "5,762.64",
+     "page": 145,
+     "row_label": "Interest income"
+    },
+    {
+     "metric": "pnl:Interest Income",
+     "period": "FY25",
+     "value_printed": "5,546.76",
+     "page": 145,
+     "row_label": "Interest income"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY26",
+     "value_printed": "6,058.92",
+     "page": 145,
+     "row_label": "Total revenue from operations (I)"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY25",
+     "value_printed": "5,752.33",
+     "page": 145,
+     "row_label": "Total revenue from operations (I)"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY26",
+     "value_printed": "3.62",
+     "page": 145,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY25",
+     "value_printed": "3.81",
+     "page": 145,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY26",
+     "value_printed": "6,062.54",
+     "page": 145,
+     "row_label": "Total income (I+II)"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY25",
+     "value_printed": "5,756.14",
+     "page": 145,
+     "row_label": "Total income (I+II)"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY26",
+     "value_printed": "1,899.08",
+     "page": 145,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY25",
+     "value_printed": "1,947.56",
+     "page": 145,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Impairment on Financial Instruments",
+     "period": "FY26",
+     "value_printed": "1,775.40",
+     "page": 145,
+     "row_label": "Impairment on financial instruments"
+    },
+    {
+     "metric": "pnl:Impairment on Financial Instruments",
+     "period": "FY25",
+     "value_printed": "1,929.51",
+     "page": 145,
+     "row_label": "Impairment on financial instruments"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY26",
+     "value_printed": "879.09",
+     "page": 145,
+     "row_label": "Employee benefit expenses"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY25",
+     "value_printed": "730.36",
+     "page": 145,
+     "row_label": "Employee benefit expenses"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY26",
+     "value_printed": "63.08",
+     "page": 145,
+     "row_label": "Depreciation and amortization expenses"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY25",
+     "value_printed": "62.22",
+     "page": 145,
+     "row_label": "Depreciation and amortization expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY26",
+     "value_printed": "409.49",
+     "page": 145,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY25",
+     "value_printed": "376.52",
+     "page": 145,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY26",
+     "value_printed": "5,029.34",
+     "page": 145,
+     "row_label": "Total expenses (IV)"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY25",
+     "value_printed": "5,047.27",
+     "page": 145,
+     "row_label": "Total expenses (IV)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY26",
+     "value_printed": "1,033.20",
+     "page": 145,
+     "row_label": "Profit before tax (III-IV)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY25",
+     "value_printed": "708.87",
+     "page": 145,
+     "row_label": "Profit before tax (III-IV)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY26",
+     "value_printed": "255.56",
+     "page": 145,
+     "row_label": "Total tax expense (VI)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY25",
+     "value_printed": "177.47",
+     "page": 145,
+     "row_label": "Total tax expense (VI)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY26",
+     "value_printed": "777.64",
+     "page": 145,
+     "row_label": "Profit for the year (V-VI)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY25",
+     "value_printed": "531.40",
+     "page": 145,
+     "row_label": "Profit for the year (V-VI)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY26",
+     "value_printed": "48.63",
+     "page": 145,
+     "row_label": "Basic (in H)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY25",
+     "value_printed": "33.32",
+     "page": 145,
+     "row_label": "Basic (in H)"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "consolidated",
+   "period": "FY26",
+   "pages": [
+    147,
+    146
+   ],
+   "heading_quote": "Consolidated Statement of Cash Flows for the year ended March 31, 2026",
+   "unit_quote": "H in crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "For the year endedMarch 31, 2026"
+    },
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2025"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY26",
+     "value_printed": "(2,770.21)",
+     "page": 146,
+     "row_label": "Net cash flows (used in) / generated from operating activities (A)"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY25",
+     "value_printed": "1,125.24",
+     "page": 146,
+     "row_label": "Net cash flows (used in) / generated from operating activities (A)"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY26",
+     "value_printed": "(100.65)",
+     "page": 146,
+     "row_label": "Net cash flows (used in) / generated from investing activities (B)"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY25",
+     "value_printed": "708.34",
+     "page": 146,
+     "row_label": "Net cash flows (used in) / generated from investing activities (B)"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY26",
+     "value_printed": "2,750.95",
+     "page": 147,
+     "row_label": "Net cash flows generated from/ (used in) financing activities (C)"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY25",
+     "value_printed": "(1,669.38)",
+     "page": 147,
+     "row_label": "Net cash flows generated from/ (used in) financing activities (C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY26",
+     "value_printed": "(119.91)",
+     "page": 147,
+     "row_label": "Net (decrease)/ increase in cash and cash equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY25",
+     "value_printed": "164.20",
+     "page": 147,
+     "row_label": "Net (decrease)/ increase in cash and cash equivalents (A+B+C)"
+    }
+   ]
+  },
+  {
+   "statement": "note",
+   "basis": "consolidated",
+   "period": "FY26",
+   "pages": [
+    153
+   ],
+   "note_label": "7",
+   "heading_quote": "7 Loans $",
+   "unit_quote": "H in crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "Particulars  March 31, 2026"
+    },
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2026  March 31, 2025"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "notes:Gross Loans",
+     "period": "FY26",
+     "value_printed": "29,038.31",
+     "page": 153,
+     "row_label": "Total - Gross"
+    },
+    {
+     "metric": "notes:Gross Loans",
+     "period": "FY25",
+     "value_printed": "25,583.08",
+     "page": 153,
+     "row_label": "Total - Gross"
+    },
+    {
+     "metric": "notes:Impairment Allowance",
+     "period": "FY26",
+     "value_printed": "1,115.58",
+     "page": 153,
+     "row_label": "Less: Impairment loss allowance"
+    },
+    {
+     "metric": "notes:Impairment Allowance",
+     "period": "FY25",
+     "value_printed": "1,308.63",
+     "page": 153,
+     "row_label": "Less: Impairment loss allowance"
+    },
+    {
+     "metric": "notes:Net Loans",
+     "period": "FY26",
+     "value_printed": "27,922.73",
+     "page": 153,
+     "row_label": "Total - Net"
+    },
+    {
+     "metric": "notes:Net Loans",
+     "period": "FY25",
+     "value_printed": "24,274.45",
+     "page": 153,
+     "row_label": "Total - Net"
+    }
+   ]
+  },
+  {
+   "statement": "note",
+   "basis": "consolidated",
+   "period": "FY26",
+   "pages": [
+    153,
+    154
+   ],
+   "note_label": "7(A)",
+   "heading_quote": "7(A)  Group lending loans",
+   "unit_quote": "H in crore",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "Gross carrying value of assets as at March 31, 2026"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "notes:Stage 3 Gross (Group)",
+     "period": "FY26",
+     "value_printed": "836.46",
+     "page": 153,
+     "row_label": "Gross carrying value of assets as at March 31, 2026 (Stage 3)"
+    },
+    {
+     "metric": "notes:Stage 3 Gross (Individual)",
+     "period": "FY26",
+     "value_printed": "85.79",
+     "page": 154,
+     "row_label": "Gross carrying value of assets as at March 31, 2026 (Stage 3)"
+    }
+   ]
+  }
+ ]
+}

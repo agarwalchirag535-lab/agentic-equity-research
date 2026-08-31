@@ -387,18 +387,37 @@ def scan_schedule_iii(pages: Sequence[str]) -> list[ScheduleIIIFinding]:
     return findings
 
 
+#: Ageing schedules are owed only for face rows the company actually carries (ADR-0058): an NBFC's
+#: Division III balance sheet has loans where a manufacturer has trade receivables, and no CWIP at all
+#: — charging it for the ageing of rows it does not have is a false disclosure accusation. Keys are
+#: Schedule III scan rows; values the face metric whose presence makes the schedule owed.
+AGEING_REQUIRES_FACE_ROW: Mapping[str, str] = {
+    "cwip_ageing": "balance_sheet:CWIP",
+    "receivables_ageing": "balance_sheet:Trade Receivables",
+    "payables_ageing": "balance_sheet:Trade Payables",
+}
+
+
 def schedule_iii_gaps(
-    findings: Sequence[ScheduleIIIFinding], fiscal_year: int | None = None
+    findings: Sequence[ScheduleIIIFinding], fiscal_year: int | None = None,
+    face_rows_present: Mapping[str, bool] | None = None,
 ) -> tuple[list[str], bool]:
     """(missing mandatory rows, is_flagged) — feeds the `disclosure_gap` forensic signal.
 
     `fiscal_year` is the year the filing reports (2017 for FY17). Rows the law did not yet require are
     NOT gaps: a missing-capability-or-era claim must never become a company non-disclosure. None means
     era-unknown and keeps the strict behaviour (every row required), which is only correct for current
-    filings."""
+    filings.
+
+    `face_rows_present` maps an ageing row to whether its FACE item exists for this company
+    (ADR-0058): an ageing schedule of a row the balance sheet does not carry is not owed, and
+    CreditAccess — an NBFC with no CWIP and no trade-receivables line — was being flagged for both.
+    Absent from the map (or map not supplied) keeps the strict behaviour."""
     if fiscal_year is not None and fiscal_year < SCHEDULE_III_EFFECTIVE_FY:
         return [], False
-    missing = sorted(f.row for f in findings if not f.found)
+    missing = sorted(
+        f.row for f in findings
+        if not f.found and (face_rows_present or {}).get(f.row, True))
     return missing, bool(missing)
 
 

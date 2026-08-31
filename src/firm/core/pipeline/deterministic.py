@@ -127,7 +127,9 @@ def deterministic_run(
     sector = (quality.SectorClass.FINANCIAL
               if BusinessModel.LENDER in models or BusinessModel.BANK in models
               else quality.SectorClass.NON_FINANCIAL)
-    screen = quality.forensic_screen(sector, evaluation.metrics, forensic_thresholds())
+    screen = quality.forensic_screen(sector, evaluation.metrics, forensic_thresholds(),
+                                    checks_ran=evaluation.ran, checks_expected=len(evaluation.applicable),
+                                    min_ran_share=float(thresholds["forensic"].get("screen_min_ran_share", 0)))
     return DeterministicRun(
         ticker=ticker, as_of=as_of, facts=facts, derived=derived, models=models,
         playbook=playbook, evaluation=evaluation, screen=screen, walk=walk, ingested=ingested,

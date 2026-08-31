@@ -1,0 +1,539 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "standalone",
+   "period": "FY21",
+   "pages": [
+    65,
+    66
+   ],
+   "heading_quote": "STaNdalONE BalaNCE  SHEET \naS aT 31 MarCH 2021",
+   "unit_quote": "(\u20b9 in crore)",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY21",
+     "label_quote": "as at \n31 March 2021"
+    },
+    {
+     "period": "FY20",
+     "label_quote": "31 March 2020"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY21",
+     "value_printed": "465.40",
+     "page": 65,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY20",
+     "value_printed": "395.00",
+     "page": 65,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY21",
+     "value_printed": "3,809.94",
+     "page": 65,
+     "row_label": "Other equity"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY20",
+     "value_printed": "3,607.03",
+     "page": 65,
+     "row_label": "Other equity"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY21",
+     "value_printed": "0.32",
+     "page": 65,
+     "row_label": "Borrowings (non-current)"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY20",
+     "value_printed": "0.66",
+     "page": 65,
+     "row_label": "Borrowings (non-current)"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY21",
+     "value_printed": "2,293.82",
+     "page": 65,
+     "row_label": "Borrowings (current)"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY20",
+     "value_printed": "2,282.40",
+     "page": 65,
+     "row_label": "Borrowings (current)"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY21",
+     "value_printed": "32.50",
+     "page": 65,
+     "row_label": "Property, plant and equipment"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY20",
+     "value_printed": "45.15",
+     "page": 65,
+     "row_label": "Property, plant and equipment"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY21",
+     "value_printed": "5,793.72",
+     "page": 65,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY20",
+     "value_printed": "5,258.84",
+     "page": 65,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY21",
+     "value_printed": "1,305.33",
+     "page": 65,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY20",
+     "value_printed": "1,780.55",
+     "page": 65,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY21",
+     "value_printed": "54.51",
+     "page": 65,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY20",
+     "value_printed": "14.71",
+     "page": 65,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY21",
+     "value_printed": "119.80",
+     "page": 65,
+     "row_label": "Bank balance other than (iii) above"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY20",
+     "value_printed": "212.20",
+     "page": 65,
+     "row_label": "Bank balance other than (iii) above"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY21",
+     "value_printed": "7,863.90",
+     "page": 65,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY20",
+     "value_printed": "7,881.57",
+     "page": 65,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY21",
+     "value_printed": "0.52",
+     "page": 66,
+     "row_label": "Total outstanding dues of micro enterprises and small enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY20",
+     "value_printed": "1.49",
+     "page": 66,
+     "row_label": "Total outstanding dues of micro enterprises and small enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY21",
+     "value_printed": "919.71",
+     "page": 66,
+     "row_label": "Total outstanding dues of creditors other than micro enterprises and small enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY20",
+     "value_printed": "1,079.56",
+     "page": 66,
+     "row_label": "Total outstanding dues of creditors other than micro enterprises and small enterprises"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY21",
+     "value_printed": "7,863.90",
+     "page": 66,
+     "row_label": "Total equity and liabilities"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY20",
+     "value_printed": "7,881.57",
+     "page": 66,
+     "row_label": "Total equity and liabilities"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "standalone",
+   "period": "FY21",
+   "pages": [
+    67
+   ],
+   "heading_quote": "STaNdalONE STaTEMENT  OF prOFiT aNd lOSS \nFOr THE yEar ENdEd 31 Mar CH 2021",
+   "unit_quote": "(\u20b9 in crore)",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY21",
+     "label_quote": "year ended\n31 March 2021"
+    },
+    {
+     "period": "FY20",
+     "label_quote": "31 March 2020"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Sales",
+     "period": "FY21",
+     "value_printed": "2,669.34",
+     "page": 67,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY20",
+     "value_printed": "4,938.59",
+     "page": 67,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY21",
+     "value_printed": "30.67",
+     "page": 67,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY20",
+     "value_printed": "77.45",
+     "page": 67,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY21",
+     "value_printed": "2,700.01",
+     "page": 67,
+     "row_label": "Total income (1+2)"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY20",
+     "value_printed": "5,016.04",
+     "page": 67,
+     "row_label": "Total income (1+2)"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY21",
+     "value_printed": "2,954.41",
+     "page": 67,
+     "row_label": "Cost of materials consumed"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY20",
+     "value_printed": "4,611.37",
+     "page": 67,
+     "row_label": "Cost of materials consumed"
+    },
+    {
+     "metric": "pnl:Purchases of Stock-in-Trade",
+     "period": "FY21",
+     "value_printed": "13.60",
+     "page": 67,
+     "row_label": "Purchases of stock-in-trade"
+    },
+    {
+     "metric": "pnl:Purchases of Stock-in-Trade",
+     "period": "FY20",
+     "value_printed": "20.51",
+     "page": 67,
+     "row_label": "Purchases of stock-in-trade"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY21",
+     "value_printed": "(828.90)",
+     "page": 67,
+     "row_label": "Changes in inventories of finished goods, stock-in-trade and work-in-progress"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY20",
+     "value_printed": "(337.85)",
+     "page": 67,
+     "row_label": "Changes in inventories of finished goods, stock-in-trade and work-in-progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY21",
+     "value_printed": "40.55",
+     "page": 67,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY20",
+     "value_printed": "71.57",
+     "page": 67,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY21",
+     "value_printed": "393.68",
+     "page": 67,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY20",
+     "value_printed": "368.88",
+     "page": 67,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY21",
+     "value_printed": "33.26",
+     "page": 67,
+     "row_label": "Depreciation and amortisation expenses"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY20",
+     "value_printed": "34.66",
+     "page": 67,
+     "row_label": "Depreciation and amortisation expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY21",
+     "value_printed": "89.00",
+     "page": 67,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY20",
+     "value_printed": "123.36",
+     "page": 67,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY21",
+     "value_printed": "2,695.60",
+     "page": 67,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY20",
+     "value_printed": "4,892.50",
+     "page": 67,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY21",
+     "value_printed": "4.41",
+     "page": 67,
+     "row_label": "Profit before tax (3-4)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY20",
+     "value_printed": "123.54",
+     "page": 67,
+     "row_label": "Profit before tax (3-4)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY21",
+     "value_printed": "(56.43)",
+     "page": 67,
+     "row_label": "Total tax expense"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY20",
+     "value_printed": "45.04",
+     "page": 67,
+     "row_label": "Total tax expense"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY21",
+     "value_printed": "60.84",
+     "page": 67,
+     "row_label": "Profit/(loss) for the year"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY20",
+     "value_printed": "78.50",
+     "page": 67,
+     "row_label": "Profit/(loss) for the year"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY21",
+     "value_printed": "1.50",
+     "page": 67,
+     "row_label": "Basic earnings per share (in Rs)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY20",
+     "value_printed": "1.99",
+     "page": 67,
+     "row_label": "Basic earnings per share (in Rs)"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "standalone",
+   "period": "FY21",
+   "pages": [
+    69,
+    70
+   ],
+   "heading_quote": "STaNdalONE CaSH FlOw STaTEMENT \nFOr THE yEar ENdEd 31 M arCH 2021",
+   "unit_quote": "(\u20b9 in crore)",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY21",
+     "label_quote": "as at\n31 March 2021",
+     "months": 12
+    },
+    {
+     "period": "FY20",
+     "label_quote": "31 March 2020",
+     "months": 12
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY21",
+     "value_printed": "120.65",
+     "page": 69,
+     "row_label": "Net cash generated from operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY20",
+     "value_printed": "60.07",
+     "page": 69,
+     "row_label": "Net cash generated from operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY21",
+     "value_printed": "97.52",
+     "page": 69,
+     "row_label": "Net cash generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY20",
+     "value_printed": "40.57",
+     "page": 69,
+     "row_label": "Net cash generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY21",
+     "value_printed": "8.49",
+     "page": 69,
+     "row_label": "Interest received"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY20",
+     "value_printed": "14.67",
+     "page": 69,
+     "row_label": "Interest received"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY21",
+     "value_printed": "(178.37)",
+     "page": 70,
+     "row_label": "Net cash used from financing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY20",
+     "value_printed": "(168.66)",
+     "page": 70,
+     "row_label": "Net cash used from financing activities"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY21",
+     "value_printed": "39.80",
+     "page": 70,
+     "row_label": "Net increase / (decrease) in cash and cash equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY20",
+     "value_printed": "(68.02)",
+     "page": 70,
+     "row_label": "Net increase / (decrease) in cash and cash equivalents (A+B+C)"
+    }
+   ]
+  }
+ ]
+}

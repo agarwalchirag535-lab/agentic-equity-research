@@ -368,3 +368,63 @@ def test_screen_originate_to_sell_applies_regardless_of_sector():
     r = forensic_screen(SectorClass.NON_FINANCIAL, ForensicMetrics(gain_on_sale_reliant=True), TH)
     assert r.verdict is ForensicVerdict.REVIEW  # one HIGH flag => REVIEW, not hard fail
     assert {f.name for f in r.flags} == {"gain_on_sale_reliant"}
+
+
+def test_an_empty_read_is_insufficient_not_a_pass():
+    """EVAL-1 (ADR-0058): PASS is a claim of looking and finding nothing. The golden set caught the
+    bare screen saying PASS on a filing the pipeline could not read at all — zero checks ran, every
+    metric at its not-evaluated default, zero flags, clean verdict. With `checks_ran=0` the screen now
+    refuses to have an opinion about the company."""
+    from firm.core.compute.quality import (
+        ForensicMetrics,
+        ForensicVerdict,
+        SectorClass,
+        forensic_screen,
+    )
+
+    empty = forensic_screen(SectorClass.NON_FINANCIAL, ForensicMetrics(), TH,
+                            checks_ran=0)
+    assert empty.verdict is ForensicVerdict.INSUFFICIENT
+    assert not empty.hard_fail and empty.flags == []
+
+    # one check having actually run restores the normal contract — where the floor above zero sits is
+    # the golden set's question, not this function's
+    one = forensic_screen(SectorClass.NON_FINANCIAL, ForensicMetrics(cfo_pat=1.2), TH,
+                          checks_ran=1)
+    assert one.verdict is ForensicVerdict.PASS
+
+    # a sliver of the playbook is not a verdict either: 1 of 10 ran on PC Jeweller FY21 (one
+    # text-section scan) and the bare screen said PASS about statements the pipeline could not read
+    sliver = forensic_screen(SectorClass.NON_FINANCIAL, ForensicMetrics(), TH,
+                             checks_ran=1, checks_expected=10, min_ran_share=0.25)
+    assert sliver.verdict is ForensicVerdict.INSUFFICIENT
+    enough = forensic_screen(SectorClass.NON_FINANCIAL, ForensicMetrics(cfo_pat=1.2), TH,
+                             checks_ran=3, checks_expected=10, min_ran_share=0.25)
+    assert enough.verdict is ForensicVerdict.PASS
+
+    # legacy callers that assembled metrics by hand and passed no count keep the old contract
+    legacy = forensic_screen(SectorClass.NON_FINANCIAL, ForensicMetrics(), TH)
+    assert legacy.verdict is ForensicVerdict.PASS
+
+
+def test_a_rate_cut_into_falling_stress_is_release_not_suppression():
+    """ADR-0058: the golden set's hard_recovery case. Sezzle cut provisions into RISING delinquency
+    (the tell); CreditAccess FY26 cut credit cost 7.95% -> 6.36% while Stage-3 fell 4.79% -> 3.18%
+    (the fix). Same rate cut, opposite meaning, separated only by the stress direction — and with no
+    staging data the cut alone still flags, the conservative direction."""
+    from firm.core.compute.quality import reserve_suppression_flag
+
+    # Sezzle shape: material cut, stress NOT falling — flags
+    assert reserve_suppression_flag(0.012, 0.035, 0.010,
+                                    impaired_share_curr=0.05, impaired_share_prior=0.04,
+                                    stress_relief_min_drop=0.010) is True
+    # recovery shape: material cut WITH material stress relief — release, no flag
+    assert reserve_suppression_flag(0.0636, 0.0795, 0.010,
+                                    impaired_share_curr=0.0318, impaired_share_prior=0.0479,
+                                    stress_relief_min_drop=0.010) is False
+    # no staging data: the cut alone still flags (pre-ADR-0058 contract)
+    assert reserve_suppression_flag(0.0636, 0.0795, 0.010) is True
+    # no material cut: never flags, whatever the staging says
+    assert reserve_suppression_flag(0.078, 0.0795, 0.010,
+                                    impaired_share_curr=0.05, impaired_share_prior=0.04,
+                                    stress_relief_min_drop=0.010) is False

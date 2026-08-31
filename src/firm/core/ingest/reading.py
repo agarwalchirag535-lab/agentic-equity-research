@@ -140,6 +140,12 @@ def _month_number(word: str) -> int | None:
     w = word.lower()
     if w in _MONTH_NAMES:
         return _MONTH_NAMES[w]
+    # Text extraction glues words ("As atMarch 31, 2026" is how a real two-up header survives), and the
+    # word-boundary then hands us the whole glued token. A FULL month name as the token's suffix is
+    # unambiguous; abbreviations are not extended this courtesy.
+    for name, n in _MONTH_NAMES.items():
+        if w.endswith(name):
+            return n
     if len(w) >= 3:  # 'Mar', 'Sept' — filings abbreviate; three letters are unambiguous
         return next((n for name, n in _MONTH_NAMES.items() if name.startswith(w[:3])), None)
     return None

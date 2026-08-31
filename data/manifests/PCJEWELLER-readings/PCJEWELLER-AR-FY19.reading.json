@@ -1,0 +1,539 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "standalone",
+   "period": "FY19",
+   "pages": [
+    72,
+    73
+   ],
+   "heading_quote": "STANDALONE BAL ANCE SHEET AS AT 31 MAR CH 2019",
+   "unit_quote": "(\u20b9 in crores)",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY19",
+     "label_quote": "As at\n  31 March 2019"
+    },
+    {
+     "period": "FY18",
+     "label_quote": "31 March 2018"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY19",
+     "value_printed": "394.65",
+     "page": 72,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY18",
+     "value_printed": "394.36",
+     "page": 72,
+     "row_label": "Equity share capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY19",
+     "value_printed": "3,541.84",
+     "page": 72,
+     "row_label": "Other equity"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY18",
+     "value_printed": "3,531.44",
+     "page": 72,
+     "row_label": "Other equity"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY19",
+     "value_printed": "11.58",
+     "page": 72,
+     "row_label": "Borrowings (non-current)"
+    },
+    {
+     "metric": "balance_sheet:Non-Current Borrowings",
+     "period": "FY18",
+     "value_printed": "29.50",
+     "page": 72,
+     "row_label": "Borrowings (non-current)"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY19",
+     "value_printed": "2,090.65",
+     "page": 72,
+     "row_label": "Borrowings (current)"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY18",
+     "value_printed": "1,024.97",
+     "page": 72,
+     "row_label": "Borrowings (current)"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY19",
+     "value_printed": "59.18",
+     "page": 72,
+     "row_label": "Property, plant and equipment"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY18",
+     "value_printed": "77.30",
+     "page": 72,
+     "row_label": "Property, plant and equipment"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY19",
+     "value_printed": "4,988.11",
+     "page": 72,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY18",
+     "value_printed": "5,161.28",
+     "page": 72,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY19",
+     "value_printed": "1,773.00",
+     "page": 72,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY18",
+     "value_printed": "1,761.81",
+     "page": 72,
+     "row_label": "Trade receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY19",
+     "value_printed": "82.73",
+     "page": 72,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY18",
+     "value_printed": "382.74",
+     "page": 72,
+     "row_label": "Cash and cash equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY19",
+     "value_printed": "236.15",
+     "page": 72,
+     "row_label": "Bank balance other than (iii) above"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY18",
+     "value_printed": "1,108.73",
+     "page": 72,
+     "row_label": "Bank balance other than (iii) above"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY19",
+     "value_printed": "0.58",
+     "page": 72,
+     "row_label": "Total outstanding dues of micro enterprises and small enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY18",
+     "value_printed": "0.54",
+     "page": 72,
+     "row_label": "Total outstanding dues of micro enterprises and small enterprises"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY19",
+     "value_printed": "7,664.04",
+     "page": 72,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY18",
+     "value_printed": "8,960.98",
+     "page": 72,
+     "row_label": "Total assets"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY19",
+     "value_printed": "1,264.28",
+     "page": 73,
+     "row_label": "Total outstanding dues of creditors other than micro enterprises and small enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY18",
+     "value_printed": "3,560.64",
+     "page": 73,
+     "row_label": "Total outstanding dues of creditors other than micro enterprises and small enterprises"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY19",
+     "value_printed": "7,664.04",
+     "page": 73,
+     "row_label": "Total equity and liabilities"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY18",
+     "value_printed": "8,960.98",
+     "page": 73,
+     "row_label": "Total equity and liabilities"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "standalone",
+   "period": "FY19",
+   "pages": [
+    74
+   ],
+   "heading_quote": "STANDALONE STATEMENT OF PROFIT AND LOSS\n  EARFOR THE Y ENDED 31 MARCH 2019",
+   "unit_quote": "(\u20b9 in crores)",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY19",
+     "label_quote": "Year ended\n  31 March 2019"
+    },
+    {
+     "period": "FY18",
+     "label_quote": "31 March 2018",
+     "months": 12
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Sales",
+     "period": "FY19",
+     "value_printed": "8,368.85",
+     "page": 74,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY18",
+     "value_printed": "9,488.97",
+     "page": 74,
+     "row_label": "Revenue from operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY19",
+     "value_printed": "92.32",
+     "page": 74,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY18",
+     "value_printed": "99.57",
+     "page": 74,
+     "row_label": "Other income"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY19",
+     "value_printed": "8,461.17",
+     "page": 74,
+     "row_label": "Total income (1+2)"
+    },
+    {
+     "metric": "pnl:Total Income",
+     "period": "FY18",
+     "value_printed": "9,588.54",
+     "page": 74,
+     "row_label": "Total income (1+2)"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY19",
+     "value_printed": "7,925.02",
+     "page": 74,
+     "row_label": "Cost of materials consumed"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY18",
+     "value_printed": "8,830.81",
+     "page": 74,
+     "row_label": "Cost of materials consumed"
+    },
+    {
+     "metric": "pnl:Purchases of Stock-in-Trade",
+     "period": "FY19",
+     "value_printed": "12.41",
+     "page": 74,
+     "row_label": "Purchases of stock-in-trade"
+    },
+    {
+     "metric": "pnl:Purchases of Stock-in-Trade",
+     "period": "FY18",
+     "value_printed": "318.08",
+     "page": 74,
+     "row_label": "Purchases of stock-in-trade"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY19",
+     "value_printed": "(148.92)",
+     "page": 74,
+     "row_label": "Changes in inventories of finished goods, stock-in-trade and work-in-progress"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY18",
+     "value_printed": "(1,006.42)",
+     "page": 74,
+     "row_label": "Changes in inventories of finished goods, stock-in-trade and work-in-progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY19",
+     "value_printed": "112.40",
+     "page": 74,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY18",
+     "value_printed": "89.69",
+     "page": 74,
+     "row_label": "Employee benefits expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY19",
+     "value_printed": "340.39",
+     "page": 74,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY18",
+     "value_printed": "311.88",
+     "page": 74,
+     "row_label": "Finance costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY19",
+     "value_printed": "16.75",
+     "page": 74,
+     "row_label": "Depreciation and amortisation expenses"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY18",
+     "value_printed": "20.46",
+     "page": 74,
+     "row_label": "Depreciation and amortisation expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY19",
+     "value_printed": "200.36",
+     "page": 74,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY18",
+     "value_printed": "250.40",
+     "page": 74,
+     "row_label": "Other expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY19",
+     "value_printed": "8,458.41",
+     "page": 74,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY18",
+     "value_printed": "8,818.37",
+     "page": 74,
+     "row_label": "Total expenses"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY19",
+     "value_printed": "2.76",
+     "page": 74,
+     "row_label": "Profit before tax (3-4)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY18",
+     "value_printed": "770.17",
+     "page": 74,
+     "row_label": "Profit before tax (3-4)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY19",
+     "value_printed": "5.57",
+     "page": 74,
+     "row_label": "Total tax expense"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY18",
+     "value_printed": "202.77",
+     "page": 74,
+     "row_label": "Total tax expense"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY19",
+     "value_printed": "(2.81)",
+     "page": 74,
+     "row_label": "Profit/(loss) for the year"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY18",
+     "value_printed": "567.40",
+     "page": 74,
+     "row_label": "Profit/(loss) for the year"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY19",
+     "value_printed": "(0.07)",
+     "page": 74,
+     "row_label": "Basic earnings per share (in Rs)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY18",
+     "value_printed": "14.94",
+     "page": 74,
+     "row_label": "Basic earnings per share (in Rs)"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "standalone",
+   "period": "FY19",
+   "pages": [
+    76,
+    77
+   ],
+   "heading_quote": "STANDALONE CASH FLOW STATEMENT FOR EAR THE Y ENDED 31 MARCH 2019",
+   "unit_quote": "(\u20b9 in crores)",
+   "unit": "INR_cr",
+   "columns": [
+    {
+     "period": "FY19",
+     "label_quote": "Year endedYear ended\n 31 March 2019"
+    },
+    {
+     "period": "FY18",
+     "label_quote": "31 March 2018",
+     "months": 12
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY19",
+     "value_printed": "(1,837.14)",
+     "page": 76,
+     "row_label": "Net cash (used in)/generated from operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY18",
+     "value_printed": "334.00",
+     "page": 76,
+     "row_label": "Net cash (used in)/generated from operating activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY19",
+     "value_printed": "886.21",
+     "page": 76,
+     "row_label": "Net cash (used in)/generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY18",
+     "value_printed": "(349.88)",
+     "page": 76,
+     "row_label": "Net cash (used in)/generated from investing activities"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY19",
+     "value_printed": "48.30",
+     "page": 76,
+     "row_label": "Interest received"
+    },
+    {
+     "metric": "cashflow:Interest Income",
+     "period": "FY18",
+     "value_printed": "50.46",
+     "page": 76,
+     "row_label": "Interest received"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY19",
+     "value_printed": "650.92",
+     "page": 77,
+     "row_label": "Net cash generated from financing activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY18",
+     "value_printed": "22.74",
+     "page": 77,
+     "row_label": "Net cash generated from financing activities"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY19",
+     "value_printed": "(300.01)",
+     "page": 77,
+     "row_label": "Net increase in cash and cash equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY18",
+     "value_printed": "6.86",
+     "page": 77,
+     "row_label": "Net increase in cash and cash equivalents (A+B+C)"
+    }
+   ]
+  }
+ ]
+}

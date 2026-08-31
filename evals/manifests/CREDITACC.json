@@ -19,12 +19,13 @@
       "file": "CREDITACC-AR-FY25.pdf",
       "period": "FY25",
       "prior_period": "FY24",
-      "source_url": "https://www.creditaccessgrameen.in/wp-content/uploads/2025/09/CreditAccess-Grameen_Annual-Report_FY-2024-25.pdf",
-      "published_at": "2025-09-01",
+      "source_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/525e765e-fd33-4753-b5f3-b7598cf1c916.pdf",
+      "published_at": "2025-07-05",
       "published_at_basis": "upload-path",
       "grade": "A",
-      "sha256": "dde67a899f09f9fc7b87edfa904ef9afd00b6f11da75948c82bdb62d35762a9b",
-      "bytes": 11383634
+      "sha256": "09d9871e03ff2617bc1a831e155efc2493bd51d8373495682ca737cea584084f",
+      "bytes": 11383634,
+      "note": "re-pinned at ADR-0058: the previous pin was a different FY25 document than the one the verified reading reads; the refuse-on-mismatch gate caught it"
     }
   ],
   "note": "Golden-set copy: only filings present in data/bronze, hashed from the bytes held. Cases pin their own inputs so unrelated data work cannot change what a case measures."

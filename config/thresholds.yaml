@@ -17,6 +17,11 @@ forensic:
   # generated entirely by window length. Below the floor the metric is not derived and the check reports
   # UNAVAILABLE with the reason, which is what "insufficient history" should look like.
   cumulative_cfo_pat_min_periods: 3
+  # The screen refuses to opine when fewer than this share of its applicable checks actually RAN
+  # (EVAL-1/ADR-0058): on PC Jeweller FY21 one check in ten evaluated — a text-section scan — and the
+  # bare screen said PASS about a company whose statements the pipeline could not read. PROVISIONAL
+  # until the golden set calibrates it; zero-ran is refused unconditionally in code.
+  screen_min_ran_share: 0.25
   # EPS endpoints are only comparable on the same share base (ADR-0050). When equity share capital moved
   # more than this fraction across the CAGR window, `dilution_drag` (PAT CAGR - EPS CAGR) is refused with
   # the corporate-action question instead of derived: Symphony's 1:1 bonus doubled the share count and the
@@ -46,7 +51,11 @@ originate_to_sell:
   gain_on_sale_reliance_max: 1.0     # gain-on-loan-sale > 1.0x net income = profit rests on the sale channel (Carvana: 2.2x)
   provision_book_divergence_max: 0.50 # |provision growth − loan-book growth| above this = flag (Sezzle: +130% vs +6% ⇒ gap 1.24)
   reserve_suppression_min_drop: 0.010 # loan-loss provision RATE falling by ≥1.0 rate-point YoY = reserve-suppression tell (Sezzle: 3.5%→1.2%)
-  held_for_sale_min_allowance: 0.005  # on-book loans carried with allowance < 0.5% of book while growing = no-reserve flag (Carvana)
+  held_for_sale_min_allowance: 0.005
+  # A provision-rate cut is only SUPPRESSION when stress is not falling (ADR-0012's own distinction,
+  # completed by ADR-0058 once the staging notes became readable): an impaired-share fall of at least
+  # this many rate points alongside the cut reads as reserve RELEASE and does not flag. PROVISIONAL.
+  reserve_release_stress_drop: 0.010  # on-book loans carried with allowance < 0.5% of book while growing = no-reserve flag (Carvana)
 
 # Exogenous-series divergence scanner (FORENSIC_METHODOLOGY §3 P1).
 divergence:
