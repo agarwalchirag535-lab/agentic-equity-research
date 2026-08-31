@@ -96,7 +96,10 @@ def verified_clean_completeness(report: ResearchReport) -> list[PublicationViola
     # verdict it exists to publish when a company is opaque. In exchange that verdict must be **evidenced**
     # the same way a FORENSIC_CAUTION must carry a FLAG: at least one UNAVAILABLE check or a named
     # disclosure gap. "We could not tell" with nothing missing is not a finding.
-    opacity_is_the_finding = report.verdict is Verdict.INSUFFICIENT_DISCLOSURE
+    # Both "they did not disclose" and "we could not look" are reports ABOUT a gap, so neither can be
+    # blocked by the gap it reports (ADR-0051 splits the second out of the first).
+    opacity_is_the_finding = report.verdict in (
+        Verdict.INSUFFICIENT_DISCLOSURE, Verdict.INSUFFICIENT_EVIDENCE)
     if cl.note_coverage < 1.0 and not opacity_is_the_finding:
         out.append(PublicationViolation(
             "P1_incomplete_checklist", "checklist.note_coverage",

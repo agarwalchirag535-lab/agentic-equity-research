@@ -30,7 +30,9 @@ from firm.core.report.assemble import (
 )
 from firm.schemas._base import Citation, Grade
 from firm.schemas.evidence import Evidence, EvidenceGraph, SourceClass
-from firm.schemas.report import CheckOutcome, CheckRecord, Verdict
+import pytest
+
+from firm.schemas.report import CheckOutcome, CheckRecord, GapKind, Verdict
 from tests.conftest import AS_OF, clean_series, seed_store
 
 POLICY = report_policy()
@@ -53,12 +55,16 @@ UNAFFORDABLE = feasibility_gate(
     debt_capacity_available=True, thesis_allows_dilution=False)
 
 
-def _evaluation(unavailable: int = 0, total: int = 10, flagged: int = 0) -> CheckEvaluation:
+def _evaluation(unavailable: int = 0, total: int = 10, flagged: int = 0,
+                gap: GapKind = GapKind.DISCLOSURE) -> CheckEvaluation:
+    """`gap` decides WHOSE the unavailability is (ADR-0051). DISCLOSURE by default because that is the
+    case these ladder tests are about; pass CAPABILITY to build the run whose gaps are the firm's own."""
     records = []
     names = [f"check_{i}" for i in range(total)]
     for i, name in enumerate(names):
         if i < unavailable:
-            records.append(CheckRecord(name=name, outcome=CheckOutcome.UNAVAILABLE, reason="absent"))
+            records.append(CheckRecord(name=name, outcome=CheckOutcome.UNAVAILABLE, reason="absent",
+                                       gap=gap))
         elif i < unavailable + flagged:
             records.append(CheckRecord(name=name, outcome=CheckOutcome.FLAG, detail="fired"))
         else:
@@ -102,8 +108,32 @@ def test_too_much_of_the_playbook_unevaluable_is_insufficient_disclosure():
 
 
 def test_incomplete_note_coverage_is_insufficient_disclosure():
-    notes = NotesReview(coverage=0.7, undispositioned=("30",), substantive_share=0.7, notes_total=10)
+    notes = NotesReview(coverage=0.7, undispositioned=("30",), substantive_share=0.7, notes_total=10,
+                        scanned=True)
     assert _choose(notes=notes).verdict is Verdict.INSUFFICIENT_DISCLOSURE
+
+
+def test_notes_we_never_opened_are_not_notes_the_company_withheld():
+    """ADR-0051. With no filing walked, `scanned` is False and this rung has nothing to say about the
+    company — coverage of 0% is a statement about the firm's reach, not about their disclosure."""
+    never_looked = NotesReview(coverage=0.0, substantive_share=0.0, notes_total=0, scanned=False)
+    assert _choose(notes=never_looked).verdict is not Verdict.INSUFFICIENT_DISCLOSURE
+
+
+def test_our_own_missing_capability_can_never_be_published_as_their_opacity():
+    """The prohibited failure, caught on a real company (ADR-0051): CreditAccess Grameen discloses its
+    asset quality in full, and the firm was about to publish INSUFFICIENT_DISCLOSURE over notes it does
+    not read — reasoning that "the inputs are public by law, so the gap is the finding"."""
+    ours = _evaluation(unavailable=9, total=10, gap=GapKind.CAPABILITY)
+    assert ours.unavailable_share == pytest.approx(0.9)       # we know much less
+    assert ours.capability_gap_share == pytest.approx(0.9)
+    assert ours.disclosure_gap_share == 0.0                   # and the company is accused of nothing
+    assert _choose(evaluation=ours).verdict is not Verdict.INSUFFICIENT_DISCLOSURE
+
+    theirs = _evaluation(unavailable=9, total=10, gap=GapKind.DISCLOSURE)
+    decision = _choose(evaluation=theirs)
+    assert decision.verdict is Verdict.INSUFFICIENT_DISCLOSURE
+    assert "looked for and not disclosed" in decision.rationale
 
 
 def test_full_coverage_that_read_nothing_does_not_buy_a_thesis():

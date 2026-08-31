@@ -14,6 +14,7 @@ from firm.core.config import (
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import evaluate_checks
 from firm.core.pipeline.filing import FilingSource, disposition_notes, walk_filing
+from firm.schemas.report import GapKind
 from tests.conftest import (
     AS_OF,
     CLEAN_AR_PAGES,
@@ -105,7 +106,11 @@ def test_a_row_absent_from_the_filing_is_simply_not_stored(store):
     walk, evaluation = _walk_and_evaluate(store, "THIN", pages)
     assert walk.rows == {}
     assert store.query_fact("THIN", D.RECEIVABLES, "FY26", as_of=AS_OF) is None
-    assert evaluation.record("receivables_divergent").reason.startswith("inputs not disclosed")
+    # The filing WAS walked and the row was not in it, so this is the company's gap and the wording
+    # says so — the phrasing follows the GapKind classification (ADR-0051).
+    record = evaluation.record("receivables_divergent")
+    assert record.reason.startswith("inputs not disclosed")
+    assert record.gap is GapKind.DISCLOSURE
 
 
 # ------------------------------------------------------------------------------------------------

@@ -31,7 +31,12 @@ class Verdict(str, Enum):
     QUALITY_WRONG_PRICE = "QUALITY_WRONG_PRICE"        # clean business, price/feasibility fails today
     WATCH = "WATCH"                                    # promise, thesis not yet provable
     FORENSIC_CAUTION = "FORENSIC_CAUTION"              # red flags with a corroborated evidence chain
-    INSUFFICIENT_DISCLOSURE = "INSUFFICIENT_DISCLOSURE"  # legally-public data missing/unreadable
+    INSUFFICIENT_DISCLOSURE = "INSUFFICIENT_DISCLOSURE"  # THEY did not disclose what the law requires
+    #: WE could not look hard enough to judge — too little of the playbook ran, for want of the firm's
+    #: own reach rather than the company's silence (ADR-0051). Splitting this out of
+    #: INSUFFICIENT_DISCLOSURE matters in both directions: publishing our gap as their opacity is a false
+    #: accusation, and publishing a business judgment off a fifth of the playbook is a false thesis.
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
 
 
 #: Verdicts that assert a company is investable-quality — these must carry kill criteria.
@@ -39,7 +44,7 @@ POSITIVE_VERDICTS = frozenset({Verdict.COMPOUNDER})
 #: Verdicts that withhold or warn — these must carry rehabilitation criteria (what would reverse them).
 NEGATIVE_VERDICTS = frozenset({
     Verdict.QUALITY_WRONG_PRICE, Verdict.WATCH, Verdict.FORENSIC_CAUTION,
-    Verdict.INSUFFICIENT_DISCLOSURE,
+    Verdict.INSUFFICIENT_DISCLOSURE, Verdict.INSUFFICIENT_EVIDENCE,
 })
 
 
@@ -48,6 +53,21 @@ class CheckOutcome(str, Enum):
     FLAG = "FLAG"
     NOT_APPLICABLE = "NOT_APPLICABLE"   # suppressed by the model playbook (ADR-0017)
     UNAVAILABLE = "UNAVAILABLE"         # inputs not disclosed — a signal, never a silent skip
+
+
+class GapKind(str, Enum):
+    """Whose gap an unanswered question is — the distinction decides what the verdict may conclude.
+
+    DISCLOSURE  the pipeline asked and the sources did not carry the row: evidence about the COMPANY, and
+                allowed to degrade the verdict.
+    CAPABILITY  no extractor exists yet, so the question was never actually put: evidence about US. It
+                lowers confidence and joins the backlog, but must never be charged to the company —
+                otherwise the firm rejects every business it cannot yet read and calls that rigour.
+    """
+
+    DISCLOSURE = "DISCLOSURE"
+    CAPABILITY = "CAPABILITY"
+    NONE = "NONE"
 
 
 class CheckRecord(BaseModel):
@@ -62,6 +82,13 @@ class CheckRecord(BaseModel):
     detail: str = ""
     reason: str = ""
     fact_ids: list[str] = Field(default_factory=list)
+    #: WHOSE gap an UNAVAILABLE is (ADR-0051). The verdict may only be degraded by a DISCLOSURE gap —
+    #: the pipeline looked in the right place and the company had not put the figure there. A CAPABILITY
+    #: gap is about us and lowers confidence instead. Applied to line-item questions since ADR-0022 and
+    #: to CHECKS only since ADR-0051, which is why CreditAccess Grameen — a lender that discloses its
+    #: asset quality in full — was headed for publication as INSUFFICIENT_DISCLOSURE over notes the firm
+    #: does not read. Defaults to CAPABILITY: the safe direction is to blame ourselves.
+    gap: GapKind = GapKind.NONE
 
 
 class VerifiedCleanChecklist(BaseModel):
@@ -89,21 +116,6 @@ class AnswerStatus(str, Enum):
     ANSWERED = "ANSWERED"
     UNANSWERED = "UNANSWERED"          # asked, and the sources read cannot answer it — `needs` says what would
     NOT_APPLICABLE = "NOT_APPLICABLE"  # invalid for the detected business model
-
-
-class GapKind(str, Enum):
-    """Whose gap an unanswered question is — the distinction decides what the verdict may conclude.
-
-    DISCLOSURE  the pipeline asked and the sources did not carry the row: evidence about the COMPANY, and
-                allowed to degrade the verdict.
-    CAPABILITY  no extractor exists yet, so the question was never actually put: evidence about US. It
-                lowers confidence and joins the backlog, but must never be charged to the company —
-                otherwise the firm rejects every business it cannot yet read and calls that rigour.
-    """
-
-    DISCLOSURE = "DISCLOSURE"
-    CAPABILITY = "CAPABILITY"
-    NONE = "NONE"
 
 
 class LineItemAnswer(BaseModel):

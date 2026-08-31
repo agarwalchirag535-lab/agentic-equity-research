@@ -1637,3 +1637,60 @@ measure is a golden-set calibration question and is recorded as such rather than
 store: a column-label quote that did not appear on the page, and four cash-flow rows I attributed to the
 wrong page. The propose/verify split is doing its job on its author, which is the strongest evidence it
 will do it on a model.
+
+---
+
+### ADR-0051 — "We could not look" is not "they did not disclose"
+
+**Date** 2026-08-31 · **Status** accepted · **Extends ADR-0022's rule from line items to checks and to
+the verdict ladder** · **Found by** generalising ADR-0050
+
+**Context.** ADR-0050's lesson was that a capability can look finished at every layer and be unreachable
+from a real document. Generalising it, an audit found four more checks a playbook can select with no
+evaluator (`contract_asset_divergent`, `guarantees_heavy`, `capitalised_cost_heavy`,
+`adjusted_ebitda_gap`) — covering SERVICES_IT, EPC_INFRA and REAL_ESTATE. But the audit surfaced
+something worse than the wiring gap.
+
+**The prohibited failure, live.** `CheckEvaluation.unavailable_share` counted every unrunnable check
+alike, and the verdict ladder turned that share into `INSUFFICIENT_DISCLOSURE` with the rationale *"the
+inputs are public by law, so the gap is the finding"*. On CreditAccess Grameen — a lender that discloses
+its asset quality in full — **67% of the playbook was unavailable and 0% of it was the company's doing**:
+every one of those checks needs a note this firm does not read. The report would have accused a
+compliant company of withholding public information. `GapKind`'s own docstring forbids exactly this
+("otherwise the firm rejects every business it cannot yet read and calls that rigour"); the distinction
+had been applied to line-item questions since ADR-0022 and never to checks.
+
+Two further rungs had the same defect: notes coverage and substantive share both produced
+`INSUFFICIENT_DISCLOSURE` from a `NotesReview` whose `scanned` flag was **False** — "0% of 0 notes carry
+a substantive disposition" is a sentence about a filing nobody opened.
+
+**Decision.**
+
+1. `CheckRecord.gap: GapKind`, and `_Recorder.unavailable(..., gap=GapKind.CAPABILITY)` — **CAPABILITY
+   is the default**, so a caller must state positively that it looked in the right place before the
+   company can be held responsible. The reason's wording follows the classification: a report never says
+   "not disclosed" about a note it never opened.
+2. `disclosure_gap_share` (verdict-moving) is split from `unavailable_share` (confidence-moving, and
+   still counting both kinds — whoever the gap belongs to, the firm knows less for it).
+3. `INSUFFICIENT_DISCLOSURE` requires the **disclosure** share to breach the ceiling, and names the
+   checks. The notes rungs are gated on `scanned`.
+4. A new verdict, **`INSUFFICIENT_EVIDENCE`**, for the case the split exposes. Removing the false
+   accusation alone would have replaced it with a false *thesis*: the screener-only regression run
+   promptly returned `QUALITY_WRONG_PRICE` — a business judgment off a playbook that ran 40% and never
+   opened a filing. The new rung sits after the disclosure rungs (a genuinely opaque company is still
+   reported as opaque) and before every rung that asserts anything about the business.
+
+**Result.** CreditAccess moves from `INSUFFICIENT_DISCLOSURE` to `INSUFFICIENT_EVIDENCE`: *"67% of the
+applicable playbook could not be evaluated, and 67% of it for want of this firm's own reach rather than
+the company's disclosure — no judgment about the business is supportable yet"*. That sentence is true;
+the one it replaces was false about the company and true about us. The screener-only path — which
+STATUS §6b had already caught empirically on Alkyl Amines ("INSUFFICIENT_DISCLOSURE — the opacity was
+ours") and worked around by improving extraction — is now correct by construction rather than by luck.
+
+**And the guard.** `tests/pipeline/test_check_coverage.py` runs the real evaluator over every model's
+real playbook and asserts each selectable check either has an evaluator or is declared in
+`UNIMPLEMENTED_CHECKS` with what it specifically needs. It is behavioural, not textual, so a refactor of
+the dispatch cannot fool it; it was verified by unwiring a lender check and watching it fail. The four
+unimplemented checks are declared rather than built: the lender path is the pattern — wire an evaluator
+when a company that needs it is actually run, so it is validated against a document instead of an
+expectation.

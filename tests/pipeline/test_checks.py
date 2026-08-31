@@ -199,7 +199,11 @@ def test_a_playbook_check_with_no_evaluator_is_visible_not_dropped(store):
         universal=universal_forensic_thresholds(), model_specific=model_forensic_thresholds())
     record = evaluation.record("some_future_check")
     assert record.outcome is CheckOutcome.UNAVAILABLE
-    assert "no evaluator wired" in record.reason
+    # An UNDECLARED unwired check says so in the plainest terms available: it is a wiring bug, not a
+    # fact about the company (ADR-0050/0051).
+    assert "no evaluator is wired" in record.reason
+    assert "not even declared in UNIMPLEMENTED_CHECKS" in record.reason
+    assert "wiring bug, not a fact about the company" in record.reason
 
 
 def test_unavailable_share_is_one_when_nothing_is_applicable(store):

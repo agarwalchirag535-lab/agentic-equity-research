@@ -655,6 +655,28 @@ lender-appropriate replacement measure is a golden-set calibration question, rec
 **Also worth knowing:** the verifier caught three of *my own* transcription errors (a column-label quote
 absent from the page, four cash-flow rows attributed to the wrong page) before anything reached the store.
 
+## 6f. "We could not look" is not "they did not disclose" (2026-08-31, ADR-0051)
+
+Generalising ADR-0050 found four more unwired checks (SERVICES_IT, EPC_INFRA, REAL_ESTATE) — and then
+something worse. `unavailable_share` counted every unrunnable check alike and the ladder turned it into
+**INSUFFICIENT_DISCLOSURE** reasoning *"the inputs are public by law, so the gap is the finding"*. On
+CreditAccess Grameen, **67% of the playbook was unavailable and 0% of it was the company's doing** — the
+firm was about to accuse a compliant lender of withholding information it publishes in full. Two notes
+rungs had the same defect, firing off a `NotesReview` whose `scanned` flag was False.
+
+Fixed: `CheckRecord.gap` (defaulting to CAPABILITY — blaming ourselves is the safe direction),
+`disclosure_gap_share` split from `unavailable_share`, the notes rungs gated on `scanned`, and a new
+verdict **`INSUFFICIENT_EVIDENCE`** for "we could not look hard enough to judge". That last one is
+load-bearing: removing the false accusation alone made the screener-only run return
+`QUALITY_WRONG_PRICE` — a business judgment off 40% of a playbook — so the fix had to prevent a false
+thesis as well as a false accusation. CreditAccess now reads *"67% ... for want of this firm's own reach
+rather than the company's disclosure — no judgment about the business is supportable yet"*.
+
+`tests/pipeline/test_check_coverage.py` guards the wiring class behaviourally (verified by unwiring a
+lender check and watching it fail). The four unimplemented checks are **declared** in
+`UNIMPLEMENTED_CHECKS`, not built: an evaluator gets wired when a company that needs it is run, so it is
+validated against a document rather than an expectation.
+
 ## 7. Suggested next step
 
 Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):
