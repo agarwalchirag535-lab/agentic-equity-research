@@ -382,19 +382,27 @@ def register_reading(
             write(fig.metric, fig.period, fig.value_crore,
                   f"p.{fig.page} '{fig.row_label}' (as printed: {fig.value_printed} {fig.unit}; "
                   f"{stmt.basis}; {stmt.heading_quote})")
-        # Composed in trusted code, never by the proposer (ADR-0037 practice): total borrowings is the
-        # sum of the two printed rows, its locator naming both so a reader can redo the addition.
+        # Composed in trusted code, never by the proposer (ADR-0037 practice): a total the filing
+        # prints only as parts is the sum of the printed rows, its locator naming both so a reader can
+        # redo the addition. Borrowings (non-current + current) and trade payables (the Schedule III
+        # micro/other split every modern filing uses) are the two such totals.
         if stmt.statement == "balance_sheet":
             parts = {(f.metric, f.period): f for f in stmt.figures}
             periods = {f.period for f in stmt.figures}
+            composed = (
+                ("balance_sheet:Borrowings",
+                 "balance_sheet:Non-Current Borrowings", "balance_sheet:Current Borrowings"),
+                ("balance_sheet:Trade Payables",
+                 "balance_sheet:Trade Payables (Micro)", "balance_sheet:Trade Payables (Other)"),
+            )
             for period in sorted(periods):
-                nc = parts.get(("balance_sheet:Non-Current Borrowings", period))
-                cur = parts.get(("balance_sheet:Current Borrowings", period))
-                if nc is not None and cur is not None:
-                    write("balance_sheet:Borrowings", period, nc.value_crore + cur.value_crore,
-                          f"p.{nc.page} '{nc.row_label}' + p.{cur.page} '{cur.row_label}' "
-                          f"(composed: {nc.value_printed} + {cur.value_printed} {nc.unit}; "
-                          f"{stmt.basis})")
+                for total_metric, a_metric, b_metric in composed:
+                    a, b = parts.get((a_metric, period)), parts.get((b_metric, period))
+                    if a is not None and b is not None and (total_metric, period) not in parts:
+                        write(total_metric, period, a.value_crore + b.value_crore,
+                              f"p.{a.page} '{a.row_label}' + p.{b.page} '{b.row_label}' "
+                              f"(composed: {a.value_printed} + {b.value_printed} {a.unit}; "
+                              f"{stmt.basis})")
     return tuple(fact_ids)
 
 
@@ -550,7 +558,11 @@ READING_VOCABULARY: Mapping[str, str] = {
     "balance_sheet:Trade Receivables": "trade receivables (current)",
     "balance_sheet:Cash Equivalents": "cash and cash equivalents",
     "balance_sheet:Other Bank Balances": "bank balances other than cash and cash equivalents",
-    "balance_sheet:Trade Payables": "trade payables",
+    "balance_sheet:Trade Payables": "trade payables, when printed as ONE total row",
+    "balance_sheet:Trade Payables (Micro)": "trade payables — dues of micro and small enterprises "
+                                            "(when the filing splits the Schedule III rows)",
+    "balance_sheet:Trade Payables (Other)": "trade payables — dues of creditors other than micro and "
+                                            "small enterprises",
     "cashflow:Cash from Operating Activity": "net cash from operating activities",
     "cashflow:Cash from Investing Activity": "net cash used in / from investing activities",
     "cashflow:Cash from Financing Activity": "net cash from / used in financing activities",

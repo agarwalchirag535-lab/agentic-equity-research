@@ -1,0 +1,494 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "standalone",
+   "period": "FY26",
+   "pages": [
+    86
+   ],
+   "heading_quote": "AUDITED BALANCE SHEET AS AT MARCH 31, 2026",
+   "unit_quote": "` In Lakhs",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "As At\n  March 31, 2026"
+    },
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2025"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY26",
+     "value_printed": "98,430.77",
+     "page": 86,
+     "row_label": "Property, Plant and Equipment"
+    },
+    {
+     "metric": "balance_sheet:CWIP",
+     "period": "FY26",
+     "value_printed": "13,048.12",
+     "page": 86,
+     "row_label": "Capital Work-In-Progress"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY26",
+     "value_printed": "12,213.07",
+     "page": 86,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY26",
+     "value_printed": "23,049.50",
+     "page": 86,
+     "row_label": "Trade Receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY26",
+     "value_printed": "9,415.34",
+     "page": 86,
+     "row_label": "Cash and Cash Equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY26",
+     "value_printed": "10,754.96",
+     "page": 86,
+     "row_label": "Other Bank Balances"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY26",
+     "value_printed": "1,89,540.82",
+     "page": 86,
+     "row_label": "TOTAL ASSETS"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY26",
+     "value_printed": "1,89,540.82",
+     "page": 86,
+     "row_label": "TOTAL EQUITY AND LIABILITIES"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY26",
+     "value_printed": "1,023.66",
+     "page": 86,
+     "row_label": "Equity Share Capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY26",
+     "value_printed": "1,52,313.18",
+     "page": 86,
+     "row_label": "Other Equity"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY26",
+     "value_printed": "-",
+     "page": 86,
+     "row_label": "Short Term Borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY26",
+     "value_printed": "1,550.29",
+     "page": 86,
+     "row_label": "Total outstanding dues of  Micro & Small Enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY26",
+     "value_printed": "13,570.47",
+     "page": 86,
+     "row_label": "Total outstanding dues of creditors other than Micro Enterprises and Small Enterprises"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY25",
+     "value_printed": "1,01,249.75",
+     "page": 86,
+     "row_label": "Property, Plant and Equipment"
+    },
+    {
+     "metric": "balance_sheet:CWIP",
+     "period": "FY25",
+     "value_printed": "5,191.34",
+     "page": 86,
+     "row_label": "Capital Work-In-Progress"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY25",
+     "value_printed": "16,478.08",
+     "page": 86,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY25",
+     "value_printed": "23,064.82",
+     "page": 86,
+     "row_label": "Trade Receivables"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY25",
+     "value_printed": "4,877.87",
+     "page": 86,
+     "row_label": "Cash and Cash Equivalents"
+    },
+    {
+     "metric": "balance_sheet:Other Bank Balances",
+     "period": "FY25",
+     "value_printed": "15,527.71",
+     "page": 86,
+     "row_label": "Other Bank Balances"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY25",
+     "value_printed": "1,78,885.78",
+     "page": 86,
+     "row_label": "TOTAL ASSETS"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY25",
+     "value_printed": "1,78,885.78",
+     "page": 86,
+     "row_label": "TOTAL EQUITY AND LIABILITIES"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY25",
+     "value_printed": "1,023.51",
+     "page": 86,
+     "row_label": "Equity Share Capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY25",
+     "value_printed": "1,39,224.93",
+     "page": 86,
+     "row_label": "Other Equity"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY25",
+     "value_printed": "360.45",
+     "page": 86,
+     "row_label": "Short Term Borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY25",
+     "value_printed": "1,426.79",
+     "page": 86,
+     "row_label": "Total outstanding dues of  Micro & Small Enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY25",
+     "value_printed": "16,296.57",
+     "page": 86,
+     "row_label": "Total outstanding dues of creditors other than Micro Enterprises and Small Enterprises"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "standalone",
+   "period": "FY26",
+   "pages": [
+    87
+   ],
+   "heading_quote": "AUDITED STATEMENT OF PROFIT AND LOSS FOR THE YEAR\n  ENDED MARCH 31, 2026",
+   "unit_quote": "` In Lakhs",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "For the year ended For the year ended\n  March 31, 2026"
+    },
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2025"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Sales",
+     "period": "FY26",
+     "value_printed": "1,53,585.79",
+     "page": 87,
+     "row_label": "Revenue from Operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY26",
+     "value_printed": "3,165.21",
+     "page": 87,
+     "row_label": "Other Income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY26",
+     "value_printed": "79,087.91",
+     "page": 87,
+     "row_label": "Cost of Materials Consumed"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY26",
+     "value_printed": "2,841.93",
+     "page": 87,
+     "row_label": "Changes in Inventories of Finished Goods and Work-In-Progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY26",
+     "value_printed": "11,015.96",
+     "page": 87,
+     "row_label": "Employee Benefits Expenses"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY26",
+     "value_printed": "116.90",
+     "page": 87,
+     "row_label": "Finance Costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY26",
+     "value_printed": "7,165.96",
+     "page": 87,
+     "row_label": "Depreciation and Amortisation Expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY26",
+     "value_printed": "32,175.62",
+     "page": 87,
+     "row_label": "Other Expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY26",
+     "value_printed": "1,32,404.28",
+     "page": 87,
+     "row_label": "Total Expenses (IV)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY26",
+     "value_printed": "24,346.72",
+     "page": 87,
+     "row_label": "Profit before tax (V+VI)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY26",
+     "value_printed": "6,346.81",
+     "page": 87,
+     "row_label": "Total Tax Expenses (VIII)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY26",
+     "value_printed": "17,999.91",
+     "page": 87,
+     "row_label": "Profit After Tax (VII-VIII)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY26",
+     "value_printed": "35.20",
+     "page": 87,
+     "row_label": "Basic (`)"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY25",
+     "value_printed": "1,57,182.07",
+     "page": 87,
+     "row_label": "Revenue from Operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY25",
+     "value_printed": "2,979.86",
+     "page": 87,
+     "row_label": "Other Income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY25",
+     "value_printed": "83,437.73",
+     "page": 87,
+     "row_label": "Cost of Materials Consumed"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY25",
+     "value_printed": "440.42",
+     "page": 87,
+     "row_label": "Changes in Inventories of Finished Goods and Work-In-Progress"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY25",
+     "value_printed": "10,355.21",
+     "page": 87,
+     "row_label": "Employee Benefits Expenses"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY25",
+     "value_printed": "100.88",
+     "page": 87,
+     "row_label": "Finance Costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY25",
+     "value_printed": "7,123.54",
+     "page": 87,
+     "row_label": "Depreciation and Amortisation Expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY25",
+     "value_printed": "33,839.97",
+     "page": 87,
+     "row_label": "Other Expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY25",
+     "value_printed": "1,35,297.75",
+     "page": 87,
+     "row_label": "Total Expenses (IV)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY25",
+     "value_printed": "24,864.18",
+     "page": 87,
+     "row_label": "Profit before tax (V+VI)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY25",
+     "value_printed": "6,252.74",
+     "page": 87,
+     "row_label": "Total Tax Expenses (VIII)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY25",
+     "value_printed": "18,611.44",
+     "page": 87,
+     "row_label": "Profit After Tax (VII-VIII)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY25",
+     "value_printed": "36.40",
+     "page": 87,
+     "row_label": "Basic (`)"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "standalone",
+   "period": "FY26",
+   "pages": [
+    88,
+    89
+   ],
+   "heading_quote": "AUDITED STATEMENT OF CASH FLOWS FOR THE YEAR ENDED MARCH 31, 2026",
+   "unit_quote": "` In Lakhs",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY26",
+     "label_quote": "March 31, 2026"
+    },
+    {
+     "period": "FY25",
+     "label_quote": "March 31, 2025"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY26",
+     "value_printed": "23,855.01",
+     "page": 88,
+     "row_label": "Net Cash Flows from Operating Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY25",
+     "value_printed": "26,310.59",
+     "page": 88,
+     "row_label": "Net Cash Flows from Operating Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY26",
+     "value_printed": "(13,709.52)",
+     "page": 88,
+     "row_label": "Net Cash Flow from Investing Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY25",
+     "value_printed": "(19,553.72)",
+     "page": 88,
+     "row_label": "Net Cash Flow from Investing Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY26",
+     "value_printed": "(5,608.02)",
+     "page": 89,
+     "row_label": "Net Cash Flows from Financing Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY25",
+     "value_printed": "(4,916.08)",
+     "page": 89,
+     "row_label": "Net Cash Flows from Financing Activities"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY26",
+     "value_printed": "4,537.47",
+     "page": 89,
+     "row_label": "Net Increase / (Decrease) in Cash and Cash Equivalents"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY25",
+     "value_printed": "1,840.80",
+     "page": 89,
+     "row_label": "Net Increase / (Decrease) in Cash and Cash Equivalents"
+    }
+   ]
+  }
+ ]
+}

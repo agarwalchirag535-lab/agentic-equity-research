@@ -585,8 +585,18 @@ Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jewel
    point-in-time (golden set n=3, three business shapes).
 3. **Note-level reads for PCJ-class inputs** (interest income on cash, Schedule III promoter rows) via
    the same propose/verify pattern — NOT more hand-coded note parsers.
-4. **Re-run ALKYLAMINE through the reading path** and diff against the walker's facts — the two
-   extraction lines cross-validate each other before the walker's numeric role is retired.
+4. ~~Re-run ALKYLAMINE through the reading path and diff against the walker's facts~~ **DONE
+   2026-08-31 — the two extraction lines cross-validate.** The FY26 AR read via ADR-0046 (60 figures,
+   3/3 statements verified, zero violations; sha256-verified re-download): **9/9 exact agreement** with
+   every walker fact this store holds for that document, including the composed trade-payables total,
+   and zero disagreements on the FY25 comparative against the FY25 filing's own facts (two documents,
+   two extractors, same figures). The reading added 49 facts this worktree's store lacked (this DB
+   carries the pre-ADR-0037 walker era — the whole-filing extraction lived on the sibling branch's
+   gitignored DB), lifting 15 derived metrics to grade A here. Payables' Schedule III micro/other split
+   is now a composed total like borrowings. The walker's numeric write path can be retired for any
+   company a reading covers (`walk_numeric_rows=False`); its notes/CARO/section scanning remains.
+   NOTE: the published 2026-07-31 ALKYLAMINE report in this worktree predates these facts — a re-run
+   would need fresh agent answers and would now rest on grade-A rows.
 
 The old list, for reference:
 
