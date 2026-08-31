@@ -17,6 +17,12 @@ forensic:
   # generated entirely by window length. Below the floor the metric is not derived and the check reports
   # UNAVAILABLE with the reason, which is what "insufficient history" should look like.
   cumulative_cfo_pat_min_periods: 3
+  # EPS endpoints are only comparable on the same share base (ADR-0050). When equity share capital moved
+  # more than this fraction across the CAGR window, `dilution_drag` (PAT CAGR - EPS CAGR) is refused with
+  # the corporate-action question instead of derived: Symphony's 1:1 bonus doubled the share count and the
+  # as-filed wedge (14pp) would have narrated as shareholders funding growth they fully kept. Below this
+  # change the wedge is under the "worth naming" band anyway, so nothing material is lost.
+  dilution_drag_max_capital_change: 0.02
   cumulative_cfo_pat_min: 0.70  # Σ CFO / Σ PAT over history below this = earnings not converting to cash
   beneish_m_threshold: -1.78    # M-score above this = elevated manipulation probability (NON-financials only)
   sloan_accrual_flag: 0.10      # |accruals / avg assets| above this = low earnings quality

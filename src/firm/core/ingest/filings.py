@@ -23,9 +23,9 @@ the FY17-FY26 receivables chain reconciles exactly at every join.
 from __future__ import annotations
 
 import json
-from itertools import pairwise
 from dataclasses import dataclass
 from datetime import date
+from itertools import pairwise
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -224,6 +224,69 @@ def crosscheck_overlaps(
                 against_filing=prior.file, against_value=reported,
             ))
     return overlaps
+
+
+#: Extractor versions carrying this suffix verified every figure against the page text (ADR-0046's
+#: V-checks: value found verbatim, statements internally reconciled). A contradiction between two such
+#: documents cannot plausibly be a misread on either side — it is the company printing different
+#: figures for the same period, i.e. a re-presentation.
+VERIFIED_EXTRACTOR_SUFFIX = "+verified"
+
+
+@dataclass(frozen=True)
+class StoreContradiction:
+    """One (metric, period) two documents contradict beyond any restatement band, plus what it means.
+
+    `kind` is provenance-aware where `Overlap.classify` is value-only: when BOTH sides were verified
+    against their pages, "extraction_error" would be a false confession — the honest name is
+    `re_presented` (the company changed the figure's basis, e.g. Symphony FY13 printing traded-goods
+    purchases inside materials consumed while FY14 splits them). Either way the figure is quarantined:
+    two documents that disagree 4x are not a series, and picking a side would be a guess.
+    """
+
+    overlap: Overlap
+    kind: str  # 're_presented' | 'extraction_error'
+    removed_fact_ids: tuple[str, ...]
+
+
+def quarantine_store_contradictions(
+    store: FactStore, ticker: str, as_of: date, policy: Mapping[str, float]
+) -> list[StoreContradiction]:
+    """Quarantine every (metric, period) that two documents visible as-of contradict beyond restatement.
+
+    The store-driven sibling of `quarantine_extraction_errors`: that one needs walker
+    `FilingIngestResult`s, so ADR-0046 reading-path facts had no quarantine at all — six Symphony
+    filings could disagree 4x on FY13 materials and both sides stayed grade A. Reads `facts_for`
+    directly so it works for facts however they arrived, and only pairs both published on/before
+    ``as_of`` (Law 3: a contradiction created by a future filing does not exist yet).
+
+    BOTH sides are removed, same rationale as the walker path: the disagreement does not say which
+    document to trust, and a metric-year the sources cannot agree on is UNAVAILABLE with the
+    disagreement returned for publication (owner directive 2).
+    """
+    out: list[StoreContradiction] = []
+    metrics = sorted({f.metric for f in store.query_metric_prefix(ticker, "", as_of)})
+    for metric in metrics:
+        periods = sorted({f.period for f in store.query_metric_prefix(ticker, metric, as_of)
+                          if f.metric == metric})
+        for period in periods:
+            visible = [f for f in store.facts_for(ticker, metric, period) if f.published_at <= as_of]
+            for earlier, later in pairwise(visible):
+                overlap = Overlap(metric=metric, period=period,
+                                  from_filing=later.doc_id, from_value=later.value,
+                                  against_filing=earlier.doc_id, against_value=earlier.value)
+                if overlap.classify(policy) != "extraction_error":
+                    continue
+                both_verified = all(
+                    f.extractor_version.endswith(VERIFIED_EXTRACTOR_SUFFIX) for f in (earlier, later))
+                doomed = tuple(f.fact_id for f in (earlier, later))
+                store.remove_facts(doomed)
+                out.append(StoreContradiction(
+                    overlap=overlap,
+                    kind="re_presented" if both_verified else "extraction_error",
+                    removed_fact_ids=doomed,
+                ))
+    return out
 
 
 @dataclass(frozen=True)

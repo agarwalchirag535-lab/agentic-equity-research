@@ -1,0 +1,451 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "consolidated",
+   "period": "FY13",
+   "pages": [
+    60
+   ],
+   "heading_quote": "Consolidated Balance Sheet  as at 30th June, 2013",
+   "unit_quote": "(` in Lacs)",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY13",
+     "label_quote": "30/06/2013"
+    },
+    {
+     "period": "FY12",
+     "label_quote": "30/06/2012"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY13",
+     "value_printed": "699.57",
+     "page": 60,
+     "row_label": "Share Capital"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY12",
+     "value_printed": "699.57",
+     "page": 60,
+     "row_label": "Share Capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY13",
+     "value_printed": "21,521.09",
+     "page": 60,
+     "row_label": "Reserves and Surplus"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY12",
+     "value_printed": "18,215.30",
+     "page": 60,
+     "row_label": "Reserves and Surplus"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY13",
+     "value_printed": "-",
+     "page": 60,
+     "row_label": "Short-Term Borrowings"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY12",
+     "value_printed": "742.76",
+     "page": 60,
+     "row_label": "Short-Term Borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables",
+     "period": "FY13",
+     "value_printed": "1,774.72",
+     "page": 60,
+     "row_label": "Trade Payables"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables",
+     "period": "FY12",
+     "value_printed": "1,346.08",
+     "page": 60,
+     "row_label": "Trade Payables"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY13",
+     "value_printed": "6,942.01",
+     "page": 60,
+     "row_label": "Tangible Assets"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY12",
+     "value_printed": "6,997.22",
+     "page": 60,
+     "row_label": "Tangible Assets"
+    },
+    {
+     "metric": "balance_sheet:CWIP",
+     "period": "FY13",
+     "value_printed": "359.75",
+     "page": 60,
+     "row_label": "Capital Work-In-Progress"
+    },
+    {
+     "metric": "balance_sheet:CWIP",
+     "period": "FY12",
+     "value_printed": "8.54",
+     "page": 60,
+     "row_label": "Capital Work-In-Progress"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY13",
+     "value_printed": "4,302.16",
+     "page": 60,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY12",
+     "value_printed": "4,292.10",
+     "page": 60,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY13",
+     "value_printed": "3,766.56",
+     "page": 60,
+     "row_label": "Trade Receivables"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY12",
+     "value_printed": "4,219.17",
+     "page": 60,
+     "row_label": "Trade Receivables"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY13",
+     "value_printed": "31,629.85",
+     "page": 60,
+     "row_label": "TOTAL"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY12",
+     "value_printed": "27,772.00",
+     "page": 60,
+     "row_label": "TOTAL"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY13",
+     "value_printed": "31,629.85",
+     "page": 60,
+     "row_label": "TOTAL"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY12",
+     "value_printed": "27,772.00",
+     "page": 60,
+     "row_label": "TOTAL"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "consolidated",
+   "period": "FY13",
+   "pages": [
+    60
+   ],
+   "heading_quote": "Consolidated Statement of Profit and Loss(` in Lacs)  for the year ended 30th June, 2013",
+   "unit_quote": "(` in Lacs)",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY13",
+     "label_quote": "Year ended Year ended\n  30/06/2013"
+    },
+    {
+     "period": "FY12",
+     "label_quote": "30/06/2012"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Sales",
+     "period": "FY13",
+     "value_printed": "37,775.98",
+     "page": 60,
+     "row_label": "Revenue from Operations"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY12",
+     "value_printed": "31,346.56",
+     "page": 60,
+     "row_label": "Revenue from Operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY13",
+     "value_printed": "1,696.86",
+     "page": 60,
+     "row_label": "Other Income"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY12",
+     "value_printed": "627.49",
+     "page": 60,
+     "row_label": "Other Income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY13",
+     "value_printed": "16,588.46",
+     "page": 60,
+     "row_label": "Cost of Materials Consumed"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY12",
+     "value_printed": "10,663.21",
+     "page": 60,
+     "row_label": "Cost of Materials Consumed"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY13",
+     "value_printed": "136.57",
+     "page": 60,
+     "row_label": "Changes in Inventories of Finished Goods, Work-in-Progress and Stock-in-Trade"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY12",
+     "value_printed": "2,772.53",
+     "page": 60,
+     "row_label": "Changes in Inventories of Finished Goods, Work-in-Progress and Stock-in-Trade"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY13",
+     "value_printed": "3,264.47",
+     "page": 60,
+     "row_label": "Employee Benefits Expense"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY12",
+     "value_printed": "2,830.38",
+     "page": 60,
+     "row_label": "Employee Benefits Expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY13",
+     "value_printed": "62.33",
+     "page": 60,
+     "row_label": "Finance Costs"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY12",
+     "value_printed": "74.98",
+     "page": 60,
+     "row_label": "Finance Costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY13",
+     "value_printed": "394.38",
+     "page": 60,
+     "row_label": "Depreciation and Amortization Expense"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY12",
+     "value_printed": "486.24",
+     "page": 60,
+     "row_label": "Depreciation and Amortization Expense"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY13",
+     "value_printed": "9,895.33",
+     "page": 60,
+     "row_label": "Other Expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY12",
+     "value_printed": "7,821.12",
+     "page": 60,
+     "row_label": "Other Expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY13",
+     "value_printed": "30,341.54",
+     "page": 60,
+     "row_label": "Total Expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY12",
+     "value_printed": "24,648.46",
+     "page": 60,
+     "row_label": "Total Expenses"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY13",
+     "value_printed": "9,131.30",
+     "page": 60,
+     "row_label": "Profit before Tax (III - IV)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY12",
+     "value_printed": "7,325.59",
+     "page": 60,
+     "row_label": "Profit before Tax (III - IV)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY13",
+     "value_printed": "6,010.84",
+     "page": 60,
+     "row_label": "Profit for the period (VII + X)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY12",
+     "value_printed": "5,309.97",
+     "page": 60,
+     "row_label": "Profit for the period (VII + X)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY13",
+     "value_printed": "17.18",
+     "page": 60,
+     "row_label": "Basic"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY12",
+     "value_printed": "15.18",
+     "page": 60,
+     "row_label": "Basic"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "consolidated",
+   "period": "FY13",
+   "pages": [
+    61
+   ],
+   "heading_quote": "Consolidated Cash Flow Statement  for the year ended 30th June, 2013",
+   "unit_quote": "(` in Lacs)",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY13",
+     "label_quote": "Year ended Year ended\n  30/06/2013"
+    },
+    {
+     "period": "FY12",
+     "label_quote": "30/06/2012"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY13",
+     "value_printed": "6,707.08",
+     "page": 61,
+     "row_label": "Net Cash Flow from Operating Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY12",
+     "value_printed": "8,431.30",
+     "page": 61,
+     "row_label": "Net Cash Flow from Operating Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY13",
+     "value_printed": "(3,359.41)",
+     "page": 61,
+     "row_label": "Net Cash used in Investing Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY12",
+     "value_printed": "(8,795.61)",
+     "page": 61,
+     "row_label": "Net Cash used in Investing Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY13",
+     "value_printed": "(2,989.50)",
+     "page": 61,
+     "row_label": "Net Cash used in Financing Activities"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY12",
+     "value_printed": "490.33",
+     "page": 61,
+     "row_label": "Net Cash used in Financing Activities"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY13",
+     "value_printed": "358.17",
+     "page": 61,
+     "row_label": "Net Increase/(Decrease) in Cash & Cash Equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY12",
+     "value_printed": "126.02",
+     "page": 61,
+     "row_label": "Net Increase/(Decrease) in Cash & Cash Equivalents (A+B+C)"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY13",
+     "value_printed": "770.20",
+     "page": 61,
+     "row_label": "Cash & Cash Equivalents at the end of the year"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY12",
+     "value_printed": "412.03",
+     "page": 61,
+     "row_label": "Cash & Cash Equivalents at the end of the year"
+    }
+   ]
+  }
+ ]
+}

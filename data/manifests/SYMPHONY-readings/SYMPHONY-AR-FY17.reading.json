@@ -1,0 +1,496 @@
+{
+ "statements": [
+  {
+   "statement": "balance_sheet",
+   "basis": "consolidated",
+   "period": "FY17",
+   "pages": [
+    151
+   ],
+   "heading_quote": "Consolidated Balance Sheet as at 31st March, 2017",
+   "unit_quote": "(H in Lacs)",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY17",
+     "label_quote": "As at\n  31/03/2017"
+    },
+    {
+     "period": "FY16",
+     "label_quote": "31/03/2016"
+    }
+   ],
+   "figures": [
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY17",
+     "value_printed": "1,399.14",
+     "page": 151,
+     "row_label": "Share Capital"
+    },
+    {
+     "metric": "balance_sheet:Equity Capital",
+     "period": "FY16",
+     "value_printed": "699.57",
+     "page": 151,
+     "row_label": "Share Capital"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY17",
+     "value_printed": "44,499.68",
+     "page": 151,
+     "row_label": "Reserves and Surplus"
+    },
+    {
+     "metric": "balance_sheet:Reserves",
+     "period": "FY16",
+     "value_printed": "31,162.74",
+     "page": 151,
+     "row_label": "Reserves and Surplus"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY17",
+     "value_printed": "1,928.99",
+     "page": 151,
+     "row_label": "Short-Term Borrowings"
+    },
+    {
+     "metric": "balance_sheet:Current Borrowings",
+     "period": "FY16",
+     "value_printed": "-",
+     "page": 151,
+     "row_label": "Short-Term Borrowings"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY17",
+     "value_printed": "-",
+     "page": 151,
+     "row_label": "To Micro and Small Enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Micro)",
+     "period": "FY16",
+     "value_printed": "-",
+     "page": 151,
+     "row_label": "To Micro and Small Enterprises"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY17",
+     "value_printed": "6,094.93",
+     "page": 151,
+     "row_label": "To Others"
+    },
+    {
+     "metric": "balance_sheet:Trade Payables (Other)",
+     "period": "FY16",
+     "value_printed": "4,957.71",
+     "page": 151,
+     "row_label": "To Others"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY17",
+     "value_printed": "7,141.38",
+     "page": 151,
+     "row_label": "Tangible Assets"
+    },
+    {
+     "metric": "balance_sheet:Fixed Assets",
+     "period": "FY16",
+     "value_printed": "7,015.68",
+     "page": 151,
+     "row_label": "Tangible Assets"
+    },
+    {
+     "metric": "balance_sheet:CWIP",
+     "period": "FY17",
+     "value_printed": "-",
+     "page": 151,
+     "row_label": "Capital Work-In-Progress"
+    },
+    {
+     "metric": "balance_sheet:CWIP",
+     "period": "FY16",
+     "value_printed": "301.15",
+     "page": 151,
+     "row_label": "Capital Work-In-Progress"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY17",
+     "value_printed": "7,733.43",
+     "page": 151,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Inventories",
+     "period": "FY16",
+     "value_printed": "5,507.24",
+     "page": 151,
+     "row_label": "Inventories"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY17",
+     "value_printed": "5,230.89",
+     "page": 151,
+     "row_label": "Trade Receivables"
+    },
+    {
+     "metric": "balance_sheet:Trade Receivables",
+     "period": "FY16",
+     "value_printed": "4,686.91",
+     "page": 151,
+     "row_label": "Trade Receivables"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY17",
+     "value_printed": "59,878.72",
+     "page": 151,
+     "row_label": "T O TA  L"
+    },
+    {
+     "metric": "balance_sheet:Total Assets",
+     "period": "FY16",
+     "value_printed": "42,239.14",
+     "page": 151,
+     "row_label": "T O TA  L"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY17",
+     "value_printed": "59,878.72",
+     "page": 151,
+     "row_label": "T O TA  L"
+    },
+    {
+     "metric": "verify:Total Equity and Liabilities",
+     "period": "FY16",
+     "value_printed": "42,239.14",
+     "page": 151,
+     "row_label": "T O TA  L"
+    }
+   ]
+  },
+  {
+   "statement": "pnl",
+   "basis": "consolidated",
+   "period": "FY17",
+   "pages": [
+    152
+   ],
+   "heading_quote": "Consolidated Statement of Profit and Loss  for the year ended 31st March, 2017",
+   "unit_quote": "(H in Lacs)",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY17",
+     "label_quote": "31/03/2017"
+    },
+    {
+     "period": "FY16",
+     "label_quote": "31/03/2016",
+     "months": 9
+    }
+   ],
+   "figures": [
+    {
+     "metric": "pnl:Sales",
+     "period": "FY17",
+     "value_printed": "76,802.90",
+     "page": 152,
+     "row_label": "Revenue from Operations"
+    },
+    {
+     "metric": "pnl:Sales",
+     "period": "FY16",
+     "value_printed": "44,554.65",
+     "page": 152,
+     "row_label": "Revenue from Operations"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY17",
+     "value_printed": "4,321.05",
+     "page": 152,
+     "row_label": "Other Income"
+    },
+    {
+     "metric": "pnl:Other Income",
+     "period": "FY16",
+     "value_printed": "2,088.62",
+     "page": 152,
+     "row_label": "Other Income"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY17",
+     "value_printed": "9,126.68",
+     "page": 152,
+     "row_label": "Cost of Material Consumed"
+    },
+    {
+     "metric": "pnl:Cost of Materials Consumed",
+     "period": "FY16",
+     "value_printed": "4,090.76",
+     "page": 152,
+     "row_label": "Cost of Material Consumed"
+    },
+    {
+     "metric": "pnl:Purchases of Stock-in-Trade",
+     "period": "FY17",
+     "value_printed": "29,132.27",
+     "page": 152,
+     "row_label": "Purchase of Stock-in-Trade"
+    },
+    {
+     "metric": "pnl:Purchases of Stock-in-Trade",
+     "period": "FY16",
+     "value_printed": "16,358.55",
+     "page": 152,
+     "row_label": "Purchase of Stock-in-Trade"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY17",
+     "value_printed": "(1,815.81)",
+     "page": 152,
+     "row_label": "Changes in Inventories of Finished Goods, Work-in-Progress and Stock-in-Trade"
+    },
+    {
+     "metric": "pnl:Changes in Inventories",
+     "period": "FY16",
+     "value_printed": "(320.14)",
+     "page": 152,
+     "row_label": "Changes in Inventories of Finished Goods, Work-in-Progress and Stock-in-Trade"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY17",
+     "value_printed": "6,870.73",
+     "page": 152,
+     "row_label": "Employee Benefit Expense"
+    },
+    {
+     "metric": "pnl:Employee Benefits",
+     "period": "FY16",
+     "value_printed": "4,251.73",
+     "page": 152,
+     "row_label": "Employee Benefit Expense"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY17",
+     "value_printed": "3.28",
+     "page": 152,
+     "row_label": "Finance Costs"
+    },
+    {
+     "metric": "pnl:Interest",
+     "period": "FY16",
+     "value_printed": "19.80",
+     "page": 152,
+     "row_label": "Finance Costs"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY17",
+     "value_printed": "705.18",
+     "page": 152,
+     "row_label": "Depreciation and Amortization Expense"
+    },
+    {
+     "metric": "pnl:Depreciation",
+     "period": "FY16",
+     "value_printed": "429.90",
+     "page": 152,
+     "row_label": "Depreciation and Amortization Expense"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY17",
+     "value_printed": "9,285.05",
+     "page": 152,
+     "row_label": "Other Expenses"
+    },
+    {
+     "metric": "pnl:Other Expenses",
+     "period": "FY16",
+     "value_printed": "5,627.94",
+     "page": 152,
+     "row_label": "Other Expenses"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY17",
+     "value_printed": "57,752.49",
+     "page": 152,
+     "row_label": "Total Expenses (IV )"
+    },
+    {
+     "metric": "pnl:Total Expenses",
+     "period": "FY16",
+     "value_printed": "31,404.74",
+     "page": 152,
+     "row_label": "Total Expenses (IV )"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY17",
+     "value_printed": "23,371.46",
+     "page": 152,
+     "row_label": "Profit before Tax ( V + VI)"
+    },
+    {
+     "metric": "pnl:Profit before tax",
+     "period": "FY16",
+     "value_printed": "16,485.19",
+     "page": 152,
+     "row_label": "Profit before Tax ( V + VI)"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY17",
+     "value_printed": "6,811.82",
+     "page": 152,
+     "row_label": "Net Tax Expense"
+    },
+    {
+     "metric": "pnl:Total Tax",
+     "period": "FY16",
+     "value_printed": "4,648.68",
+     "page": 152,
+     "row_label": "Net Tax Expense"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY17",
+     "value_printed": "16,559.64",
+     "page": 152,
+     "row_label": "Profit for the year ( VII - VIII)"
+    },
+    {
+     "metric": "pnl:Net Profit",
+     "period": "FY16",
+     "value_printed": "11,836.51",
+     "page": 152,
+     "row_label": "Profit for the year ( VII - VIII)"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY17",
+     "value_printed": "23.67",
+     "page": 152,
+     "row_label": "Basic"
+    },
+    {
+     "metric": "pnl:EPS in Rs",
+     "period": "FY16",
+     "value_printed": "16.92",
+     "page": 152,
+     "row_label": "Basic"
+    }
+   ]
+  },
+  {
+   "statement": "cashflow",
+   "basis": "consolidated",
+   "period": "FY17",
+   "pages": [
+    153,
+    154
+   ],
+   "heading_quote": "Consolidated Cash Flow Statement  for the year ended 31st March, 2017",
+   "unit_quote": "(H in Lacs)",
+   "unit": "INR_lakh",
+   "columns": [
+    {
+     "period": "FY17",
+     "label_quote": "31/03/2017"
+    },
+    {
+     "period": "FY16",
+     "label_quote": "31/03/2016",
+     "months": 9
+    }
+   ],
+   "figures": [
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY17",
+     "value_printed": "9,489.05",
+     "page": 153,
+     "row_label": "Net Cash Flow from Operating Activities (A)"
+    },
+    {
+     "metric": "cashflow:Cash from Operating Activity",
+     "period": "FY16",
+     "value_printed": "8,852.88",
+     "page": 153,
+     "row_label": "Net Cash Flow from Operating Activities (A)"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY17",
+     "value_printed": "(6,516.69)",
+     "page": 153,
+     "row_label": "Net Cash Flow from / (Cash Used in) Investing Activities (B)"
+    },
+    {
+     "metric": "cashflow:Cash from Investing Activity",
+     "period": "FY16",
+     "value_printed": "6,983.04",
+     "page": 153,
+     "row_label": "Net Cash Flow from / (Cash Used in) Investing Activities (B)"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY17",
+     "value_printed": "(470.70)",
+     "page": 154,
+     "row_label": "Net Cash Used in Financing Activities (C)"
+    },
+    {
+     "metric": "cashflow:Cash from Financing Activity",
+     "period": "FY16",
+     "value_printed": "(14,545.63)",
+     "page": 154,
+     "row_label": "Net Cash Used in Financing Activities (C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY17",
+     "value_printed": "2,501.66",
+     "page": 154,
+     "row_label": "Net Increase in Cash & Cash Equivalents (A+B+C)"
+    },
+    {
+     "metric": "verify:Net Change in Cash",
+     "period": "FY16",
+     "value_printed": "1,290.29",
+     "page": 154,
+     "row_label": "Net Increase in Cash & Cash Equivalents (A+B+C)"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY17",
+     "value_printed": "4,322.81",
+     "page": 154,
+     "row_label": "Cash & Cash Equivalents at the end of the year"
+    },
+    {
+     "metric": "balance_sheet:Cash Equivalents",
+     "period": "FY16",
+     "value_printed": "1,821.15",
+     "page": 154,
+     "row_label": "Cash & Cash Equivalents at the end of the year"
+    }
+   ]
+  }
+ ]
+}

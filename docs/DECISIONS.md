@@ -1573,3 +1573,60 @@ at its grade. Only a contradiction between stated closes changes an outcome.
 does); the rolling three-year incremental-ROIC windows still count labels; and quarterly labels
 (`Q1FY20`) carry no close. None of these currently crosses a discontinuity in the ingested corpus.
 The live June-year-end target is Symphony's own FY13–FY15 filings, not yet ingested.
+
+### ADR-0050 — The Symphony transition ingest: the period machinery meets the real documents, and two new guards
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0048/0049 · **Source** ingesting Symphony's
+real FY13–FY17 consolidated filings from BSE (sha256-pinned), through propose→verify→register, as-of
+2018-12-31 — the first run whose corpus *contains* the June→March year-end change rather than a
+filing on either side of it.
+
+**What the run validated (all live, none from fixtures).** Five readings, 280 figures, verified
+first-pass against the actual page text — including the FY16 filing headed "for the nine months ended
+31st March, 2016" and the FY17 filing whose split header reads "Year ended / Nine Months ended".
+Registration refused the nine-month flows **from both filings that carry them** (17 each); every one
+of 156 stored facts carries the close its filing stated; every CAGR compounds over the true 5.7496
+years from 30-Jun-2012 to 31-Mar-2018 and prints that exponent in its formula. `receivables_divergent`
+— the check ADR-0048 showed would have fired on the stub-as-year misread — passes at +13.2% against a
+25% limit. `cumulative_cfo_pat`, refused at two readable years in ADR-0048, now answers over six:
+**PASS at 0.79.** The screen lands on the same honest residue as before (REVIEW: `cfo_pat_low` 0.55,
+`high_accruals` 0.126 — the treasury-income calibration question that belongs to the golden set).
+A declared `months` on a JSON column — added incidentally in ADR-0049 — turned out to be
+load-bearing: the stub filing's FY15 comparative and the FY17 filing's FY16 comparative are refused
+without it, because in both the filing's own heading states the *other* column's length.
+
+**Finding 1 — a bonus issue read as dilution (fixed).** Symphony's FY17 1:1 bonus doubled the share
+count; PAT compounded 25.1% across FY12–FY18 and as-filed EPS 10.9%, so `dilution_drag` = 14.2pp and
+`line_items.yaml:capital_dilution` (severity HIGH) would have published *"a material wedge —
+shareholders funded part of this growth and did not keep it"* about shareholders who kept every new
+share pro-rata and funded nothing. A bonus and a placement are indistinguishable from the EPS series
+alone. Guard: when `balance_sheet:Equity Capital` moved more than
+`forensic.dilution_drag_max_capital_change` (2%, provisional) across the window, the wedge is
+**refused** with the corporate-action question, never derived — for a genuine issuer too, where the
+refusal surfaces the same question instead of an unproven number. The CAGRs themselves still derive;
+they are facts as filed.
+
+**Finding 2 — the reading path had no cross-document control, and the label lied (fixed).**
+`quarantine_extraction_errors` requires walker ingest results, so ADR-0046 reading facts were never
+reconciled: six Symphony (metric, period) pairs disagree across consecutive filings beyond any
+restatement band — FY13 materials ₹165.88cr vs ₹41.15cr (the FY13 filing prints traded-goods
+purchases inside materials consumed; FY14 splits them), FY15 other expenses ₹163.04cr vs ₹107.90cr
+(the FY17 ad-spend reclass reaching back) — and both sides sat at grade A.
+`quarantine_store_contradictions` is the store-driven sibling: works for facts however they arrived,
+point-in-time filtered, removes both sides. And where **both** sides carry a `+verified` extractor —
+every figure found verbatim on its page, statements internally reconciled — the honest kind is
+**`re_presented`**, not `extraction_error`: the company printed different figures for the same
+period, and confessing to a misread we demonstrably did not make would be its own false claim.
+
+**The restatement radar's first real catch:** 49 quiet revisions logged across the six filings, led
+by FY15 revenue 578.89 → 525.87 (₹53cr of discounts moved from other expenses into a revenue
+deduction — a 9.2% presentational cut the resolver now correctly serves point-in-time).
+
+**Residue, named:** (a) revenue basis is mixed across the FY12–FY18 window — FY12–FY14 gross of the
+discounts the company later netted, never restated that far back, so the 17.6% CAGR slightly
+overstates like-for-like growth and only note-level reading could reconcile it; (b) ROIC is
+unavailable through the reading path (no Operating Profit / Tax % rows in the vocabulary, and a
+debt-free company prints no borrowings row to transcribe — absence-means-zero needs a claim type the
+verifier cannot yet check); (c) `detect_models` returns nothing for Symphony, so only the universal
+playbook ran; (d) bonus-vs-issuance stays open until a corporate-action source exists. All are
+capability gaps and none moved a verdict.

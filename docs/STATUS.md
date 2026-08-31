@@ -29,7 +29,7 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ❌ not started (see §3 — this is the biggest risk) |
 
-**Tests:** 737 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 744 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -621,8 +621,19 @@ March-closer behaviour is byte-identical (integer exponents kept; all 8 committe
 verified live against the sha256-pinned Symphony FY18 PDF — 0 violations, 54/54 facts dated). A side
 with no stated closes (screener-only) still compares at its grade — the capability-vs-disclosure line.
 Residue in the ADR: the legacy walker doesn't date facts, rolling-3y windows still count labels,
-quarters carry no close; Symphony's own FY13-FY15 filings are the live June-end target, not yet
-ingested.
+quarters carry no close.
+
+**And then the real documents (ADR-0050, same day):** Symphony FY13–FY17 ingested from BSE —
+sha256-pinned, propose→verify→register, 280 figures verified first-pass, the nine-month transition
+filing and both filings carrying its column refusing 17 stub flows each, 156/156 facts dated, every
+CAGR compounding over the true 5.7496 years. `cumulative_cfo_pat` answers over six years now: PASS
+0.79. Screen unchanged at REVIEW (the treasury-income calibration residue). Two new guards from the
+run: a 1:1 bonus is no longer publishable as dilution (`dilution_drag` refuses when equity capital
+moved >2% across the window, asking the bonus-vs-issuance question instead), and
+`quarantine_store_contradictions` gives reading-path facts the cross-document control the walker had
+— labelling a verified-both-sides contradiction `re_presented` rather than confessing to an
+extraction error the V-checks prove we did not make. First real restatement-radar catch: 49 quiet
+revisions, led by FY15 revenue 578.89 → 525.87 (₹53cr of discounts renetted).
 
 ## 7. Suggested next step
 

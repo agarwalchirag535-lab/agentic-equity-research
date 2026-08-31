@@ -529,7 +529,27 @@ def derive_metrics(
         b.add("eps_cagr", _cagr(got[0].value, got[1].value, span),
               f"({EPS} {fN} / {EPS} {f0})^(1/{span}) - 1", got)
     pat_c, eps_c = b.values.get("pat_cagr"), b.values.get("eps_cagr")
-    if pat_c is not None and eps_c is not None:
+    # EPS endpoints are only comparable on the same share base (ADR-0050). Symphony's 1:1 bonus doubled
+    # the share count in FY17: PAT compounded 25% and as-filed EPS 11%, and the 14pp "wedge" would have
+    # narrated as "shareholders funded this growth and did not keep it" — on a bonus, where they kept
+    # every share pro-rata and funded nothing. A bonus and a placement are indistinguishable from the
+    # EPS series alone (the corporate-action disclosure answers which), so when the equity share capital
+    # moved materially across the window the wedge is REFUSED with the question, never published as a
+    # dilution finding that might be a false accusation.
+    cap0, capN = facts.fact(EQUITY_CAPITAL, f0), facts.fact(EQUITY_CAPITAL, fN)
+    capital_moved = None
+    if cap0 is not None and capN is not None and cap0.value:
+        change = abs(capN.value / cap0.value - 1.0)
+        limit = float(thresholds.get("dilution_drag_max_capital_change", 0.0))
+        if change > limit:
+            capital_moved = (
+                f"equity share capital moved {cap0.value:g} -> {capN.value:g} "
+                f"({capN.value / cap0.value:.2f}x) across {f0}-{fN}, so the share base behind EPS is "
+                "not comparable; whether that is a bonus/split (cosmetic for holders) or an issuance "
+                "(real dilution) is a corporate-action disclosure the EPS series cannot answer")
+    if capital_moved is not None:
+        b.missing.setdefault("dilution_drag", (capital_moved,))
+    elif pat_c is not None and eps_c is not None:
         b.add("dilution_drag", pat_c.value - eps_c.value,
               f"PAT CAGR - EPS CAGR, {f0}-{fN} (positive = per-share growth lagged aggregate growth)",
               tuple(pat_c.inputs) + tuple(eps_c.inputs))

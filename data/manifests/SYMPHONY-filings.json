@@ -5,6 +5,61 @@
   "retrieved_at": "2026-08-31",
   "filings": [
     {
+      "file": "SYMPHONY-AR-FY13.pdf",
+      "period": "FY13",
+      "prior_period": "FY12",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/517385/5173850613.pdf",
+      "published_at": "2013-11-25",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "4e6e2ce7193c2e3945e779c08a760d93cacd5cd4a1d41bcb9bfd67f0be4db4a6",
+      "bytes": 2824296
+    },
+    {
+      "file": "SYMPHONY-AR-FY14.pdf",
+      "period": "FY14",
+      "prior_period": "FY13",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/517385/5173850614.pdf",
+      "published_at": "2014-08-26",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "975c30909d989272026609e25ccabea5cf6a68084360d7632198fad586286a0c",
+      "bytes": 4954298
+    },
+    {
+      "file": "SYMPHONY-AR-FY15.pdf",
+      "period": "FY15",
+      "prior_period": "FY14",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/517385/5173850615.pdf",
+      "published_at": "2015-09-30",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "8117805703a1a6f113cafdd924416c896fed3c25306c2285bb768f09af61c50c",
+      "bytes": 4035141
+    },
+    {
+      "file": "SYMPHONY-AR-FY16.pdf",
+      "period": "FY16",
+      "prior_period": "FY15",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/517385/5173850316.pdf",
+      "published_at": "2016-09-01",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "eb068ce64d5f6aff0863aa296080f669717b292a6180be5c438b7851ffef11a4",
+      "bytes": 1909301
+    },
+    {
+      "file": "SYMPHONY-AR-FY17.pdf",
+      "period": "FY17",
+      "prior_period": "FY16",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/517385/5173850317.pdf",
+      "published_at": "2017-09-12",
+      "published_at_basis": "exchange-dissemination",
+      "grade": "A",
+      "sha256": "6201293cce38266331604a50dae48ab14597dd207030fd665124a0d483bcd1ce",
+      "bytes": 3800504
+    },
+    {
       "file": "SYMPHONY-AR-FY18.pdf",
       "period": "FY18",
       "prior_period": "FY17",
@@ -15,5 +70,6 @@
       "sha256": "72f6ebcd1383fa2f9398f7eb36f23a359c974791a46ea48c62a70bc30da62196",
       "bytes": 5177106
     }
-  ]
+  ],
+  "note": "FY16 is the NINE-MONTH transition period ended 31-Mar-2016 (year-end moved June->March); its flow figures are stubs and are refused at registration (ADR-0048/0049). FY13-FY15 close 30 June."
 }
