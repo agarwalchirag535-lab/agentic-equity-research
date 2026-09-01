@@ -1,6 +1,7 @@
 # GOLDEN_SET.md — design before construction
 
-> **Status: PORTED TO THE TRUNK (ADR-0057; authored on the third line as its "ADR-0061/0062").** Seven cases — six hard negatives and one positive —
+> **Status: FINAL — eight cases, all signed (ADR-0087; ported by ADR-0057, grown by ADR-0061).**
+> Six clean negatives across five hardness classes, two adverse positives —
 > behind `firm eval` / `make eval`. Current (2026-08-31, ADR-0060): **7 of 7 in band, 0 extraction
 > failures, 0 regressions, positives 1/1** — the set's first fully green run, with Five-Star's
 > readings authored (PORT-1b closed) and CAL-1 closed without moving a threshold. Open: CAL-2 (§6)

@@ -3437,3 +3437,51 @@ the +4 arithmetic slip propagated into ADR-0085 and ADR-0086 as "1049" where the
 worktree, and by diffing the lint commit for removed test functions (zero). The numbers above are now
 the measured ones. The lesson is the repo's own, applied to its author: a stated number is measured or
 it is not stated — ADR counts were being incremented by arithmetic instead of read from the run.
+
+### ADR-0087 — The golden set is signed: independent verification against the primary documents
+
+**Date** 2026-09-01 · **Status** accepted · **Provenance is the point of this ADR** · **Files**
+`evals/golden_set/*.yaml` (all 8 signed, 5 annotated), `evals/GOLDEN_SET_AUDIT.md` (new),
+`evals/GOLDEN_SET_REVIEW.md` (regenerated), `docs/GOLDEN_SET.md`
+
+**Who signed, and on what authority.** The owner explicitly directed — after this session raised the
+self-validation concern twice and was overruled with conditions — that Claude perform the complete
+verification and sign off *if and only if the evidence supports it*, blocking on anything weak. The
+conditions are what make this sound: verification ran against **primary documents only** — the local
+annual-report PDFs re-extracted independently, the two adverse-event filings fetched fresh from BSE,
+clean labels checked by date-disciplined search — and the firm's own fact store, verdicts and eval
+results were used as evidence for **nothing** (the circularity GOLDEN_SET.md §0 names first). Each
+case file carries this provenance above its flag.
+
+**What was verified** (full evidence in `evals/GOLDEN_SET_AUDIT.md`): all 30 figures verbatim on
+their cited pages, in the claimed column, in the claimed unit, on statements confirmed standalone
+where claimed; every arithmetic identity recomputed (payables split 1,550.29 + 13,570.47 = 15,120.76;
+Stage-3 books 836.46 + 85.79 = 922.25 — plus a second identity the case never claimed, the books'
+totals summing to gross loans); cross-filing locks confirmed in the earlier filings (a three-filing
+revenue interlock at Alkyl Amines; both FY25 CreditAccess values in the FY25 AR; both PCJ FY20 values
+in the FY20 AR); both adverse events read from the BSE PDFs with company identity, event, wording and
+dates confirmed after as-of; and the six clean labels searched with the event's own date required to
+be ≤ as-of.
+
+**Found and corrected, rather than glossed:** the PCJ resignation quote was inexact (the letter says
+"outstanding balance**/ delays** in payment … of the Company") — corrected to verbatim; the GAYATRI
+FY17 receivables base is restated between filings (FY17 AR standalone 85,036.43 vs FY18 AR comparative
+75,464.88) — quantified in the case file with the growth-base caveat (+50% vs +33%); GOLDEN_SET.md's
+header still said "Seven cases"; and three routine supervisory penalties (two RBI KYC, one NSE LODR)
+predating the NBFC cases' as-of were judged **non-qualifying** for the adverse taxonomy and recorded
+in the case files so the clean label's boundary is explicit instead of implicit.
+
+**One false alarm, resolved by evidence:** a consistency check flagged the FY19/FY21 Alkyl cases as
+look-ahead because their title-year ARs postdate as-of. Deliberate: those cases test the pipeline on
+earlier filings, and both facts were verified as current-year figures in the FY18/FY20 ARs, published
+before as-of.
+
+**Post-sign-off eval:** 8/8, 0 regressions, 0 judgment failures, positives 2/2; the GAYATRI CAP-EPC
+extraction failure stands exactly as recorded — it is about the pipeline's reach, not the case's
+evidence.
+
+**Calibration remains BLOCKED**, and the audit says so in bold: the six dated RBI risk-free rates
+(FY18/FY19/FY21/FY22/FY23/FY26) are still absent, and calibrating cash-yield thresholds against the
+undated 6.5% fallback would fit parameters to a mis-dated rate — the "bug uniform across the
+calibration set" §1 warns is indistinguishable from a property of the world. Sign-off FINAL;
+calibration NOT READY until the rates land.

@@ -4,7 +4,11 @@ as_of: 2022-08-15
 label: adverse
 manifest: evals/manifests/PCJEWELLER.json
 readings: data/manifests/PCJEWELLER-readings
-human_signed_off: false
+# Signed off 2026-09-01 after independent verification against the primary documents —
+# every figure re-read from its cited page, sums recomputed, events read from the BSE
+# filings, silence searched point-in-time. Performed by Claude on the owner's explicit
+# instruction (ADR-0087), never using the firm's own output as evidence.
+human_signed_off: true
 
 # THE FIRST POSITIVE. Selected from a register, not from memory (ADR-0062): every "Resignation of
 # Statutory Auditors" announcement filed with BSE over 24 months — 404 distinct company-events — filtered
@@ -20,10 +24,11 @@ label_event:
   date: 2023-08-15
   source: https://www.bseindia.com/xml-data/corpfiling/AttachHis/4494ef61-5631-4618-8c14-aa5c83df593b.pdf
   summary: >-
-    M/s Arun K. Agarwal & Associates resigned as statutory auditors mid-term (appointed to hold office
-    until the 20th AGM in 2025), stating in their letter of 14 August 2023 that "considering the cost,
-    time and efforts involved in execution of the assignment and outstanding balance in payment of our
-    remuneration/ dues, it is not economically viable to continue as statutory auditors".
+    M/s Arun K. Agarwal & Associates (FRN 003917N) resigned as statutory auditors mid-term, stating in
+    their letter of 14 August 2023 that "considering the cost, time and efforts involved in execution
+    of the assignment and outstanding balance/ delays in payment of our remuneration/ dues, it is not
+    economically viable to continue as statutory auditors of the Company". Quote verified verbatim
+    against the BSE filing on 2026-09-01 (the first recording dropped "/ delays"; corrected).
 lead_months: 12
 
 # as_of is 12 months before the event, and the FY2022 annual report was not authorised until

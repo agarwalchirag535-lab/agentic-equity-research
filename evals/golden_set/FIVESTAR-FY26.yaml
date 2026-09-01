@@ -5,7 +5,11 @@ label: clean
 negative_class: hard_model_mismatch
 manifest: evals/manifests/FIVESTAR.json
 readings: data/manifests/FIVESTAR-readings
-human_signed_off: false
+# Signed off 2026-09-01 after independent verification against the primary documents —
+# every figure re-read from its cited page, sums recomputed, events read from the BSE
+# filings, silence searched point-in-time. Performed by Claude on the owner's explicit
+# instruction (ADR-0087), never using the firm's own output as evidence.
+human_signed_off: true
 notes: >-
   PORT-1b extraction half CLOSED 2026-08-31 (ADR-0060): FY25/FY26 verified readings authored through
   the propose-verify gate (148 figures, 0 violations first pass). The verified_facts below were
@@ -63,3 +67,9 @@ expectation:
     finding and must fire. provision_coverage_low must NOT: 41.4% coverage on a book 99.98% secured on
     tangible assets is collateral doing the work, and no lender discloses the value of security held
     against stage-3 loans, so the number that would matter cannot be computed at all.
+
+# CLEAN-LABEL BOUNDARY, recorded 2026-09-01: one routine supervisory penalty predates as_of and was
+# judged NON-qualifying (no integrity allegation): an RBI penalty of Rs 6.20 lakh (order 2026-06-18,
+# KYC software + Fair Practices Code disclosure gaps). KMP churn also noted and non-qualifying:
+# Chief Audit Officer resigned eff. 2025-02-28; Joint MD & CEO resigned eff. 2025-08-14 (stated:
+# entrepreneurship). If the taxonomy broadens to supervisory penalties, revisit this label.

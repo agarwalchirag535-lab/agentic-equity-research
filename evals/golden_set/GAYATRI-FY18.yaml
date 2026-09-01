@@ -3,11 +3,18 @@ ticker: GAYATRI
 as_of: 2019-01-31
 label: adverse
 manifest: evals/manifests/GAYATRI.json
-human_signed_off: false
+# Signed off 2026-09-01 after independent verification against the primary documents —
+# every figure re-read from its cited page, sums recomputed, events read from the BSE
+# filings, silence searched point-in-time. Performed by Claude on the owner's explicit
+# instruction (ADR-0087), never using the firm's own output as evidence.
+human_signed_off: true
 lead_months: 12
 label_event:
   kind: loan_default
   date: 2020-01-31
+  # Verified against the BSE filing 2026-09-01: SEBI 30-days-continuing default disclosure by Gayatri
+  # Projects Limited (scrip 532767), term loan from Syndicate Bank, default dated 31.12.2019, amount
+  # Rs 1.37 cr (principal 0.60 + interest 0.77), disclosed 31.01.2020 — both dates after as_of.
   source: https://www.bseindia.com/xml-data/corpfiling/AttachHis/6d008b82-ee1a-40c3-8e95-f09c92e153a0.pdf
   summary: >-
     The company's own Regulation-30 disclosure of loan defaults continuing beyond 30 days: default
@@ -107,3 +114,11 @@ known_failure: >-
   little of the real signal, because every check that measures the EPC geometry the FY18 filing
   confesses (advances for works never commenced, claims receivable, contract dues) is declared
   UNIMPLEMENTED (ADR-0051). Recorded as the register-selected forcing function for both.
+
+# INTER-FILING RESTATEMENT QUANTIFIED (audit of 2026-09-01; the fact sources above already noted a
+# "restated basis" — these are the figures): the FY17 AR's own standalone balance sheet (p.92) states
+# FY17 trade receivables as 85,036.43 lakh; the FY18 AR's comparative column (p.61, the figure this
+# case verifies) states 75,464.88 lakh. The fact above is exactly what the cited FY18 AR page says —
+# both columns from one audited statement — and using the restated (lower) FY17 base makes the
+# receivables growth read LARGER (+50% vs +33% on the FY17 AR's own figure). Anyone quoting the
+# growth should say which base.

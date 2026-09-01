@@ -4,7 +4,11 @@ as_of: 2019-06-30
 label: clean
 negative_class: easy
 manifest: evals/manifests/ALKYLAMINE.json
-human_signed_off: false
+# Signed off 2026-09-01 after independent verification against the primary documents —
+# every figure re-read from its cited page, sums recomputed, events read from the BSE
+# filings, silence searched point-in-time. Performed by Claude on the owner's explicit
+# instruction (ADR-0087), never using the firm's own output as evidence.
+human_signed_off: true
 
 # THE DEEPEST REPLAY THE SET GOES. Two filings available, both pre-Ind AS 109 in substance and both
 # pre-amendment. It exists to hold the point-in-time floor: the further back a case sits, the more
@@ -34,3 +38,8 @@ expectation:
   rationale: >-
     A FY2018 filing owes no Key Audit Matters section and none of the 2021 Schedule III rows. Anything
     the firm reports absent here is the firm's own anachronism, not the company's opacity.
+
+# SILENCE CHECK (audit of 2026-09-01): searched for auditor resignation / SEBI order / default /
+# NCLT / fraud action / forensic audit dated on or before as_of — none found; CRISIL upgraded the
+# company to AA-/Stable in May 2023 and it is near debt-free, inconsistent with hidden distress.
+# Nearest non-qualifying item: CFO resignation 2020-09-21 (individual officer, no allegation).

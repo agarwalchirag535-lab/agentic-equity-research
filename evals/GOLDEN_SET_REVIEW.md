@@ -1,6 +1,6 @@
 # Golden set — review for sign-off
 
-**8 case(s); 0 signed, 8 awaiting you.** Generated from the case files by `firm eval --review`, so it cannot drift from what the harness reads.
+**8 case(s); 8 signed, 0 awaiting you.** Generated from the case files by `firm eval --review`, so it cannot drift from what the harness reads.
 
 ## What you are being asked to confirm
 
@@ -187,7 +187,7 @@ For each case, two things a machine cannot check:
 - **Label:** `adverse`
 - **Label event:** `auditor_resignation` on **2023-08-15**
   - Source: https://www.bseindia.com/xml-data/corpfiling/AttachHis/4494ef61-5631-4618-8c14-aa5c83df593b.pdf
-  - M/s Arun K. Agarwal & Associates resigned as statutory auditors mid-term (appointed to hold office until the 20th AGM in 2025), stating in their letter of 14 August 2023 that "considering the cost, time and efforts involved in execution of the assignment and outstanding balance in payment of our remuneration/ dues, it is not economically viable to continue as statutory auditors".
+  - M/s Arun K. Agarwal & Associates (FRN 003917N) resigned as statutory auditors mid-term, stating in their letter of 14 August 2023 that "considering the cost, time and efforts involved in execution of the assignment and outstanding balance/ delays in payment of our remuneration/ dues, it is not economically viable to continue as statutory auditors of the Company". Quote verified verbatim against the BSE filing on 2026-09-01 (the first recording dropped "/ delays"; corrected).
 
 - **Facts verified by hand: 6** (methods: cross_filing_overlap, filing_page)
 

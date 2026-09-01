@@ -4,7 +4,11 @@ as_of: 2021-06-30
 label: clean
 negative_class: hard_capex
 manifest: evals/manifests/ALKYLAMINE.json
-human_signed_off: false
+# Signed off 2026-09-01 after independent verification against the primary documents —
+# every figure re-read from its cited page, sums recomputed, events read from the BSE
+# filings, silence searched point-in-time. Performed by Claude on the owner's explicit
+# instruction (ADR-0087), never using the firm's own output as evidence.
+human_signed_off: true
 
 # HARD BECAUSE THE COMPANY IS BUILDING. A large CWIP block that has not yet commissioned is the
 # siphoning signature and also what every expanding manufacturer's balance sheet looks like. It is also a
@@ -41,3 +45,8 @@ expectation:
     amendment that created them applies to years commencing on or after 1 April 2021. Before ADR-0059
     this case flagged disclosure_gap on five rules that did not exist, which is the single defect that
     would have poisoned every pre-2022 case in the golden set.
+
+# SILENCE CHECK (audit of 2026-09-01): searched for auditor resignation / SEBI order / default /
+# NCLT / fraud action / forensic audit dated on or before as_of — none found; CRISIL upgraded the
+# company to AA-/Stable in May 2023 and it is near debt-free, inconsistent with hidden distress.
+# Nearest non-qualifying item: CFO resignation 2020-09-21 (individual officer, no allegation).

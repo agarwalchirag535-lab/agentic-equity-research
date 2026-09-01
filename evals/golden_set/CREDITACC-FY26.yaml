@@ -5,7 +5,11 @@ label: clean
 negative_class: hard_recovery
 manifest: evals/manifests/CREDITACC.json
 readings: data/manifests/CREDITACC-readings
-human_signed_off: false
+# Signed off 2026-09-01 after independent verification against the primary documents —
+# every figure re-read from its cited page, sums recomputed, events read from the BSE
+# filings, silence searched point-in-time. Performed by Claude on the owner's explicit
+# instruction (ADR-0087), never using the firm's own output as evidence.
+human_signed_off: true
 
 # HARD BECAUSE THE METRICS ARE IMPROVING OFF A BAD YEAR. The provision rate was cut 1.27pp while the book
 # grew 13.5% — the Sezzle signature read on its own — and the only thing that separates it from
@@ -72,3 +76,9 @@ expectation:
     Reg 52(4) annexure (Gross Stage III 3.17%, provision coverage 65.40%). A provision-rate cut into an
     improving book is not suppression. REVIEW rather than PASS is expected and correct: disclosure_gap
     still fires on undisclosed_income, which the firm has not resolved.
+
+# CLEAN-LABEL BOUNDARY, recorded 2026-09-01: two routine supervisory penalties predate as_of and
+# were judged NON-qualifying for the adverse taxonomy (no integrity allegation): an NSE LODR
+# Reg 17(1) fine of Rs 2.45 lakh (communicated 2026-02-16, late Non-Exec Chairperson appointment)
+# and an RBI KYC penalty of Rs 3.10 lakh (order 2026-05-25, transaction-monitoring software gap).
+# If the taxonomy is ever broadened to include supervisory penalties, this label must be revisited.

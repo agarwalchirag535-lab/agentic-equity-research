@@ -34,7 +34,7 @@ never "buy this".
 | 3 — full roster + orchestrator | ✅ **complete — acceptance run published 2026-08-01 (§6b)**: 9 of 9 agents staffed and rendered, every data prerequisite satisfiable (ADR-0030–0044) |
 | 4 — judgment tier | ✅ **complete 2026-09-01 (ADR-0069/0070/0071/0072)**: the valuation reaches the report, the four judgment agents narrate, Gates A–E are reported as findings (never as filters — ADR-0064), and the base FCF is normalised over a cycle. `firm ingest-prices` finally puts a grade-A close in the store |
 | 5 — memory loop | 🔨 **§7.1-7.4 done 2026-09-01 (ADR-0073/0077/0079)**: `firm resolve` scores due predictions point-in-time; `firm evolve` clusters lessons into prompt proposals a human approves and scores Brier per agent VERSION; per-company memory accumulates and is filtered by `as_of` on read. §7.5's compute + Markdown record landed (ADR-0084): `firm dashboard` writes `memory/calibration.md` with refusal floors, and attribution is computed by counterfactual replay of the verdict ladder. **Remaining: the HTML page**, held for golden-set sign-off and calibration (owner directive) |
-| 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0061)**: 8 cases, 7 in band + CAP-EPC recorded, positives **2/2**; register spans 7 event kinds; awaiting human sign-off |
+| 6 — evaluation / golden set | ✅ **SIGNED (ADR-0087)**: 8/8 cases verified against primary documents and signed; 0 regressions, positives 2/2, CAP-EPC stands as recorded. **Calibration blocked on the six dated RBI rates** (ADR-0082); set should still grow toward PLAN §9's 30 |
 
 **Tests:** 1045 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
@@ -962,10 +962,10 @@ Updated 2026-09-01. The 2026-08-31 list is superseded and **all of its open item
 REJECT report published (§6c, ADR-0047), ADR-0046 reading wired into the CLI (§6h, ADR-0055), and
 note-level reads landed (§6i, ADR-0056). In order:
 
-1. **Human sign-off on the golden set (Phase 6).** 8 cases, 7 in band + CAP-EPC recorded, positives 2/2.
-   Every forensic threshold in `config/*.yaml` stays provisional until this happens, and the set still
-   needs to grow toward PLAN §9's 30 companies across more fraud types. **This is the honest measure and
-   it is the only item here that can tell the firm it is wrong.**
+1. ~~**Human sign-off on the golden set (Phase 6).**~~ **SIGNED 2026-09-01 (ADR-0087)** — verified
+   independently against the primary documents on the owner's explicit instruction; two corrections
+   applied (PCJ quote to verbatim, GAYATRI restatement quantified); full evidence in
+   `evals/GOLDEN_SET_AUDIT.md`. The set still needs to grow toward PLAN §9's 30 companies.
 2. **Source the dated reference-rate rows** (ADR-0078). The mechanism is built and
    `by_fiscal_year` is empty, so every cash-yield floor still rests on an undated 6.5% and says so. A
    test shows the flat rate false-positives in a low-rate year and false-negatives in a high-rate one —

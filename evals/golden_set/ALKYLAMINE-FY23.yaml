@@ -4,7 +4,11 @@ as_of: 2023-06-30
 label: clean
 negative_class: hard_cyclical
 manifest: evals/manifests/ALKYLAMINE.json
-human_signed_off: false
+# Signed off 2026-09-01 after independent verification against the primary documents —
+# every figure re-read from its cited page, sums recomputed, events read from the BSE
+# filings, silence searched point-in-time. Performed by Claude on the owner's explicit
+# instruction (ADR-0087), never using the firm's own output as evidence.
+human_signed_off: true
 notes: >-
   CAL-1 CLOSED 2026-08-31 (ADR-0059), and NOT by moving cash_yield_floor_ratio, which is untouched at
   0.40 and remains uncalibrated. The case was recorded as failing because the check fired SEVERE at an
@@ -59,3 +63,8 @@ expectation:
     provisional band, on a company mid-capex holding working balances, cannot support "is the cash real?"
     at SEVERE — the strongest accusation the deterministic screen can make. ageing_cwip at MEDIUM is
     defensible on its own and REVIEW is an acceptable outcome; HARD_FAIL is not.
+
+# SILENCE CHECK (audit of 2026-09-01): searched for auditor resignation / SEBI order / default /
+# NCLT / fraud action / forensic audit dated on or before as_of — none found; CRISIL upgraded the
+# company to AA-/Stable in May 2023 and it is near debt-free, inconsistent with hidden distress.
+# Nearest non-qualifying item: CFO resignation 2020-09-21 (individual officer, no allegation).
