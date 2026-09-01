@@ -850,6 +850,34 @@ def resolve_cmd(
                    f"P={r.prediction.probability:.2f} and broke — record why in memory/lessons.jsonl")
 
 
+@app.command("dashboard")
+def dashboard_cmd(
+    memory: str = typer.Option("memory", "--memory"),
+    reports_root: str = typer.Option("reports", "--reports"),
+    write: bool = typer.Option(True, "--write/--no-write",
+                               help="write memory/calibration.md, the git-tracked record"),
+) -> None:
+    """The firm's calibration scoreboard (SPEC §7.5): Brier by agent version, the over/under-confidence
+    curve, hit rate by claim type, and attribution — whether any agent's output changed a decision.
+
+    Compute + Markdown record only; the HTML page waits for golden-set sign-off and calibration (owner
+    directive, 2026-09-01). Every panel refuses below its floor rather than drawing noise: a
+    confident-looking curve from three points is worse than none, because it looks like measurement.
+    """
+    from pathlib import Path
+
+    from firm.core.monitoring.dashboard import build_dashboard, render_dashboard
+
+    policy = load_thresholds()["dashboard"]
+    dash = build_dashboard(Path(memory) / "predictions.jsonl", reports_root, policy=policy)
+    rendered = render_dashboard(dash)
+    typer.echo(rendered)
+    if write:
+        out = Path(memory) / "calibration.md"
+        out.write_text(rendered)
+        typer.echo(f"record written: {out} — `git diff` on it IS the calibration trend")
+
+
 @app.command("rates")
 def rates_cmd(
     golden: str = typer.Option("evals/golden_set", "--golden",

@@ -1097,6 +1097,31 @@ def run_deep_dive(
         # NOT `coverage_gaps`. The verdict must never move because the FIRM failed to look — ADR-0019.
         # They reach the report (below) so a reader sees them, and stop there.
     )
+    # ATTRIBUTION BY COUNTERFACTUAL REPLAY (SPEC §7.5, ADR-0084). The verdict ladder is deterministic,
+    # and agent output reaches it through exactly one channel: the forensic veto. So "did an agent
+    # change the decision?" is not a heuristic here — replay the ladder with the channel off and
+    # compare. Exact, code-authored, and cheap; the dashboard aggregates these across reports, because
+    # an agent whose output never changes a decision is dead weight the SPEC says to cut.
+    veto_used = bool(getattr(forensic_out, "veto", False)) if forensic_out else False
+    decision_attribution: list[str] = []
+    if veto_used:
+        without_veto = choose_verdict(
+            screen, evaluation, notes, feasibility, policy=policy, history_years=derived.years,
+            min_history_years=int(thresholds["screen"]["min_history_years"]),
+            forensic_veto=False, interrogation=interrogation)
+        if without_veto.verdict is not decision.verdict:
+            decision_attribution.append(
+                f"forensic_accountant: the veto DECIDED this verdict — without it the deterministic "
+                f"ladder returns {without_veto.verdict.value}")
+        else:
+            decision_attribution.append(
+                "forensic_accountant: veto asserted but the deterministic screen already reached the "
+                "same verdict — the veto changed nothing")
+    else:
+        decision_attribution.append(
+            "verdict fully deterministic: no agent input moved it (the veto is the only channel an "
+            "agent has into the ladder, and it was not asserted)")
+
     # SPEC §8's funnel, computed for this company and REPORTED (ADR-0071). It gates NOTHING here: the
     # owner chose this company, and research eligibility is not the investment verdict (ADR-0064). The
     # kill criteria Gate E asks about are the same ones `assemble_report` attaches, computed from the
@@ -1124,7 +1149,7 @@ def run_deep_dive(
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
         interrogation=interrogation,
         target_multiple=target_multiple, target_years=target_years, valuation=valuation,
-        gates=gate_findings,
+        gates=gate_findings, decision_attribution=decision_attribution,
         # Quiet revisions between visible filings (lesson 3 of the first prediction resolution): every
         # figure a later filing changed, point-in-time, from the overlap classifier. Deterministic; the
         # Ind AS transition legitimately produces a cluster, which is why the section explains itself.

@@ -395,6 +395,11 @@ class ResearchReport(BaseModel):
     #: SPEC §8's funnel, applied to this company. Findings, never filters (ADR-0064/0071).
     gates: list[GateLine] = Field(default_factory=list)
 
+    #: Which agent input, if any, changed the deterministic verdict — computed by replaying the ladder
+    #: with the channel toggled off (ADR-0084). Code-authored; the dashboard aggregates it, because an
+    #: agent whose output never changes a decision is dead weight (SPEC §7.5).
+    decision_attribution: list[str] = Field(default_factory=list)
+
     #: What the quoted price already assumes (ADR-0069). None when the run had no valuation policy to
     #: apply; an `unavailable` status inside it means the policy ran and named what it lacked.
     valuation: ValuationSection | None = None

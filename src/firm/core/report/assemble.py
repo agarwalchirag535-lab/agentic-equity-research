@@ -453,6 +453,8 @@ def assemble_report(
     valuation: Any | None = None,
     #: `pipeline.gates.GateFinding`s — SPEC §8's funnel as findings, never as filters (ADR-0071).
     gates: Sequence[Any] = (),
+    #: Code-authored replay result: which agent input changed the verdict (ADR-0084).
+    decision_attribution: Sequence[str] = (),
 ) -> ResearchReport:
     """Build the report object. Publication gates run separately (`core/report/render.write_report`).
 
@@ -496,6 +498,7 @@ def assemble_report(
         # — an agent cannot add to this list or remove from it.
         management_questions=management_questions(evaluation, notes, interrogation),
         gates=[GateLine(gate=g.gate.value, status=g.status, reason=g.reason) for g in gates],
+        decision_attribution=list(decision_attribution),
         valuation=build_valuation(valuation),
         return_potential=build_return_potential(
             feasibility,

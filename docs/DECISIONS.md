@@ -3327,3 +3327,39 @@ after the rates land, because calibrating before then fits a parameter to the fi
 **Nothing was self-signed and no threshold was calibrated.** All eight cases remain
 `human_signed_off: false`. The run is clean — 0 regressions, 0 judgment failures, positives 2/2, one
 recorded extraction failure (GAYATRI-FY18, CAP-EPC) — and a clean run is not a signature.
+
+### ADR-0084 — The calibration dashboard's compute half: panels that refuse, attribution that replays
+
+**Date** 2026-09-01 · **Status** accepted · **SPEC §7.5, compute + record only** — the HTML page waits
+for golden-set sign-off and calibration (owner directive) · **Files**
+`core/monitoring/dashboard.py` (new), `core/pipeline/deep_dive.py`, `schemas/report.py`,
+`core/report/assemble.py`, `cli.py`, `config/thresholds.yaml`, `tests/monitoring/test_dashboard.py`
+(new) · **1040 tests, compute 100%**
+
+**Four panels, one discipline.** Brier per agent version, the over/under-confidence curve, hit rate by
+claim type, attribution. Every panel refuses below a configured floor and says what it is waiting for:
+with today's three resolved predictions, a confidence curve is three dots wearing an axis, and a
+dashboard that draws it anyway is worse than none because it **looks like measurement**. The floors
+live in `config/thresholds.yaml` under `dashboard:` — the same anti-noise reasoning as
+`cumulative_cfo_pat_min_periods` and `min_resolved_for_comparison`, applied to the scoreboard itself.
+The curve's probability bands are **fixed, not quantile**, because quantile buckets move every time a
+prediction resolves and two runs of a record must be comparable to be a record.
+
+**Attribution is exact, and that is the design choice worth the ink.** SPEC asks which agent's output
+most changed the final decision — the question that finds dead weight. Here it needs no estimate: the
+verdict ladder is deterministic, and agent output enters it through exactly one channel, the forensic
+veto. So `run_deep_dive` **replays `choose_verdict` with the channel toggled off** and records the
+difference on the report as `decision_attribution` — "the veto DECIDED this verdict; without it the
+ladder returns X", "veto asserted but changed nothing", or "verdict fully deterministic". Code-authored,
+counterfactual, cheap. A test drives it end to end: a veto on a clean screen flips the verdict, and the
+replay names the exact alternative the ladder would have returned.
+
+The field is bound into the run-constant `assemble` partial, so a **degraded** report keeps its
+attribution — the reader of a degraded report is precisely the one who most needs to know what decided
+it. Reports published before the field existed are counted as read and contribute nothing, which is the
+honest treatment of a record written before the question was being asked.
+
+**The record is Markdown, on purpose.** `firm dashboard` writes `memory/calibration.md` (Law 6: state
+is git-trackable files), so `git diff memory/calibration.md` *is* the calibration trend. Run against
+the real ledger it shows the firm's entire measurable history: Brier 0.2244 over three PC Jeweller
+predictions, every other panel honestly waiting.

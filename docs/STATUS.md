@@ -33,10 +33,10 @@ never "buy this".
 | **2 — three agents, deep** | ✅ **complete — acceptance test passes; first report published (§6a)** |
 | 3 — full roster + orchestrator | ✅ **complete — acceptance run published 2026-08-01 (§6b)**: 9 of 9 agents staffed and rendered, every data prerequisite satisfiable (ADR-0030–0044) |
 | 4 — judgment tier | ✅ **complete 2026-09-01 (ADR-0069/0070/0071/0072)**: the valuation reaches the report, the four judgment agents narrate, Gates A–E are reported as findings (never as filters — ADR-0064), and the base FCF is normalised over a cycle. `firm ingest-prices` finally puts a grade-A close in the store |
-| 5 — memory loop | 🔨 **§7.1-7.4 done 2026-09-01 (ADR-0073/0077/0079)**: `firm resolve` scores due predictions point-in-time; `firm evolve` clusters lessons into prompt proposals a human approves and scores Brier per agent VERSION; per-company memory accumulates and is filtered by `as_of` on read. **Remaining: §7.5 the calibration dashboard** (over/under-confidence curve, hit rate by claim type, and which agent's output most changed the decision — an agent that never changes one is dead weight) |
+| 5 — memory loop | 🔨 **§7.1-7.4 done 2026-09-01 (ADR-0073/0077/0079)**: `firm resolve` scores due predictions point-in-time; `firm evolve` clusters lessons into prompt proposals a human approves and scores Brier per agent VERSION; per-company memory accumulates and is filtered by `as_of` on read. §7.5's compute + Markdown record landed (ADR-0084): `firm dashboard` writes `memory/calibration.md` with refusal floors, and attribution is computed by counterfactual replay of the verdict ladder. **Remaining: the HTML page**, held for golden-set sign-off and calibration (owner directive) |
 | 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0061)**: 8 cases, 7 in band + CAP-EPC recorded, positives **2/2**; register spans 7 event kinds; awaiting human sign-off |
 
-**Tests:** 1001 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 1040 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules

@@ -37,6 +37,17 @@ multibagger:
   # §6.5 serial-dilution flag
   share_cagr_flag: 0.06         # share count CAGR (10y) above this without matching ROIC step-up
 
+# Calibration dashboard (SPEC §7.5, ADR-0084). Every floor exists so a panel refuses rather than
+# draws a confident-looking curve from three points — a dashboard that does that is worse than none,
+# because it looks like measurement.
+dashboard:
+  # Resolved predictions before the over/under-confidence curve is drawn at all.
+  min_resolved_for_curve: 20
+  # Resolved predictions a probability bucket needs before its point is plotted.
+  min_per_bucket: 5
+  # Resolved predictions a claim type (metric) needs before its hit rate is stated.
+  min_per_claim_type: 3
+
 # Prompt evolution (SPEC §7.3). Both numbers exist to stop the firm learning from noise.
 evolution:
   # Lessons sharing a root cause before a prompt change is proposed. One miss is a sample of one, and a
