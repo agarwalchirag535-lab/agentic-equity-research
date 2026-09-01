@@ -87,6 +87,7 @@ from firm.core.pipeline.interrogate import Interrogation, interrogate
 from firm.core.pipeline.peers import PeerComparison, load_peer_comparisons
 from firm.core.pipeline.peers import citable_values as peer_citable_values
 from firm.core.pipeline.peers import payload_rows as peer_payload_rows
+from firm.core.pipeline.valuation import load_valuation, valuation_derivations
 from firm.core.report.assemble import (
     Narration,
     NotesReview,
@@ -611,14 +612,20 @@ def _narration(
             "this company includes everything we could not look at."
         )
 
+    # The deterministic Valuation section now carries the reverse DCF and the priced grid (ADR-0069),
+    # so this note must not claim that tier is missing — it renders directly above this text. What it
+    # says instead is the one thing the computed section cannot: that no agent has argued with it yet.
     valuation = (
-        "No valuation claim is made in this report. The valuation tier (reverse DCF, probability-weighted "
-        "scenarios, sensitivity) is Phase 4 of the build; the feasibility gate below is a *self-funding* "
-        "test, not a price judgment."
+        "No analyst has yet argued with the computed valuation above. The reverse DCF and the scenario "
+        "grid are deterministic — priced from the company's own realised growth against the settled "
+        "exchange close — and the judgment tier that would weigh their probabilities "
+        "(`valuation_modeler`, `red_team`) is not staffed in this run. Read the section above as "
+        "arithmetic about the price, not as a view on it."
         if feasibility is None else
-        f"Feasibility only, not price: {feasibility.rationale} No reverse DCF, scenario set or target "
-        "price is asserted — that tier is not built yet, and a valuation narrative without it would be "
-        "invented."
+        f"The self-funding test and the price test are different questions and both are answered here. "
+        f"Feasibility: {feasibility.rationale} The computed valuation above answers the second. No "
+        f"analyst has yet argued with either — the judgment tier that would weigh the scenarios' "
+        f"probabilities is not staffed in this run."
     )
     # EVERY AGENT THAT RAN MUST BE READABLE SOMEWHERE. `sector_analyst`, `macro_strategist` and
     # `unit_economics_analyst` were validating, entering `agent_versions` — so the report named them as
@@ -790,6 +797,16 @@ def run_deep_dive(
         derived, policy, thresholds["multibagger"],
         target_multiple=target_multiple, target_years=target_years)
 
+    # ---- 3b. the valuation (Phase 4, ADR-0062/0069) ----------------------------------------------
+    # Runs after the checks and before the agents, because its outputs become DERIVATIONS: merged onto
+    # the run's DerivedSet, they are policed by the same Law-1 arithmetic validator that polices
+    # `incremental_roic`, so an agent restating a scenario's value per share is checked against the
+    # priced grid rather than trusted. A run with no price still produces a valuation — one whose
+    # status is `unavailable` and whose missing inputs are named.
+    valuation = load_valuation(store, ticker, as_of, facts, derived,
+                               policy=thresholds["valuation"])
+    derived = derived.extended(valuation_derivations(valuation))
+
     notes, _dispositions = (
         disposition_notes(walk.notes, evaluation, disclosure_gaps_found=walk.missing_disclosures,
                           reconciliations=walk.reconciliations)
@@ -906,7 +923,7 @@ def run_deep_dive(
         feasibility=feasibility,
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
         interrogation=interrogation,
-        target_multiple=target_multiple, target_years=target_years,
+        target_multiple=target_multiple, target_years=target_years, valuation=valuation,
         # Quiet revisions between visible filings (lesson 3 of the first prediction resolution): every
         # figure a later filing changed, point-in-time, from the overlap classifier. Deterministic; the
         # Ind AS transition legitimately produces a cluster, which is why the section explains itself.

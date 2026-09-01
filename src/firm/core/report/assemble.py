@@ -49,6 +49,8 @@ from firm.schemas.report import (
     ResearchReport,
     RestatementLine,
     ReturnPotential,
+    ValuationScenario,
+    ValuationSection,
     Verdict,
     VerifiedCleanChecklist,
 )
@@ -359,6 +361,30 @@ class Narration:
     replication_notes: tuple[str, ...] = ()
 
 
+def build_valuation(result: Any | None) -> ValuationSection | None:
+    """Project a `ValuationResult` onto the report contract (ADR-0069). Straight projection.
+
+    Deliberately no judgment here: everything worth deciding was decided in `pipeline/valuation.py`
+    against the policy block, and a second opinion at render time is exactly how a "base case" quietly
+    becomes whichever column reads best.
+    """
+    if result is None:
+        return None
+    return ValuationSection(
+        status=result.status, missing=list(result.missing), price=result.price,
+        price_on=result.price_on, shares_cr=result.shares_cr, market_cap_cr=result.market_cap_cr,
+        net_debt_cr=result.net_debt_cr, enterprise_value_cr=result.enterprise_value_cr,
+        base_fcf_cr=result.base_fcf_cr, realised_growth=result.realised_growth,
+        implied_growth=result.implied_growth, implied_growth_note=result.implied_growth_note,
+        scenarios=[
+            ValuationScenario(name=s.name, growth=s.growth, value_per_share=s.value_per_share,
+                              return_multiple=s.return_multiple)
+            for s in result.scenarios
+        ],
+        assumptions=dict(result.assumptions),
+    )
+
+
 def build_return_potential(
     feasibility: FeasibilityResult | None,
     *,
@@ -417,6 +443,8 @@ def assemble_report(
     #: firm). Whatever is used is PRINTED, so the reader can see the assumption being made.
     target_multiple: float | None = None,
     target_years: int | None = None,
+    #: `pipeline.valuation.ValuationResult` for this run, or None when no valuation was attempted.
+    valuation: Any | None = None,
 ) -> ResearchReport:
     """Build the report object. Publication gates run separately (`core/report/render.write_report`).
 
@@ -459,6 +487,7 @@ def assemble_report(
         # ADR-0066: computed on EVERY report, from the same records the verdict rests on. Not narration
         # — an agent cannot add to this list or remove from it.
         management_questions=management_questions(evaluation, notes, interrogation),
+        valuation=build_valuation(valuation),
         return_potential=build_return_potential(
             feasibility,
             target_multiple=float(target_multiple if target_multiple is not None

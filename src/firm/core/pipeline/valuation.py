@@ -28,6 +28,7 @@ from firm.core.compute.scenarios import (
     scenario_growth_grid,
     value_scenario_grid,
 )
+from firm.core.ingest.prices import CLOSE
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
 
@@ -207,3 +208,34 @@ def valuation_derivations(result: ValuationResult) -> dict[str, D.Derivation]:
             f"DCF at the company's realised growth ({base.growth:+.2%}), "
             f"{result.assumptions['discount_rate']:.0%} discount, per share", inputs)
     return out
+
+
+def load_valuation(
+    store: Any,
+    ticker: str,
+    as_of: date,
+    facts: CompanyFacts,
+    derived: DerivedSet,
+    *,
+    policy: Mapping[str, Any],
+) -> ValuationResult:
+    """Read the settled close point-in-time and price the company against it (ADR-0069).
+
+    The price is read through the ordinary point-in-time query, so a close disseminated after `as_of`
+    does not exist for this run — the same rule as every other fact. Taking the LATEST period at or
+    before the run date (rather than the series' end) is the second half of that discipline: a price
+    series is the easiest place in the system to leak the future, and `series[-1]` in a replay of 2019
+    values the company at today's price and turns a backtest into a fantasy.
+
+    No price is not an error. It is a named missing input, and `value_company` reports it as one.
+    """
+    closes = [f for f in store.query_metric_prefix(ticker, CLOSE, as_of)
+              if f.period <= as_of.isoformat()]
+    latest = max(closes, key=lambda f: f.period) if closes else None
+    price_on = date.fromisoformat(latest.period) if latest is not None else None
+    return value_company(
+        facts, derived,
+        price=latest.value if latest is not None else None,
+        price_on=price_on, policy=policy,
+        price_facts=(latest,) if latest is not None else (),
+    )

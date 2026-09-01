@@ -230,6 +230,51 @@ class ReturnPotential(BaseModel):
     unavailable_reason: str = ""
 
 
+class ValuationScenario(BaseModel):
+    """One priced scenario. Deterministic — the agent's `ScenarioLine` is a separate, narrated thing."""
+
+    name: str
+    growth: float
+    value_per_share: float
+    #: Intrinsic value under this scenario divided by the price actually quoted. NOT a target price and
+    #: NOT a re-rating: no multiple expansion is assumed anywhere in this number.
+    return_multiple: float
+
+
+class ValuationSection(BaseModel):
+    """What the price already assumes, and what the business would have to do to justify it (ADR-0069).
+
+    Reverse DCF first, deliberately (SPEC §5): a forward DCF's answer is hostage to the discount rate
+    and to which year is called "base", so it partly restates its own assumptions. Inverting it — hold
+    the price, solve for the growth it demands — produces a sentence a reader can check against a base
+    rate, which is what the house standard asks for.
+
+    `status == 'unavailable'` is a real result with its inputs NAMED, never an empty section: a
+    valuation that quietly substitutes a zero for a missing net debt is worse than none, because it
+    looks like one.
+    """
+
+    status: str = "unavailable"
+    missing: list[str] = Field(default_factory=list)
+    price: float | None = None
+    price_on: date | None = None
+    shares_cr: float | None = None
+    market_cap_cr: float | None = None
+    net_debt_cr: float | None = None
+    enterprise_value_cr: float | None = None
+    base_fcf_cr: float | None = None
+    #: What the business has actually compounded — the grid is centred here, never on a house guess.
+    realised_growth: float | None = None
+    #: The growth the quoted price already demands. None when it falls outside the configured bracket,
+    #: which is a finding about the price and is reported in `implied_growth_note`.
+    implied_growth: float | None = None
+    implied_growth_note: str = ""
+    scenarios: list[ValuationScenario] = Field(default_factory=list)
+    #: The policy block this valuation used. A discount rate is a return this firm DEMANDS, not a
+    #: measurement, so it is printed in every report that rests on it rather than buried in config.
+    assumptions: dict[str, float] = Field(default_factory=dict)
+
+
 class ManagementQuestion(BaseModel):
     """One specific question to put to the company, with the reason it matters and what would settle it.
 
@@ -322,6 +367,10 @@ class ResearchReport(BaseModel):
     # contributors and printed nothing they wrote. An agent that runs and is not rendered is the
     # ADR-0034 failure in the other direction — the reader cannot tell it from one that never ran.
     sector_narrative: str = ""
+
+    #: What the quoted price already assumes (ADR-0069). None when the run had no valuation policy to
+    #: apply; an `unavailable` status inside it means the policy ran and named what it lacked.
+    valuation: ValuationSection | None = None
 
     #: The §6 return-potential finding — target, required growth, and whether the company can fund it
     #: from its own returns. A section, not the verdict's spine (ADR-0063/0068).

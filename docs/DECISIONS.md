@@ -2754,3 +2754,50 @@ in its quietest form.
 `"config report.target_return_multiple over report.target_years"` — a config path, which tells a
 narrating agent nothing it can reason with. It now carries the computed required CAGR and what it
 means.
+
+### ADR-0069 — The valuation reaches the report: Phase 4's deterministic half is wired
+
+**Date** 2026-09-01 · **Status** accepted · **Completes the arithmetic half of** ADR-0062 · **Files**
+`core/pipeline/valuation.py`, `core/pipeline/deep_dive.py`, `schemas/report.py`,
+`core/report/assemble.py`, `core/report/render.py`, `tests/pipeline/test_valuation_wiring.py` (new) ·
+**899 tests, compute 100%**
+
+**The gap.** ADR-0062 built `value_company`, the reverse DCF, the scenario grid and the
+`DerivedSet.extended` seam they were meant to plug into — and then nothing connected them.
+`run_deep_dive` never called the valuation, so **no published report has ever carried one**, and
+`config/valuation` was a policy block with no consumer. STATUS had recorded this as "no report renders
+a valuation section"; this closes it.
+
+**What is wired.** `load_valuation` reads the settled close, prices the company, and its outputs are
+merged onto the run's `DerivedSet` — which is the point of doing it here rather than in the renderer:
+the same Law-1 arithmetic validator that polices `incremental_roic` now polices
+`reverse_dcf_implied_growth` and `base_case_value_per_share`, so an agent restating a scenario's value
+per share is checked against the priced grid instead of trusted. The report gains a `ValuationSection`
+carrying the price and its date, market cap, net debt, EV, base FCF, the growth the price already
+demands, the four-scenario grid, and **the policy block itself** — because a discount rate is the
+return this firm *demands*, not a measurement, and burying it in config would hide the largest
+assumption in the section.
+
+**Two properties the tests pin.**
+
+* **No look-ahead.** The close is read through the ordinary point-in-time query *and* pinned to the
+  latest period at or before the run date. A price series is the easiest place in the system to leak
+  the future — one `series[-1]` in a replay of 2019 values the company at today's price and turns a
+  backtest into hindsight theatre. A close disseminated after `as_of` is invisible; tested directly.
+* **Missing is named, never defaulted.** A run without a price still renders the section, saying what
+  it lacked. A section that quietly disappears is indistinguishable from one that passed.
+
+**A test that was hiding a failure, found and fixed before commit.** The first version of the e2e test
+asserted the valuation `if valuation.status == "valued"`. It passed — and proved nothing, because
+`clean_series` carries no balance-sheet cash rows, so the valuation correctly refused and every
+assertion took the empty branch. The fixture now supplies them and the assertions are unconditional. A
+conditional assertion on the path under test is not a test.
+
+**Stale prose corrected.** `_narration` told every reader "no reverse DCF, scenario set or target price
+is asserted — that tier is not built yet". It is now built and renders directly above that sentence.
+The note says the true thing instead: the arithmetic is there, and no analyst has argued with it yet.
+
+**Still open for Phase 4 acceptance:** the four judgment agents (`valuation_modeler`,
+`thesis_synthesizer`, `red_team`, `portfolio_manager`) are prompts that do not run, Gates D/E gate
+nothing, and the base FCF is a single year — a trough year flatters the bear case, and the fix is the
+missing input (ADR-0059), never a nudged discount rate.

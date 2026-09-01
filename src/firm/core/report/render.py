@@ -224,8 +224,53 @@ def render_markdown(report: ResearchReport) -> str:
     # 6-7. management + valuation
     if r.management_narrative:
         out += ["## Management and governance", "", r.management_narrative, ""]
+    v = r.valuation
+    if v is not None:
+        out += ["## Valuation — what the price already assumes", ""]
+        if v.status != "valued":
+            out += [
+                ("_The valuation could not run. Its missing inputs are named rather than defaulted: a "
+                 "valuation that substitutes a zero for a figure it does not have is worse than none, "
+                 "because it looks like one._"),
+                "",
+            ]
+            out += [f"- **UNAVAILABLE** — {item}" for item in v.missing] + [""]
+        else:
+            out += [
+                (f"Quoted **₹{v.price:,.2f}** on {v.price_on:%Y-%m-%d} · "
+                 f"market cap **₹{v.market_cap_cr:,.0f}cr** · "
+                 f"net debt ₹{v.net_debt_cr:,.0f}cr · EV ₹{v.enterprise_value_cr:,.0f}cr · "
+                 f"base FCF ₹{v.base_fcf_cr:,.0f}cr"),
+                "",
+            ]
+            if v.implied_growth is not None:
+                realised = ("no realised growth figure" if v.realised_growth is None
+                            else f"has realised **{v.realised_growth:+.1%}**")
+                out += [
+                    (f"**Reverse DCF: this price demands {v.implied_growth:.1%} FCF growth for "
+                     f"{int(v.assumptions.get('explicit_years', 0))} years.** The company {realised}. "
+                     f"That is the comparison to check against a base rate, not a target price."),
+                    "",
+                ]
+            elif v.implied_growth_note:
+                out += [f"**Reverse DCF:** {v.implied_growth_note}", ""]
+            if v.scenarios:
+                out += ["| scenario | growth | value/share | vs. price |", "|---|---|---|---|"]
+                out += [
+                    (f"| {s.name} | {s.growth:+.1%} | ₹{s.value_per_share:,.0f} | "
+                     f"{s.return_multiple:.2f}x |")
+                    for s in v.scenarios
+                ]
+                out += [""]
+            if v.assumptions:
+                stated = " · ".join(f"{k} {val:g}" for k, val in sorted(v.assumptions.items()))
+                out += [
+                    (f"_Stated policy, not measurement — a discount rate is the return this firm "
+                     f"demands: {stated}. No exit multiple is assumed anywhere above._"),
+                    "",
+                ]
     if r.valuation_narrative:
-        out += ["## Valuation", "", r.valuation_narrative, ""]
+        out += ["### Valuation — the analyst's reading", "", r.valuation_narrative, ""]
 
     # 8. thesis AND anti-thesis — always both
     out += ["## Thesis", "", r.thesis or "_none stated_", "",
