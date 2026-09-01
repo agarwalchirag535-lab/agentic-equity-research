@@ -161,13 +161,17 @@ def choose_verdict(
 
     if feasibility is None:
         return VerdictDecision(Verdict.WATCH, (
-            "the §6.3 feasibility gate could not run (ROIC not derivable from disclosed figures), so no "
-            "compounding claim is provable yet"
+            "forensically clean and adequately disclosed, but the §6.3 feasibility gate could not run "
+            "(ROIC is not derivable from the disclosed figures), so the return question is untested "
+            "rather than answered. Every other section of this report stands on its own evidence — "
+            "the gap is one input, named in Return potential, not a verdict on the business"
         ))
     if feasibility.verdict in (GateVerdict.HARD_FAIL, GateVerdict.NEEDS_EXTERNAL_FUNDING):
-        return VerdictDecision(Verdict.QUALITY_WRONG_PRICE, (
-            f"forensically clean, but the feasibility gate returned {feasibility.verdict.value}: "
-            f"{feasibility.rationale}"
+        return VerdictDecision(Verdict.RETURN_HURDLE_NOT_CLEARED, (
+            f"forensically clean and adequately disclosed; what it does not clear is THIS RUN'S RETURN "
+            f"TARGET — the §6.3 gate returned {feasibility.verdict.value}: {feasibility.rationale} "
+            f"That is a finding in the Return-potential section against the target you set, not a "
+            f"judgment that the business is unsound (ADR-0063); a different target may clear."
         ))
     if history_years < min_history_years:
         return VerdictDecision(Verdict.WATCH, (

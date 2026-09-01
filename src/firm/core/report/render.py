@@ -26,7 +26,7 @@ _OUTCOME_MARK = {
 
 _VERDICT_HEADLINE = {
     "COMPOUNDER": "Passes the compounding test",
-    "QUALITY_WRONG_PRICE": "Quality business, wrong price today",
+    "RETURN_HURDLE_NOT_CLEARED": "Clean business; does not clear this run's return target",
     "WATCH": "Watch — thesis not yet provable",
     "FORENSIC_CAUTION": "Forensic caution — red flags evidenced below",
     "INSUFFICIENT_DISCLOSURE": "Insufficient disclosure — opacity is the finding",

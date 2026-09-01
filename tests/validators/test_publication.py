@@ -126,11 +126,11 @@ def test_p2_positive_report_needs_a_load_bearing_kill_criterion():
 
 
 def test_p2_negative_report_needs_rehabilitation_criteria():
-    rep = _report(verdict=Verdict.QUALITY_WRONG_PRICE, kill_criteria=[])
+    rep = _report(verdict=Verdict.RETURN_HURDLE_NOT_CLEARED, kill_criteria=[])
     v = symmetry(rep)
     assert any(x.field == "rehabilitation_criteria" for x in v)
     # with them, symmetry is satisfied (no kill criteria needed for a withholding verdict)
-    ok = _report(verdict=Verdict.QUALITY_WRONG_PRICE, kill_criteria=[],
+    ok = _report(verdict=Verdict.RETURN_HURDLE_NOT_CLEARED, kill_criteria=[],
                  rehabilitation_criteria=[_criterion()])
     assert symmetry(ok) == []
 
@@ -212,7 +212,7 @@ def test_validate_report_aggregates_all_rules():
 
 def test_report_verdict_polarity_helpers():
     assert _report(verdict=Verdict.COMPOUNDER).is_positive
-    for v in (Verdict.QUALITY_WRONG_PRICE, Verdict.WATCH, Verdict.FORENSIC_CAUTION,
+    for v in (Verdict.RETURN_HURDLE_NOT_CLEARED, Verdict.WATCH, Verdict.FORENSIC_CAUTION,
               Verdict.INSUFFICIENT_DISCLOSURE):
         rep = _report(verdict=v, rehabilitation_criteria=[_criterion()])
         assert rep.is_negative and not rep.is_positive

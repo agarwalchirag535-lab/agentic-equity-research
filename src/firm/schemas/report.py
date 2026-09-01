@@ -28,7 +28,11 @@ class Verdict(str, Enum):
     """Exactly one per report (REPORT_ARCHITECTURE §2). Never 'buy'/'sell' (SPEC §1)."""
 
     COMPOUNDER = "COMPOUNDER"                          # passed forensics + feasibility + valuation
-    QUALITY_WRONG_PRICE = "QUALITY_WRONG_PRICE"        # clean business, price/feasibility fails today
+    #: Forensically clean and adequately disclosed, but the §6.3 gate says it cannot fund the growth
+    #: THIS RUN'S TARGET demands. Named for the test it actually performs: it fires on the feasibility
+    #: gate, never on a price comparison, and was called QUALITY_WRONG_PRICE from Phase 2 until ADR-0081.
+    #: Reads as MIXED at the headline — quality established, hurdle not cleared (ADR-0067).
+    RETURN_HURDLE_NOT_CLEARED = "RETURN_HURDLE_NOT_CLEARED"
     WATCH = "WATCH"                                    # promise, thesis not yet provable
     FORENSIC_CAUTION = "FORENSIC_CAUTION"              # red flags with a corroborated evidence chain
     INSUFFICIENT_DISCLOSURE = "INSUFFICIENT_DISCLOSURE"  # THEY did not disclose what the law requires
@@ -46,7 +50,7 @@ class Outcome(str, Enum):
     criteria symmetry, the publication gates and the golden set. `Outcome` is the summary axis above
     it, and it exists because the verdict ladder alone answered a narrower question than the mandate
     now asks (ADR-0063). A forensically clean, fully-disclosed, fairly-priced business that simply
-    cannot compound 5x in seven years is not a *failure*; reading `QUALITY_WRONG_PRICE` as a flat
+    cannot compound 5x in seven years is not a *failure*; reading `RETURN_HURDLE_NOT_CLEARED` as a flat
     negative was the last place the 5-10x question was still masquerading as the whole point.
 
     MIXED is therefore a first-class result, not an error state: quality established, return hurdle
@@ -64,7 +68,7 @@ class Outcome(str, Enum):
 OUTCOME_BY_VERDICT: dict[Verdict, Outcome] = {
     Verdict.COMPOUNDER: Outcome.PASS,
     # Clean business, feasibility or price fails at the target — quality established, hurdle not cleared.
-    Verdict.QUALITY_WRONG_PRICE: Outcome.MIXED,
+    Verdict.RETURN_HURDLE_NOT_CLEARED: Outcome.MIXED,
     # Promise visible, thesis not yet provable from what exists.
     Verdict.WATCH: Outcome.MIXED,
     Verdict.FORENSIC_CAUTION: Outcome.FAIL,
@@ -80,7 +84,7 @@ OUTCOME_BY_VERDICT: dict[Verdict, Outcome] = {
 POSITIVE_VERDICTS = frozenset({Verdict.COMPOUNDER})
 #: Verdicts that withhold or warn — these must carry rehabilitation criteria (what would reverse them).
 NEGATIVE_VERDICTS = frozenset({
-    Verdict.QUALITY_WRONG_PRICE, Verdict.WATCH, Verdict.FORENSIC_CAUTION,
+    Verdict.RETURN_HURDLE_NOT_CLEARED, Verdict.WATCH, Verdict.FORENSIC_CAUTION,
     Verdict.INSUFFICIENT_DISCLOSURE, Verdict.INSUFFICIENT_EVIDENCE,
 })
 

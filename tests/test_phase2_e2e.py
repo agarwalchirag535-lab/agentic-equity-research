@@ -9,7 +9,7 @@ The five are chosen to land on five different verdicts, because a pipeline that 
 verdict has not been shown to discriminate:
 
   1. COMPOUNDER             — clean, self-funds the target growth
-  2. QUALITY_WRONG_PRICE    — same business, ROIC too low to self-fund the target
+  2. RETURN_HURDLE_NOT_CLEARED    — same business, ROIC too low to self-fund the target
   3. FORENSIC_CAUTION       — profit never becomes cash; receivables absorb the gap
   4. INSUFFICIENT_DISCLOSURE — screener-only run: most of the playbook cannot be evaluated
   5. WATCH                  — clean and high-return, but too little history to prove a thesis
@@ -79,12 +79,12 @@ def test_clean_high_return_company_publishes_a_compounder_report(store, tmp_path
     assert "✅ pass" in render_markdown(result.report)
 
 
-# ---- 2. QUALITY_WRONG_PRICE ------------------------------------------------------------------------
+# ---- 2. RETURN_HURDLE_NOT_CLEARED ------------------------------------------------------------------------
 def test_clean_but_cannot_self_fund_the_target_is_withheld(store, tmp_path):
     result = _run(store, "LOWROIC", clean_series(roic_boost=1.0),
                   answers=clean_answers("LOWROIC"), filing=filing_for("LOWROIC"), tmp_path=tmp_path)
 
-    assert result.report.verdict is Verdict.QUALITY_WRONG_PRICE, result.decision.rationale
+    assert result.report.verdict is Verdict.RETURN_HURDLE_NOT_CLEARED, result.decision.rationale
     assert result.screen.verdict.value == "PASS"          # forensically clean — the maths is the problem
     assert result.feasibility is not None
     assert result.feasibility.required_reinvestment > 1.0

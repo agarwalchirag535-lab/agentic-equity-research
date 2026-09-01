@@ -36,7 +36,7 @@ never "buy this".
 | 5 — memory loop | 🔨 **§7.1-7.4 done 2026-09-01 (ADR-0073/0077/0079)**: `firm resolve` scores due predictions point-in-time; `firm evolve` clusters lessons into prompt proposals a human approves and scores Brier per agent VERSION; per-company memory accumulates and is filtered by `as_of` on read. **Remaining: §7.5 the calibration dashboard** (over/under-confidence curve, hit rate by claim type, and which agent's output most changed the decision — an agent that never changes one is dead weight) |
 | 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0061)**: 8 cases, 7 in band + CAP-EPC recorded, positives **2/2**; register spans 7 event kinds; awaiting human sign-off |
 
-**Tests:** 995 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 1001 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -952,8 +952,9 @@ order, and each with the flag it retires:
 version drift (UP035/ISC004/RUF022 — rules that postdate the code). The non-style findings among them
 were fixed (`899ebde`: two undefined names in annotations, a dead assignment, stale suppressions); the
 mechanical 70-file reformat is left for the owner to schedule. Also unpaid by choice:
-`QUALITY_WRONG_PRICE` is named for a price test it does not perform (it fires on the feasibility gate)
-— worth renaming when the ladder is next opened for Phase 4, not before.
+~~`QUALITY_WRONG_PRICE` is named for a price test it does not perform~~ — **renamed
+`RETURN_HURDLE_NOT_CLEARED` on 2026-09-01 (ADR-0081)**, with both feasibility rationales reframed as
+findings against the run's target rather than against the company.
 
 ## 7. Suggested next step
 
@@ -970,17 +971,17 @@ note-level reads landed (§6i, ADR-0056). In order:
    test shows the flat rate false-positives in a low-rate year and false-negatives in a high-rate one —
    which is exactly the year-dependent error GOLDEN_SET.md §1 warns calibration would learn to
    compensate for, so this should land BEFORE sign-off, not after.
-3. **Retire the last old-charter narrowness in code** (ADR-0063 flags #1–#4). `POSITIVE_VERDICTS` still
-   has one member; `choose_verdict` still lets a feasibility miss carry the ladder; and
-   `agents/thesis_synthesizer.md` is still v1.0.0 with its mandate written as "own the §6 multibagger
-   decomposition and the feasibility gate" rather than the overall investment case.
+3. ~~**Retire the last old-charter narrowness in code**~~ — **DONE 2026-09-01 (ADR-0081)**: verdict
+   renamed `RETURN_HURDLE_NOT_CLEARED`, both feasibility rationales reframed, and `thesis_synthesizer`
+   at v1.1.0 owning the overall investment case with the §6 decomposition as one pillar.
+   `POSITIVE_VERDICTS` deliberately keeps one member — see the ADR for why a second would re-hardcode
+   a house opinion about which targets deserve applause.
 4. **SPEC §7.5, the calibration dashboard** — the over/under-confidence curve, hit rate by claim type,
    and the attribution question that matters most: which agent's output most changed the decision. An
    agent whose output never changes one is dead weight and should be cut.
 5. **`make lint`** — ~180 ruff findings, nearly all version drift (UP035/ISC004/RUF022). A mechanical
    ~70-file reformat; the non-style findings among them were fixed in `899ebde`.
-6. **Rename `QUALITY_WRONG_PRICE`** — it fires on the feasibility gate, not a price test, and has been
-   misnamed since Phase 2. Worth doing the next time the verdict ladder is opened (see item 3).
+6. ~~**Rename `QUALITY_WRONG_PRICE`**~~ — **DONE 2026-09-01 (ADR-0081)**, together with item 3.
 4. ~~Re-run ALKYLAMINE through the reading path and diff against the walker's facts~~ **DONE
    2026-08-31 — the two extraction lines cross-validate.** The FY26 AR read via ADR-0046 (60 figures,
    3/3 statements verified, zero violations; sha256-verified re-download): **9/9 exact agreement** with

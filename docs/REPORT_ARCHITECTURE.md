@@ -30,7 +30,7 @@
 | Verdict | Meaning | Publishable output |
 |---|---|---|
 | `COMPOUNDER` | Passed forensics, feasibility (§6.3), valuation discipline, red team | Full positive thesis + kill criteria |
-| `QUALITY_WRONG_PRICE` | Forensically clean, good business; fails valuation/feasibility today | Reject note + re-entry triggers (the ALKYLAMINE case — already our house pattern) |
+| `RETURN_HURDLE_NOT_CLEARED` | Forensically clean and adequately disclosed; does not clear the §6.3 self-funding gate **at the target this run was given**. Reads as MIXED, never FAIL — the miss is against a parameter you chose, not a finding about the company (ADR-0063/0081). Called `QUALITY_WRONG_PRICE` until 2026-09-01, which named a price test it never performed | Report in full + re-entry triggers (the ALKYLAMINE case — already our house pattern) |
 | `WATCH` | Structural promise, thesis not yet provable (often `EMERGING` track, ADR-0008) | Short note + what evidence would upgrade it |
 | `FORENSIC_CAUTION` | Deterministic red flags + narrative corroboration | Caution report: evidence chain, replication steps, rehabilitation criteria |
 | `INSUFFICIENT_DISCLOSURE` | Legally-public data missing/unreadable after primary-source effort | Opacity itself published as the finding (ADR-0014) |
@@ -69,7 +69,7 @@ company should answer." The `hedge`/`legal-framing` standards apply to both.
 ## 4. Validators that gate publication (all blocking)
 
 Existing: citation, arithmetic, consistency, hedge, evidence-graph R1–R6. Added by this architecture:
-- **verified-clean completeness** — a `COMPOUNDER`/`QUALITY_WRONG_PRICE` report must enumerate every
+- **verified-clean completeness** — a `COMPOUNDER`/`RETURN_HURDLE_NOT_CLEARED` report must enumerate every
   check in the applicable playbook; a skipped check must say why (never silently absent).
 - **symmetry** — positive reports must contain kill criteria; negative reports must contain
   rehabilitation criteria; both must contain the opposing case (§3.8).

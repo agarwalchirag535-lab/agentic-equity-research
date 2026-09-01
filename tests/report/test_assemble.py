@@ -146,7 +146,7 @@ def test_full_coverage_that_read_nothing_does_not_buy_a_thesis():
 
 def test_a_clean_company_that_cannot_self_fund_the_target_is_withheld_on_price():
     decision = _choose(feasibility=UNAFFORDABLE)
-    assert decision.verdict is Verdict.QUALITY_WRONG_PRICE
+    assert decision.verdict is Verdict.RETURN_HURDLE_NOT_CLEARED
     assert GateVerdict.NEEDS_EXTERNAL_FUNDING.value in decision.rationale
 
 
@@ -208,7 +208,7 @@ def test_assembly_attaches_criteria_by_verdict_class_and_states_the_rationale(st
 
     withheld = assemble_report(
         ticker="ACME", company_name="ACME Limited", as_of=AS_OF, run_id="run-2",
-        decision=VerdictDecision(Verdict.QUALITY_WRONG_PRICE, "maths"), derived=derived,
+        decision=VerdictDecision(Verdict.RETURN_HURDLE_NOT_CLEARED, "maths"), derived=derived,
         evaluation=evaluation, models=[], notes=FULL_NOTES, graph=EvidenceGraph(),
         load_bearing_ids=(), narration=Narration(thesis="t", anti_thesis="a"), agent_versions={},
         forensic=THRESHOLDS["forensic"], policy=POLICY, feasibility=UNAFFORDABLE,

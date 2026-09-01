@@ -93,7 +93,7 @@ def test_rehabilitation_criteria_come_from_the_fired_and_unavailable_checks(stor
 def test_a_clean_but_unaffordable_company_gets_a_re_entry_trigger(store):
     """A forensically spotless company withheld purely on maths must still state its exit route.
 
-    Without this the P2 symmetry gate would refuse to publish the `QUALITY_WRONG_PRICE` note that
+    Without this the P2 symmetry gate would refuse to publish the `RETURN_HURDLE_NOT_CLEARED` note that
     REPORT_ARCHITECTURE §2 explicitly calls for.
     """
     from firm.core.compute.multibagger import feasibility_gate

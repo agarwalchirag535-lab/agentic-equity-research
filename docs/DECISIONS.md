@@ -3205,3 +3205,44 @@ are measured and available today. `BudgetGuard` stays for USD and activates when
 exists; that is a stated gap, not a silent one. A cache hit is charged nothing: charging it would make
 the ceiling punish the mechanism that saves money and make a resumed run (Law 5) fail where the first
 one passed.
+
+### ADR-0081 — The verdict layer stops treating "not a 5–10x" as a failure
+
+**Date** 2026-09-01 · **Status** accepted · **Closes** ADR-0063 flags #1–#4 · **Files**
+`schemas/report.py`, `core/report/{assemble,render,criteria}.py`, `agents/thesis_synthesizer.md`,
+`tests/report/test_return_hurdle_verdict.py` (new) · **1001 tests, compute 100%**
+
+ADR-0063 flagged four places where the 5–10x question still behaved as the system's purpose. Two were
+closed on the way past: **ADR-0067** gave a clean-but-unaffordable business the MIXED headline it
+deserved, and **ADR-0068** made the target a per-run parameter, which is what makes "does not clear the
+hurdle" a statement about the question rather than about the company. What remained was the verdict
+layer's own language — and that is what a reader sees first, so it was the last place the old framing
+could still do damage.
+
+**`QUALITY_WRONG_PRICE` → `RETURN_HURDLE_NOT_CLEARED`.** The old name promised a price comparison the
+verdict has never performed: it fires on the §6.3 self-funding gate. A reader shown "Quality business,
+wrong price today" would go looking for a valuation argument that was never made — and, since ADR-0069,
+the report now carries a real valuation section beside it, so the two would have contradicted each
+other in the same document.
+
+**Both feasibility rationales reframed.** "Forensically clean, *but* the feasibility gate returned …"
+put the miss against the company. It now reads as a miss against **this run's target**, says a
+different target may clear it, and says in terms that it is not a judgment that the business is
+unsound. The un-runnable case no longer says "no compounding claim is provable yet" — a sentence that
+framed an entire report around the one section that could not run — but says the return question is
+untested rather than answered, and that every other section stands on its own evidence.
+
+**`thesis_synthesizer` 1.0.0 → 1.1.0.** Its mandate was "Own the §6 multibagger decomposition and the
+feasibility gate", and step 1 let a HARD_FAIL end the thesis. It now owns the **overall investment
+case** with the §6 decomposition as one pillar, is told not to restate the computed gate verdict as its
+own conclusion, and is told explicitly that a business which cannot self-fund a 5x is still a business.
+It also now reads `prior_conclusions` (ADR-0079) and must say, when the firm's verdict has changed,
+whether the evidence changed or only the opinion — those are different, and a reader deserves to know
+which. The semver bump matters beyond bookkeeping: predictions record `agent_version`, so
+`brier_by_agent_version` (ADR-0077) can now measure whether 1.1.0 actually forecasts better than 1.0.0.
+
+**What was NOT done, and why.** No new "positive" verdict was added. `POSITIVE_VERDICTS` keeps one
+member, and that is correct: `COMPOUNDER` means *clears the bar this run was asked to test*, and since
+the bar is now yours to set, a good business you tested at 5x and that clears 2x is a run away from
+being a COMPOUNDER. Adding a second positive rung would have re-hardcoded a house opinion about which
+targets deserve applause — the exact error ADR-0063 was written to remove.

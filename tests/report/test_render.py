@@ -114,11 +114,13 @@ def test_markdown_renders_criteria_tables_and_gaps():
 
 def test_markdown_negative_verdict_renders_rehabilitation():
     rep = _positive_report(
-        verdict=Verdict.QUALITY_WRONG_PRICE, kill_criteria=[],
+        verdict=Verdict.RETURN_HURDLE_NOT_CLEARED, kill_criteria=[],
         rehabilitation_criteria=[_crit(metric="pe_ratio")],
     )
     md = render_markdown(rep)
-    assert "Quality business, wrong price today" in md
+    # The headline names the test that actually ran. "Wrong price today" described a price comparison
+    # this verdict has never performed — it fires on the §6.3 feasibility gate (ADR-0081).
+    assert "Clean business; does not clear this run's return target" in md
     assert "Rehabilitation criteria — what would reverse this verdict" in md
     assert "Kill criteria" not in md
 

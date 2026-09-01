@@ -162,7 +162,7 @@ def rehabilitation_criteria(
       company the datum is public by law, so the fix is disclosure, not an analyst's patience
       (owner directive 2). Those are resolvable from the next filing by inspection;
     * a failed **feasibility gate** becomes the re-entry trigger REPORT_ARCHITECTURE §2 asks for on a
-      `QUALITY_WRONG_PRICE` note: the ROIC at which the target growth becomes self-fundable. Without this,
+      `RETURN_HURDLE_NOT_CLEARED` note: the ROIC at which the target growth becomes self-fundable. Without this,
       a forensically spotless company withheld purely on maths would have nothing to state, and the P2
       symmetry gate would (correctly) refuse to publish it.
     """
