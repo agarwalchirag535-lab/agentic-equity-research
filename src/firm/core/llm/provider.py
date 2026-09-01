@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Callable, Protocol
 
 from firm.core.llm.cache import DiskCache, make_key
+from firm.core.orchestrator.budget import BudgetExceeded
 
 
 @dataclass(frozen=True)
@@ -187,6 +188,55 @@ class CachingProvider:
             "text": resp.text, "model": resp.model,
             "input_tokens": resp.input_tokens, "output_tokens": resp.output_tokens,
         })
+        return resp
+
+
+class MeteredProvider:
+    """Counts what a run actually consumes, and stops it at a ceiling (SPEC §9, ADR-0080).
+
+    `BudgetGuard` was written in Phase 0 to abort a run on cost and **was never instantiated**: every
+    `LLMResponse` has carried `input_tokens`/`output_tokens` from the start and nothing ever summed
+    them, so a `deep-dive` against a paid API had no spend limit and no accounting. Nothing could abort
+    on breach because nothing was counting.
+
+    THE CEILING IS IN TOKENS, NOT DOLLARS, AND THAT IS DELIBERATE. Charging USD needs a price per
+    model, and `config/models.yaml` still carries placeholder model ids (PLAN OQ#4). Inventing prices
+    to populate a budget would produce a number that looks like money and is not — the same class of
+    error as typing a risk-free rate from memory (ADR-0078). Tokens are measured, exact, and available
+    today; `BudgetGuard` stays for USD and activates when a real price table exists.
+
+    Wraps the seam every provider passes through, so **retries are counted too** — three attempts per
+    agent is precisely where an unattended run's cost escapes, and metering the call site rather than
+    the loop would have missed it.
+    """
+
+    def __init__(self, inner: Provider, *, ceiling_tokens: int | None = None) -> None:
+        self._inner = inner
+        self._ceiling = ceiling_tokens
+        self.name = f"metered:{inner.name}"
+        self.input_tokens = 0
+        self.output_tokens = 0
+        self.calls = 0
+        #: (model, input, output, cached) per call — so a post-mortem can see WHERE a run spent.
+        self.ledger: list[tuple[str, int, int, bool]] = []
+
+    @property
+    def total_tokens(self) -> int:
+        return self.input_tokens + self.output_tokens
+
+    def complete(self, req: LLMRequest) -> LLMResponse:
+        resp = self._inner.complete(req)
+        self.calls += 1
+        self.ledger.append((resp.model, resp.input_tokens, resp.output_tokens, resp.cached))
+        # A cache hit cost nothing, so charging it would make the ceiling punish the thing that saves
+        # money — and would make a resumed run (Law 5) fail where the first one passed.
+        if not resp.cached:
+            self.input_tokens += resp.input_tokens
+            self.output_tokens += resp.output_tokens
+        if self._ceiling is not None and self.total_tokens > self._ceiling:
+            raise BudgetExceeded(
+                f"run consumed {self.total_tokens:,} tokens, over the {self._ceiling:,} ceiling "
+                f"({self.calls} call(s)). Raise --max-tokens or lower --phase; nothing was published.")
         return resp
 
 

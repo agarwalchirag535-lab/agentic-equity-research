@@ -37,11 +37,13 @@ inputs produce the same directory (Law 5).
 from __future__ import annotations
 
 import json
+import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from functools import partial
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -55,7 +57,7 @@ from firm.core.agents.evidence import (
 from firm.core.agents.loader import AgentSpec, load_agent
 from firm.core.agents.packet import build_packet, load_house_style
 from firm.core.agents.runner import run_agent
-from firm.core.compute import multibagger, quality
+from firm.core.compute import multibagger, quality, scenarios
 from firm.core.compute.models import (
     BusinessModel,
     Playbook,
@@ -85,11 +87,11 @@ from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs, evaluate_checks
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
 from firm.core.pipeline.filing import FilingSource, FilingWalk, disposition_notes, walk_filing
+from firm.core.pipeline.gates import evaluate_gates
 from firm.core.pipeline.interrogate import Interrogation, interrogate
 from firm.core.pipeline.peers import PeerComparison, load_peer_comparisons
 from firm.core.pipeline.peers import citable_values as peer_citable_values
 from firm.core.pipeline.peers import payload_rows as peer_payload_rows
-from firm.core.pipeline.gates import evaluate_gates
 from firm.core.pipeline.valuation import load_valuation, valuation_derivations
 from firm.core.report.assemble import (
     Narration,
@@ -102,7 +104,7 @@ from firm.core.report.criteria import kill_criteria
 from firm.core.report.narration import deterministic_narration
 from firm.core.report.publish import publish_or_degrade
 from firm.core.report.render import write_report
-from firm.core.validators import arithmetic, citation
+from firm.core.validators import arithmetic, citation, hedge
 from firm.core.validators.evidence_graph import GraphViolation, validate_graph
 from firm.core.validators.publication import PublicationViolation, validate_report
 from firm.schemas._base import AgentOutputBase
@@ -560,6 +562,65 @@ def _citation_problems(
     return problems
 
 
+#: Sentence split for the hedge scan: the rule is "a vague quantifier WITHOUT a number", and "without"
+#: has to be scoped to something. The sentence is the unit a reader judges the claim in.
+_SENTENCE = re.compile(r"(?<=[.!?;])\s+|\n+")
+_HAS_NUMBER = re.compile(r"\d")
+
+
+def _hedge_problems(output: AgentOutputBase) -> list[str]:
+    """House style §1: an adjective standing in for a number is not an analysis (ADR-0080).
+
+    `agents/_shared/house_style.md` tells every agent, verbatim, that "a `hedge_detector` flags vague
+    quantifiers ... and forces a number", and `forbidden.md` bans them outright. Until now that was a
+    claim the system made and did not keep: `validators/hedge.py` was written in Phase 0 and never
+    called, so "margins are healthy and growth has been strong" shipped into published narrative
+    unchallenged. A prompt that asserts an enforcement which does not exist is worse than one that asks
+    politely — it teaches the agent the rule is checked, and the agent has no way to learn otherwise.
+
+    Runs over the same schema-derived walk as the citation check, so a field added to any agent schema
+    is covered the day it appears rather than the day someone remembers this function.
+    """
+    problems: list[str] = []
+    for label, text in authored_texts(output):
+        for sentence in _SENTENCE.split(text):
+            found = hedge.find_hedges(sentence)
+            # "WITHOUT A NUMBER" is the rule as `forbidden.md` writes it, and applying it as written
+            # matters in both directions. A bare word match would fail "margins improved to a strong
+            # 24.1% [fact:derived:ebitda_margin]" — a sentence that does exactly what house style asks,
+            # with the adjective as commentary on a cited figure. Matching the whole sentence catches
+            # the actual offence: an adjective standing IN PLACE OF the number.
+            if found and not _HAS_NUMBER.search(sentence):
+                problems.append(
+                    f"{label}: {', '.join(sorted(set(found)))} with no figure in the sentence "
+                    f"({sentence.strip()[:80]!r}) — house style §1 wants the number and its "
+                    f"[fact:...] citation, not the adjective")
+    return problems
+
+
+def _probability_problems(output: AgentOutputBase) -> list[str]:
+    """Scenario probabilities must be a distribution, not four independent guesses (ADR-0080).
+
+    `ScenarioLine.probability` is deliberately the agent's to author — it is the judgment the whole
+    judgment tier exists to supply. But a set of probabilities is a claim about ONE future, and nothing
+    checked that it summed to one: `valuation_modeler` could return bull 0.8, base 0.8 and bear 0.8 and
+    pass every gate, which is not an optimistic view, it is not a view at all. `validate_probabilities`
+    was written in Phase 0 to catch exactly this and was reachable only from two functions that were
+    themselves never called — the same defect as `_scenario_discipline`, one field to its left.
+    """
+    lines = getattr(output, "scenarios", None)
+    if not lines:
+        return []
+    if any(getattr(line, "probability", None) is None for line in lines):
+        return []                      # a partly-weighted set is a schema question, not a sum question
+    try:
+        # `ScenarioLine` carries `.probability`, which is all `validate_probabilities` reads.
+        scenarios.validate_probabilities(lines)
+    except ValueError as exc:
+        return [f"scenarios: {exc} — probabilities describe ONE future, so they must sum to 1"]
+    return []
+
+
 def _run_one_agent(
     spec: AgentSpec,
     schema: type[AgentOutputBase],
@@ -583,6 +644,8 @@ def _run_one_agent(
         output = run_agent(provider, system=system, user=prompt, model=model, schema=schema)
         problems = (_numeric_discipline(output, derived)
                     + _scenario_discipline(output, priced_scenarios or {})
+                    + _probability_problems(output)
+                    + _hedge_problems(output)
                     + _citation_problems(output, known_fact_ids, known_values))
         if not problems:
             return output
@@ -591,7 +654,8 @@ def _run_one_agent(
             f"{user}\n\n## Your previous answer broke the house laws — fix these and resend the JSON\n"
             + "\n".join(f"- {p}" for p in problems)
             + "\n\nEvery number in prose needs its [fact:...] token; numeric fields must equal the "
-              "computed values or be null."
+              "computed values or be null; replace vague quantifiers with the figure and its citation; "
+              "scenario probabilities must sum to 1."
         )
     raise AgentDisciplineError(spec.name, last)
 

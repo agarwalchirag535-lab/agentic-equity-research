@@ -3154,3 +3154,54 @@ a withheld verdict is still something the firm decided, and it should have to fa
 was wrong: §7.4 was unbuilt (this ADR) and §7.5, the calibration dashboard, still is. STATUS now says
 so. Overstating coverage in the status file is the same failure the report gates exist to prevent, and
 it is worse there, because STATUS is what the next session reads first.
+
+### ADR-0080 — Three more checks that were never called: hedges, probabilities, and cost
+
+**Date** 2026-09-01 · **Status** accepted · **Same defect class as** ADR-0074 · **Files**
+`core/pipeline/deep_dive.py`, `core/llm/provider.py`, `cli.py`,
+`tests/pipeline/test_agent_discipline_gaps.py` (new), `tests/llm/test_metering.py` (new) ·
+**996 tests, compute 100%**
+
+A systematic audit for the ADR-0074 defect — capabilities written, tested, and never called — turned up
+three more. The private-function guard added that morning does not cover them: all three are public,
+and "no caller yet" is a defensible state for a public helper, which is exactly the ambiguity they hid
+in.
+
+**1. The hedge detector, and the promise the system made about it.** `validators/hedge.py` was written
+in Phase 0 and never called. That alone is ordinary; what makes it the sharpest finding of the day is
+that **the system tells its agents the check exists**. `agents/_shared/house_style.md` §1 says verbatim
+that "a `hedge_detector` flags vague quantifiers … and forces a number", and
+`agents/_shared/forbidden.md` — a file titled *anti-patterns that fail a run* — bans them. Neither was
+true, so "margins are healthy and growth has been strong" shipped into published narrative
+unchallenged. A prompt asserting an enforcement that does not exist is worse than one that asks
+politely: the agent is taught the rule is checked and has no way to learn otherwise.
+
+Wired now, over the same schema-derived walk as the citation check, and **applying the rule as written
+rather than more strictly**: `forbidden.md` bans a vague quantifier *"without a number"*, so the scan
+is scoped to the sentence. "Margins improved to a strong 24.1% [fact:derived:ebitda_margin]" passes —
+the adjective is commentary on a cited figure — while "margins are healthy" fails. A bare word match
+would have failed prose that does exactly what house style asks.
+
+**2. Scenario probabilities were never a distribution.** `ScenarioLine.probability` is deliberately the
+agent's to author — it is the judgment the whole tier exists to supply — but nothing checked that the
+weights summed to one. `validate_probabilities` existed for precisely this and was reachable only from
+two functions that were themselves never called. `valuation_modeler` could return bull 0.8, base 0.8
+and bear 0.8 and pass every gate: not an optimistic view, no view at all. This is
+`_scenario_discipline` one field to the left — the return multiple got its guard that morning, the
+weight beside it did not. Worth recording *why* the check is small: the schema already bounds each
+value to [0, 1]; what a per-field schema cannot express is that the set is a distribution.
+
+**3. There was no cost ceiling, because nothing was counting.** `BudgetGuard` ("the run aborts and
+reports on breach", SPEC §9) was never instantiated. Every `LLMResponse` has carried token counts since
+Phase 0 and nothing summed them, so an unattended `deep-dive` against a paid API had no spend limit and
+no accounting. `MeteredProvider` now wraps the seam every provider passes through — **so retries are
+counted, which is where an unattended run's cost actually escapes** — and `--max-tokens` aborts on
+breach.
+
+**The ceiling counts tokens, not dollars, and that is deliberate.** Charging USD needs a price per
+model and `config/models.yaml` still carries placeholder ids (PLAN OQ#4). Inventing prices would
+produce a number that looks like money and is not — the ADR-0078 error in a different costume. Tokens
+are measured and available today. `BudgetGuard` stays for USD and activates when a real price table
+exists; that is a stated gap, not a silent one. A cache hit is charged nothing: charging it would make
+the ceiling punish the mechanism that saves money and make a resumed run (Law 5) fail where the first
+one passed.

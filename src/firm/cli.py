@@ -337,6 +337,9 @@ def deep_dive(
              "cover, so the subject's newest year is never compared against a peer's older one."),
     force: bool = typer.Option(
         False, "--force", help="write the report even if a publication gate fails (debugging only)"),
+    max_tokens: int = typer.Option(
+        None, "--max-tokens",
+        help="abort the run above this many LLM tokens (SPEC section 9 cost ceiling; unlimited if unset)"),
     target_multiple: float = typer.Option(
         None, "--target-multiple",
         help="return target the run is judged against (default: config report.target_return_multiple)"),
@@ -352,7 +355,7 @@ def deep_dive(
     """
     import os
 
-    from firm.core.llm.provider import build_provider
+    from firm.core.llm.provider import MeteredProvider, build_provider
     from firm.core.pipeline.deep_dive import plan_agents, read_answers, run_deep_dive
     from firm.core.report.render import write_report
 
@@ -363,6 +366,11 @@ def deep_dive(
     prepared = None
     key_env = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}.get(provider)
     llm = build_provider(provider, os.environ.get(key_env) if key_env else None)
+    # Meter every call, including retries — three attempts per agent is where an unattended run's cost
+    # escapes (ADR-0080). Wrapping is unconditional so the run always REPORTS what it consumed; the
+    # ceiling only bites when the operator sets one.
+    metered = MeteredProvider(llm, ceiling_tokens=max_tokens)
+    llm = metered
 
     store = FactStore(db)
     try:
@@ -551,6 +559,9 @@ def deep_dive(
         md, _ = write_report(draft, reports_root, force=True)
         typer.echo(f"  ⚠ FORCED: as-assembled draft written, publication gates NOT enforced: {md}")
         return
+    if metered.calls:
+        typer.echo(f"  consumed {metered.total_tokens:,} tokens over {metered.calls} call(s) "
+                   f"({metered.input_tokens:,} in, {metered.output_tokens:,} out)")
     typer.echo(f"  published: {result.markdown_path}")
 
 
