@@ -19,7 +19,7 @@ from __future__ import annotations
 from datetime import date
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from firm.schemas._base import Citation, Confidence, Grade
 
@@ -37,6 +37,43 @@ class Verdict(str, Enum):
     #: INSUFFICIENT_DISCLOSURE matters in both directions: publishing our gap as their opacity is a false
     #: accusation, and publishing a business judgment off a fifth of the playbook is a false thesis.
     INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
+
+
+class Outcome(str, Enum):
+    """The headline conclusion, in the four values the owner reads first (ADR-0067).
+
+    `Verdict` says precisely what the firm concluded and stays the operative value: it drives the
+    criteria symmetry, the publication gates and the golden set. `Outcome` is the summary axis above
+    it, and it exists because the verdict ladder alone answered a narrower question than the mandate
+    now asks (ADR-0063). A forensically clean, fully-disclosed, fairly-priced business that simply
+    cannot compound 5x in seven years is not a *failure*; reading `QUALITY_WRONG_PRICE` as a flat
+    negative was the last place the 5-10x question was still masquerading as the whole point.
+
+    MIXED is therefore a first-class result, not an error state: quality established, return hurdle
+    not cleared — or promise visible, thesis not yet provable. None of the four is a preferred answer.
+    """
+
+    PASS = "PASS"                                    # clears the bar the run was asked to test
+    MIXED = "MIXED"                                  # some pillars hold, others do not
+    FAIL = "FAIL"                                    # a corroborated finding against the company
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"  # no honest conclusion is available either way
+
+
+#: Exactly one outcome per verdict. Exhaustive by test: a new verdict cannot be added without deciding
+#: what it means at the headline, which is the decision most likely to be skipped in a hurry.
+OUTCOME_BY_VERDICT: dict[Verdict, Outcome] = {
+    Verdict.COMPOUNDER: Outcome.PASS,
+    # Clean business, feasibility or price fails at the target — quality established, hurdle not cleared.
+    Verdict.QUALITY_WRONG_PRICE: Outcome.MIXED,
+    # Promise visible, thesis not yet provable from what exists.
+    Verdict.WATCH: Outcome.MIXED,
+    Verdict.FORENSIC_CAUTION: Outcome.FAIL,
+    # Both say "no conclusion is available", and they differ in WHOSE gap caused that — a distinction
+    # the verdict keeps and the headline deliberately does not, because the reader's next action is the
+    # same either way: read the gap, then decide whether to ask the company or wait for the firm.
+    Verdict.INSUFFICIENT_DISCLOSURE: Outcome.INSUFFICIENT_EVIDENCE,
+    Verdict.INSUFFICIENT_EVIDENCE: Outcome.INSUFFICIENT_EVIDENCE,
+}
 
 
 #: Verdicts that assert a company is investable-quality — these must carry kill criteria.
@@ -278,6 +315,12 @@ class ResearchReport(BaseModel):
     management_questions: list[ManagementQuestion] = Field(default_factory=list)
     replication_notes: list[str] = Field(default_factory=list)
     unavailable_items: list[str] = Field(default_factory=list)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def outcome(self) -> Outcome:
+        """The headline, derived from the verdict so the two can never disagree (ADR-0067)."""
+        return OUTCOME_BY_VERDICT[self.verdict]
 
     @property
     def is_positive(self) -> bool:

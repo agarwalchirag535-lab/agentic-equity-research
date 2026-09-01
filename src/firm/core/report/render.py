@@ -66,7 +66,7 @@ def render_markdown(report: ResearchReport) -> str:
     out += [
         f"# {r.company_name} ({r.ticker}) — research note",
         "",
-        f"**Verdict: `{r.verdict.value}` — {headline}**",
+        f"**Outcome: `{r.outcome.value}` · Verdict: `{r.verdict.value}` — {headline}**",
         "",
         f"_As-of {r.as_of.isoformat()} · run `{r.run_id}` · confidence "
         f"{r.confidence.value:.2f} (from {r.confidence.evidence_count} facts, lowest grade "

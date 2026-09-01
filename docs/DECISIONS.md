@@ -2674,3 +2674,45 @@ pointer, the latter carries the company's, in full.
 **Not done:** a standalone `questions.md` written beside `report.md`, and a `firm questions --ticker X`
 command. The section is on the report, which meets the requirement; the standalone artifact is a small
 addition to `write_report` when the owner wants one.
+
+### ADR-0067 — Four outcomes above the verdict: PASS / MIXED / FAIL / INSUFFICIENT_EVIDENCE
+
+**Date** 2026-09-01 · **Status** accepted · **Implements** ADR-0063 flags #1-#2 and ADR-0064 flag #3 ·
+**Files** `schemas/report.py`, `core/report/render.py`, `tests/report/test_outcome_axis.py` (new) ·
+**888 tests, compute 100%**
+
+**The defect.** `POSITIVE_VERDICTS` had exactly one member, `COMPOUNDER`, and everything else was
+negative. So a forensically clean, fully-disclosed, fairly-priced business that simply cannot compound
+5x in seven years published as `QUALITY_WRONG_PRICE` — classified alongside a forensic caution. That
+was the last place the 5-10x question was still masquerading as the whole mandate: the ladder answered
+"is this a multibagger candidate?" and then presented "no" as though it were a finding against the
+company. Under ADR-0063 that is wrong, and under the standing invariant that all four outcomes are
+legitimate results it also biases the system toward one of them.
+
+**The decision, and the option not taken.** The tempting move was to rework the `Verdict` enum itself.
+Rejected: `Verdict` is load-bearing in four places (criteria symmetry, P1's opacity exemption, P2, P4)
+and its values carry distinctions worth keeping — `INSUFFICIENT_DISCLOSURE` versus
+`INSUFFICIENT_EVIDENCE` is the ADR-0051 distinction about *whose* gap it is, and collapsing it would
+undo real work. Instead `Outcome` is a **summary axis above** the verdict: a computed field, derived
+from the verdict so the two can never disagree, and serialised into the artifact.
+
+    COMPOUNDER → PASS ·  QUALITY_WRONG_PRICE → MIXED ·  WATCH → MIXED ·  FORENSIC_CAUTION → FAIL
+    INSUFFICIENT_DISCLOSURE → INSUFFICIENT_EVIDENCE ·  INSUFFICIENT_EVIDENCE → INSUFFICIENT_EVIDENCE
+
+**MIXED is the substantive addition.** Quality established, return hurdle not cleared — or promise
+visible, thesis not yet provable. It is a first-class result, not an error state, and it is where most
+honest research on a decent company lands. Both flavours of "we cannot conclude" read as
+INSUFFICIENT_EVIDENCE at the headline while the verdict keeps whose gap it was: the reader's next
+action is the same either way — read the gap, then decide whether to ask the company or wait for the
+firm.
+
+**Two structural tests, because these are what a hurried later change would break.** The mapping is
+exhaustive over `Verdict`, so a verdict added later cannot ship without someone deciding what it means
+at the headline. And the set of PASS-mapped verdicts must equal `POSITIVE_VERDICTS`, so the two ways of
+saying "this company passed" cannot drift apart.
+
+**Naming debt, deliberately not paid.** `QUALITY_WRONG_PRICE` is returned when the *feasibility gate*
+fails, which is about self-funding growth rather than price; the name has been imprecise since Phase 2.
+Renaming an enum value that the reports, the ladder and eventually the golden set all reference buys
+clarity at the cost of churn, and the headline now carries the meaning that matters. Worth doing when
+the verdict ladder is next opened for Phase 4's valuation wiring, not before.

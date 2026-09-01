@@ -71,10 +71,11 @@ def _positive_report(**kw):
 
 
 # ---- markdown ------------------------------------------------------------------------------------
-def test_markdown_leads_with_verdict_and_confidence():
+def test_markdown_leads_with_outcome_verdict_and_confidence():
+    """The headline carries both axes (ADR-0067): the four-value outcome and the specific verdict."""
     md = render_markdown(_positive_report())
     assert md.startswith("# ABC Chemicals Ltd (ABC) — research note")
-    assert "**Verdict: `COMPOUNDER` — Passes the compounding test**" in md
+    assert "**Outcome: `PASS` · Verdict: `COMPOUNDER` — Passes the compounding test**" in md
     assert "confidence 0.72" in md and "lowest grade A" in md
     assert "Research artifact only" in md            # disclaimer always present
 
