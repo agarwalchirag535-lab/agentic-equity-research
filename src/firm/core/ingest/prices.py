@@ -122,3 +122,17 @@ def ingest_prices(
               f"(BSE daily close x volume)")
     return PriceIngestResult("registered", close=settled, adv_cr=adv, fact_ids=tuple(ids),
                              facts=tuple(written))
+
+
+def latest_market_fact(store: FactStore, ticker: str, metric: str, as_of: date) -> Any | None:
+    """The most recent `metric` fact dated on or before `as_of`, or None.
+
+    Market facts are keyed by their TRADING DATE, not by a fiscal period, so `query_fact` — which wants
+    a period it can name — cannot reach them. Both accessors that need one (the close for the
+    valuation, the ADV for Gate A's liquidity floor) must also pin the period at or before the run
+    date: the store's `published_at <= as_of` filter and this one are two different guards, and a
+    price series is the place where losing either leaks the future into a replay.
+    """
+    dated = [f for f in store.query_metric_prefix(ticker, metric, as_of)
+             if f.period <= as_of.isoformat()]
+    return max(dated, key=lambda f: f.period) if dated else None

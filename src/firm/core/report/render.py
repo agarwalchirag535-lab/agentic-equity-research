@@ -195,6 +195,27 @@ def render_markdown(report: ResearchReport) -> str:
         out += [""]
 
     # 4b. sector, macro and unit economics — comparative work, printed before the company-only sections
+    if r.gates:
+        out += [
+            "## The funnel, applied to this company",
+            "",
+            ("_SPEC §8's gates exist to keep a 3,000-company sweep affordable. Here they decide "
+             "nothing: this company was chosen, so every gate is a finding and none of them removed a "
+             "section from this report (ADR-0064). UNAVAILABLE is not PASS — a gate whose inputs were "
+             "missing has not been cleared._"),
+            "",
+            "| gate | tests | outcome | why |",
+            "|---|---|---|---|",
+        ]
+        purpose = {
+            "A": "liquidity, cap band, history", "B": "no deterministic forensic hard fail",
+            "C": "a structural growth runway", "D": "the §6.3 self-funding math",
+            "E": "the thesis survives a bear case",
+        }
+        out += [f"| {g.gate} | {purpose.get(g.gate, '')} | `{g.status}` | {g.reason} |"
+                for g in r.gates]
+        out += [""]
+
     rp = r.return_potential
     if rp is not None:
         out += [

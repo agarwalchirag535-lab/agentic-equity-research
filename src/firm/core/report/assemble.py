@@ -43,6 +43,7 @@ from firm.schemas.report import (
     AnswerStatus,
     CheckOutcome,
     GapKind,
+    GateLine,
     LineItemAnswer,
     LineItemSection,
     ReportClaim,
@@ -445,6 +446,8 @@ def assemble_report(
     target_years: int | None = None,
     #: `pipeline.valuation.ValuationResult` for this run, or None when no valuation was attempted.
     valuation: Any | None = None,
+    #: `pipeline.gates.GateFinding`s — SPEC §8's funnel as findings, never as filters (ADR-0071).
+    gates: Sequence[Any] = (),
 ) -> ResearchReport:
     """Build the report object. Publication gates run separately (`core/report/render.write_report`).
 
@@ -487,6 +490,7 @@ def assemble_report(
         # ADR-0066: computed on EVERY report, from the same records the verdict rests on. Not narration
         # — an agent cannot add to this list or remove from it.
         management_questions=management_questions(evaluation, notes, interrogation),
+        gates=[GateLine(gate=g.gate.value, status=g.status, reason=g.reason) for g in gates],
         valuation=build_valuation(valuation),
         return_potential=build_return_potential(
             feasibility,

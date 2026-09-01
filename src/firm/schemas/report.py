@@ -230,6 +230,23 @@ class ReturnPotential(BaseModel):
     unavailable_reason: str = ""
 
 
+class GateLine(BaseModel):
+    """One SPEC §8 funnel gate, applied to this company and REPORTED rather than enforced (ADR-0071).
+
+    In a deep dive these decide nothing: research eligibility and investment verdict are separate
+    (ADR-0064), so a company the owner named is never dropped for failing an investment gate. The same
+    findings drive the sweep, where they do decide who is looked at — a different question, asked by a
+    different caller.
+
+    `status` is PASS / FAIL / UNAVAILABLE, and the third is not the first: a gate whose inputs were
+    missing has not been passed, and saying so is the same discipline the check records follow.
+    """
+
+    gate: str
+    status: str
+    reason: str
+
+
 class ValuationScenario(BaseModel):
     """One priced scenario. Deterministic — the agent's `ScenarioLine` is a separate, narrated thing."""
 
@@ -367,6 +384,9 @@ class ResearchReport(BaseModel):
     # contributors and printed nothing they wrote. An agent that runs and is not rendered is the
     # ADR-0034 failure in the other direction — the reader cannot tell it from one that never ran.
     sector_narrative: str = ""
+
+    #: SPEC §8's funnel, applied to this company. Findings, never filters (ADR-0064/0071).
+    gates: list[GateLine] = Field(default_factory=list)
 
     #: What the quoted price already assumes (ADR-0069). None when the run had no valuation policy to
     #: apply; an `unavailable` status inside it means the policy ran and named what it lacked.

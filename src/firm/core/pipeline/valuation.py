@@ -28,7 +28,7 @@ from firm.core.compute.scenarios import (
     scenario_growth_grid,
     value_scenario_grid,
 )
-from firm.core.ingest.prices import CLOSE
+from firm.core.ingest.prices import CLOSE, latest_market_fact
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
 
@@ -229,9 +229,7 @@ def load_valuation(
 
     No price is not an error. It is a named missing input, and `value_company` reports it as one.
     """
-    closes = [f for f in store.query_metric_prefix(ticker, CLOSE, as_of)
-              if f.period <= as_of.isoformat()]
-    latest = max(closes, key=lambda f: f.period) if closes else None
+    latest = latest_market_fact(store, ticker, CLOSE, as_of)
     price_on = date.fromisoformat(latest.period) if latest is not None else None
     return value_company(
         facts, derived,

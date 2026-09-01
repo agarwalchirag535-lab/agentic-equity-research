@@ -442,9 +442,16 @@ class EvalReport:
         for name, (ok, total) in self.by_negative_class().items():
             lines.append(f"  negative class {name:22} {ok}/{total} judged correctly")
         if self.positives:
-            ok = len([r for r in self.positives if r.judgment_ok])
+            cleared = self.cleared_a_positive
+            ok = len(self.positives) - len(cleared)
             lines.append(f"  positives                            {ok}/{len(self.positives)} judged "
                          "correctly (the firm did not clear them)")
+            # SPEC §9: clearing a positive is the EXPENSIVE error, and a bare count does not tell the
+            # reader which company the firm waved through. Name them — `cleared_a_positive` existed for
+            # this and the count was being recomputed inline instead.
+            for r in cleared:
+                lines.append(f"    CLEARED A POSITIVE: {r.case_id} ({r.negative_class}) — screen "
+                             f"returned {r.screen}; this is the expensive error")
         if self.unsigned:
             lines.append(f"NOT YET HUMAN-SIGNED: {', '.join(r.case_id for r in self.unsigned)}")
         return "\n".join(lines)

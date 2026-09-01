@@ -2846,3 +2846,43 @@ reader at all — is printed framed as a research view, never as an instruction 
 **A test fixture that the citation gate rejected, correctly.** The first version of the
 `thesis_synthesizer` answer said an assumption held "within 10% of the current cycle average". The
 validator failed the run for an uncited number in agent prose. The fixture was wrong, not the gate.
+
+### ADR-0071 — SPEC §8's funnel becomes findings, not filters: Gates A–E reported for every company
+
+**Date** 2026-09-01 · **Status** accepted · **Completes Phase-4 acceptance** with ADR-0069/0070 ·
+**Files** `core/pipeline/gates.py` (new), `core/pipeline/deep_dive.py`, `schemas/report.py`,
+`core/report/assemble.py`, `core/report/render.py`, `core/ingest/prices.py`, `core/eval/golden.py`,
+`tests/pipeline/test_gates.py` (new) · **912 tests, compute 100%**
+
+**The item, and the trap in it.** STATUS has carried "Gates D/E gate nothing" as the last Phase-4
+acceptance item since ADR-0062. The obvious reading — make them gate — is *wrong under ADR-0064*, and
+following it would have quietly undone the owner's directive: gates that skip work would turn a failed
+investment test into a truncated report, which is exactly "filtering bad companies out before
+research".
+
+**The resolution.** The gates exist for the economics of a 3,000-company sweep, where the FIRM chooses
+and Gate A dropping the illiquid saves real money. When the OWNER chooses, every gate outcome is a
+**finding**: computed, printed with its reason in a "The funnel, applied to this company" section, and
+passed to nobody as a licence to skip. `plan_run` still accepts `gates_passed` for the sweep — the
+skipping machinery is intact and unused here, which is the correct division. A test asserts that a
+nanocap failing the liquidity floor, the cap band and the forensic screen still gets every section.
+
+**Each gate is honest about what it can and cannot test.**
+
+* **A** (liquidity, band, history) finally has its liquidity number: `market:ADV` has existed since
+  ADR-0062 and nothing read it, so SPEC §8's floor had no consumer.
+* **B** is the deterministic forensic hard fail — already computed, now stated as a funnel outcome.
+* **C** (a structural growth runway) returns **UNAVAILABLE, permanently and deliberately.** No computed
+  test stands behind it, and returning PASS because nothing contradicted it is how a gate becomes
+  decoration. The house rule that missing is not clean applies to gates as much as to checks.
+* **D** is the §6.3 self-funding math.
+* **E** asks whether a bear case was actually put: with no `red_team`, it is UNAVAILABLE, not PASS —
+  an unchallenged thesis has not survived anything. Its kill criteria come from the same call
+  `assemble_report` makes, so the gate and the Falsifiability section cannot disagree.
+
+**Two things found on the way.** `latest_market_fact` was extracted because market facts are keyed by
+TRADING DATE and `query_fact` wants a nameable period — both the close and the ADV need the same
+point-in-time pin, and duplicating it is how one of them eventually loses it. And `cleared_a_positive`
+in the golden-set report existed, was documented as "the only number Wave 2 exists for", and was
+unused while `render()` recomputed its count inline — so the firm's most expensive error, clearing a
+positive, was printed as a bare count that never named the company. It now names them.

@@ -76,6 +76,7 @@ from firm.core.config import (
 )
 from firm.core.facts.store import Fact, FactStore
 from firm.core.ingest.filings import restatement_log
+from firm.core.ingest.prices import ADV, latest_market_fact
 from firm.core.llm.cache import make_key
 from firm.core.llm.provider import Provider, StaticProvider
 from firm.core.monitoring.predictions import Prediction, log_report_predictions
@@ -87,6 +88,7 @@ from firm.core.pipeline.interrogate import Interrogation, interrogate
 from firm.core.pipeline.peers import PeerComparison, load_peer_comparisons
 from firm.core.pipeline.peers import citable_values as peer_citable_values
 from firm.core.pipeline.peers import payload_rows as peer_payload_rows
+from firm.core.pipeline.gates import evaluate_gates
 from firm.core.pipeline.valuation import load_valuation, valuation_derivations
 from firm.core.report.assemble import (
     Narration,
@@ -95,6 +97,7 @@ from firm.core.report.assemble import (
     assemble_report,
     choose_verdict,
 )
+from firm.core.report.criteria import kill_criteria
 from firm.core.report.narration import deterministic_narration
 from firm.core.report.publish import publish_or_degrade
 from firm.core.report.render import write_report
@@ -1009,6 +1012,21 @@ def run_deep_dive(
         # NOT `coverage_gaps`. The verdict must never move because the FIRM failed to look — ADR-0019.
         # They reach the report (below) so a reader sees them, and stop there.
     )
+    # SPEC §8's funnel, computed for this company and REPORTED (ADR-0071). It gates NOTHING here: the
+    # owner chose this company, and research eligibility is not the investment verdict (ADR-0064). The
+    # kill criteria Gate E asks about are the same ones `assemble_report` attaches, computed from the
+    # same inputs, so the gate and the report's Falsifiability section cannot disagree.
+    adv = latest_market_fact(store, ticker, ADV, as_of)
+    gate_findings = evaluate_gates(
+        screen=screen, feasibility=feasibility, history_years=derived.years,
+        thresholds=thresholds["screen"],
+        market_cap_cr=valuation.market_cap_cr,
+        adv_cr=adv.value if adv is not None else None,
+        kill_criteria=kill_criteria(derived, forensic=thresholds["forensic"], policy=policy,
+                                    as_of=as_of),
+        red_team_ran="red_team" in run.outputs,
+    )
+
     # Everything run-constant is bound once: the publication ladder (ADR-0065) may have to re-assemble
     # this report two or three times, and a second literal argument list is a second place to drift.
     assemble = partial(
@@ -1021,6 +1039,7 @@ def run_deep_dive(
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
         interrogation=interrogation,
         target_multiple=target_multiple, target_years=target_years, valuation=valuation,
+        gates=gate_findings,
         # Quiet revisions between visible filings (lesson 3 of the first prediction resolution): every
         # figure a later filing changed, point-in-time, from the overlap classifier. Deterministic; the
         # Ind AS transition legitimately produces a cluster, which is why the section explains itself.
