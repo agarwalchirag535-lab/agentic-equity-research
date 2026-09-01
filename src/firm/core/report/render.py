@@ -36,13 +36,13 @@ _VERDICT_HEADLINE = {
 class ReportNotPublishable(RuntimeError):
     """Raised when a report fails a publication gate. Carries the violations for the caller to log."""
 
-    def __init__(self, violations) -> None:  # noqa: ANN001 - list[PublicationViolation]
+    def __init__(self, violations) -> None:
         self.violations = violations
         detail = "; ".join(f"{v.rule}:{v.field}" for v in violations)
         super().__init__(f"report failed {len(violations)} publication gate(s): {detail}")
 
 
-def _criteria_table(title: str, criteria) -> list[str]:  # noqa: ANN001
+def _criteria_table(title: str, criteria) -> list[str]:
     if not criteria:
         return []
     lines = [f"### {title}", "", "| criterion | metric | test | resolve by | load-bearing |",
@@ -195,6 +195,29 @@ def render_markdown(report: ResearchReport) -> str:
         out += [""]
 
     # 4b. sector, macro and unit economics — comparative work, printed before the company-only sections
+    rp = r.return_potential
+    if rp is not None:
+        out += [
+            "## Return potential",
+            "",
+            (f"_Judged against **{rp.target_multiple:g}x over {rp.target_years} years**, which needs "
+             f"**{rp.required_earnings_cagr:.1%}** earnings CAGR with no re-rating and no dilution "
+             f"(SPEC §6.2). The target is an input to this section, not the verdict's spine — a good "
+             f"business that cannot clear it is reported as exactly that._"),
+            "",
+        ]
+        if rp.unavailable_reason:
+            out += [f"**Self-funding test: UNAVAILABLE** — {rp.unavailable_reason}.", ""]
+        else:
+            out += [
+                "| ROIC | required reinvestment | gate |",
+                "|---|---|---|",
+                (f"| {rp.roic:.1%} | {rp.required_reinvestment:.0%} of NOPAT | "
+                 f"`{rp.gate_verdict}` |"),
+                "",
+                rp.rationale,
+                "",
+            ]
     if r.sector_narrative:
         out += ["## Sector and competitive position", "", r.sector_narrative, ""]
 

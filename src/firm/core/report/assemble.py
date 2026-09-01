@@ -27,7 +27,11 @@ from datetime import date
 from typing import Any
 
 from firm.core.compute.models import BusinessModel
-from firm.core.compute.multibagger import FeasibilityResult, GateVerdict
+from firm.core.compute.multibagger import (
+    FeasibilityResult,
+    GateVerdict,
+    required_earnings_cagr,
+)
 from firm.core.compute.quality import ForensicScreenResult, Severity
 from firm.core.pipeline.checks import CheckEvaluation
 from firm.core.pipeline.derive import DerivedSet
@@ -44,6 +48,7 @@ from firm.schemas.report import (
     ReportClaim,
     ResearchReport,
     RestatementLine,
+    ReturnPotential,
     Verdict,
     VerifiedCleanChecklist,
 )
@@ -354,6 +359,34 @@ class Narration:
     replication_notes: tuple[str, ...] = ()
 
 
+def build_return_potential(
+    feasibility: FeasibilityResult | None,
+    *,
+    target_multiple: float,
+    target_years: int,
+) -> ReturnPotential:
+    """Project the §6 gate onto the report contract, target included (ADR-0068).
+
+    Built even when the gate could not run: the required CAGR follows from the target alone, and a
+    section that says "ROIC is not derivable from what was disclosed" is worth more than no section —
+    it tells the reader which missing number is blocking the answer.
+    """
+    required = required_earnings_cagr(target_multiple, target_years, 1.0)
+    if feasibility is None:
+        return ReturnPotential(
+            target_multiple=target_multiple, target_years=target_years,
+            required_earnings_cagr=required,
+            unavailable_reason=("ROIC is not derivable from the disclosed figures, so whether the "
+                                "company can fund this growth from its own returns cannot be tested"),
+        )
+    return ReturnPotential(
+        target_multiple=target_multiple, target_years=target_years,
+        required_earnings_cagr=required, roic=feasibility.roic,
+        required_reinvestment=feasibility.required_reinvestment,
+        gate_verdict=feasibility.verdict.value, rationale=feasibility.rationale,
+    )
+
+
 def assemble_report(
     *,
     ticker: str,
@@ -379,6 +412,11 @@ def assemble_report(
     coverage_gaps: Sequence[str] = (),
     #: Quiet revisions between visible filings (`restatement_log`), rendered as their own section.
     restatements: Sequence[Any] = (),
+    #: The return target this run was judged against. Defaults to the config policy; a caller may
+    #: override it per run (ADR-0063: the target is a parameter of the question, not a property of the
+    #: firm). Whatever is used is PRINTED, so the reader can see the assumption being made.
+    target_multiple: float | None = None,
+    target_years: int | None = None,
 ) -> ResearchReport:
     """Build the report object. Publication gates run separately (`core/report/render.write_report`).
 
@@ -421,6 +459,12 @@ def assemble_report(
         # ADR-0066: computed on EVERY report, from the same records the verdict rests on. Not narration
         # — an agent cannot add to this list or remove from it.
         management_questions=management_questions(evaluation, notes, interrogation),
+        return_potential=build_return_potential(
+            feasibility,
+            target_multiple=float(target_multiple if target_multiple is not None
+                                  else policy["target_return_multiple"]),
+            target_years=int(target_years if target_years is not None else policy["target_years"]),
+        ),
         replication_notes=list(narration.replication_notes),
         unavailable_items=_unavailable_items(evaluation, coverage_gaps),
         restatements=[

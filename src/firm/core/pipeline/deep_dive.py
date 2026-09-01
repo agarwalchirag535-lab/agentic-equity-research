@@ -307,13 +307,19 @@ def statement_shape(facts: CompanyFacts, derived: DerivedSet) -> StatementShape:
 
 
 def feasibility_at_target(derived: DerivedSet, policy: Mapping[str, Any],
-                 mb: Mapping[str, float]) -> multibagger.FeasibilityResult | None:
-    """The §6.3 gate at the config target multiple. None when ROIC is not derivable — never assumed."""
+                 mb: Mapping[str, float], *, target_multiple: float | None = None,
+                 target_years: int | None = None) -> multibagger.FeasibilityResult | None:
+    """The §6.3 gate at the run's return target. None when ROIC is not derivable — never assumed.
+
+    The target defaults to the config policy and may be overridden per run (ADR-0063): 5x/7y is the
+    firm's house question, not a property of every company worth asking about.
+    """
     roic = derived.value("roic_latest")
     if roic is None or roic <= 0:
         return None
     g = multibagger.required_earnings_cagr(
-        float(policy["target_return_multiple"]), int(policy["target_years"]), 1.0)
+        float(target_multiple if target_multiple is not None else policy["target_return_multiple"]),
+        int(target_years if target_years is not None else policy["target_years"]), 1.0)
     return multibagger.feasibility_gate(
         g_required=g, roic=roic,
         self_fund_ceiling=mb["self_fund_ceiling"], high_quality_ceiling=mb["high_quality_ceiling"],
@@ -385,7 +391,8 @@ def agent_facts_payload(
             for f in guidance
         ],
         "feasibility_gate": None if feasibility is None else {
-            "target": "config report.target_return_multiple over report.target_years",
+            "target": (f"{feasibility.g_required:.1%} earnings CAGR — the growth the run's return "
+                       f"target demands with no re-rating and no dilution (SPEC §6.2)"),
             "g_required": feasibility.g_required,
             "roic": feasibility.roic,
             "required_reinvestment": feasibility.required_reinvestment,
@@ -723,6 +730,10 @@ def run_deep_dive(
     start_year: int | None = None,
     write: bool = True,
     max_citation_retries: int = 1,
+    #: The return target this run is judged against (ADR-0063/0068). None = the config default (5x/7y).
+    #: Whatever is used is printed in the report's Return-potential section.
+    target_multiple: float | None = None,
+    target_years: int | None = None,
     #: ADR-0046 walk options: a verified reading already covers the numeric rows (so the row-locator must
     #: not re-register them), and may supply verified note/related-party enumerations in place of the
     #: pattern scanners. Defaults preserve the walker-only path unchanged.
@@ -775,7 +786,9 @@ def run_deep_dive(
     screen = quality.forensic_screen(sector, evaluation.metrics, forensic_thresholds(),
                                     checks_ran=evaluation.ran, checks_expected=len(evaluation.applicable),
                                     min_ran_share=float(thresholds["forensic"].get("screen_min_ran_share", 0)))
-    feasibility = feasibility_at_target(derived, policy, thresholds["multibagger"])
+    feasibility = feasibility_at_target(
+        derived, policy, thresholds["multibagger"],
+        target_multiple=target_multiple, target_years=target_years)
 
     notes, _dispositions = (
         disposition_notes(walk.notes, evaluation, disclosure_gaps_found=walk.missing_disclosures,
@@ -893,6 +906,7 @@ def run_deep_dive(
         feasibility=feasibility,
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
         interrogation=interrogation,
+        target_multiple=target_multiple, target_years=target_years,
         # Quiet revisions between visible filings (lesson 3 of the first prediction resolution): every
         # figure a later filing changed, point-in-time, from the overlap classifier. Deterministic; the
         # Ind AS transition legitimately produces a cluster, which is why the section explains itself.

@@ -2716,3 +2716,41 @@ fails, which is about self-funding growth rather than price; the name has been i
 Renaming an enum value that the reports, the ladder and eventually the golden set all reference buys
 clarity at the cost of churn, and the headline now carries the meaning that matters. Worth doing when
 the verdict ladder is next opened for Phase 4's valuation wiring, not before.
+
+### ADR-0068 — Return potential becomes a report section, and the target becomes a parameter
+
+**Date** 2026-09-01 · **Status** accepted · **Implements** ADR-0063 flags #2-#3 · **Files**
+`schemas/report.py`, `core/report/assemble.py`, `core/report/render.py`, `core/pipeline/deep_dive.py`,
+`cli.py`, `tests/report/test_return_potential.py` (new) · **893 tests, compute 100%**
+
+**The defect, found by grepping for it.** SPEC §6 calls the feasibility gate the intellectual centre of
+the system. It reached the reader through a verdict rationale and a rehabilitation criterion, and
+nowhere else: `render.py` had no feasibility output at all. So a report could be judged against 5x over
+7 years without ever printing that target, its required growth, the company's ROIC, or the
+reinvestment the target demands — making the single most consequential assumption in the analysis the
+one thing a reader could not check. Under ADR-0063's direction (standing sections, each carrying its
+own conclusion) this was the biggest missing section, and it is the one that carries the 5-10x question
+in its new role.
+
+**Two decisions.**
+
+1. **The gate is now a section, `return_potential`.** It renders the target, the earnings CAGR that
+   target demands with no re-rating and no dilution, ROIC, the required reinvestment as a share of
+   NOPAT, and the gate verdict with its rationale. It is a *section*, not the verdict's spine: a good
+   business that cannot clear the hurdle is reported as exactly that, which is what ADR-0063 and
+   ADR-0067's MIXED outcome together make possible.
+2. **The target is a parameter of the question, not a property of the firm.**
+   `--target-multiple` / `--target-years` on `firm deep-dive`, threaded through `run_deep_dive`,
+   `feasibility_at_target` and `assemble_report`, defaulting to config (5x/7y). The same company judged
+   at 3x/5y and at 10x/7y is the same company; what changes is the question, and the report now says
+   which one it answered.
+
+**The section exists even when the gate cannot run.** `required_earnings_cagr` follows from the target
+alone, so an unreadable ROIC does not make the section disappear — it prints the target and names ROIC
+as the blocking input. A silently absent section would have been the "missing reads as clean" failure
+in its quietest form.
+
+**Also fixed:** the agent packet described the target as the literal string
+`"config report.target_return_multiple over report.target_years"` — a config path, which tells a
+narrating agent nothing it can reason with. It now carries the computed required CAGR and what it
+means.

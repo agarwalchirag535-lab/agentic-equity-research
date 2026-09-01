@@ -203,6 +203,33 @@ class Criterion(BaseModel):
     load_bearing: bool = False
 
 
+class ReturnPotential(BaseModel):
+    """The §6 return-potential finding, as a report section rather than a hidden gate (ADR-0068).
+
+    The feasibility gate is what SPEC §6 calls the intellectual centre of the system, and until now it
+    reached the reader only obliquely — through a verdict rationale and a rehabilitation criterion. So a
+    report could be judged against "5x over 7 years" without ever printing that target, which made the
+    single most consequential assumption in the analysis the one thing a reader could not check.
+
+    It is a *section* and not the spine (ADR-0063): a business that cannot self-fund the target growth
+    is reported as exactly that, not reclassified as a failure. `required_earnings_cagr` is computable
+    from the target alone, so the section says something useful even when ROIC is not derivable — in
+    which case `unavailable_reason` names what is missing rather than the gate quietly not appearing.
+    """
+
+    target_multiple: float
+    target_years: int
+    #: Earnings CAGR the target demands with no re-rating and no dilution — the §6.2 identity.
+    required_earnings_cagr: float
+    roic: float | None = None
+    #: g_required / ROIC. Above 1.0 the company cannot fund that growth from its own returns.
+    required_reinvestment: float | None = None
+    gate_verdict: str = ""
+    rationale: str = ""
+    #: Set when the gate could not run at all. Missing is reported as missing, never as a zero.
+    unavailable_reason: str = ""
+
+
 class ManagementQuestion(BaseModel):
     """One specific question to put to the company, with the reason it matters and what would settle it.
 
@@ -295,6 +322,10 @@ class ResearchReport(BaseModel):
     # contributors and printed nothing they wrote. An agent that runs and is not rendered is the
     # ADR-0034 failure in the other direction — the reader cannot tell it from one that never ran.
     sector_narrative: str = ""
+
+    #: The §6 return-potential finding — target, required growth, and whether the company can fund it
+    #: from its own returns. A section, not the verdict's spine (ADR-0063/0068).
+    return_potential: ReturnPotential | None = None
 
     # 6-7. management + valuation
     management_narrative: str = ""

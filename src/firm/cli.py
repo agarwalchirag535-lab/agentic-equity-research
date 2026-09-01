@@ -299,6 +299,11 @@ def deep_dive(
              "cover, so the subject's newest year is never compared against a peer's older one."),
     force: bool = typer.Option(
         False, "--force", help="write the report even if a publication gate fails (debugging only)"),
+    target_multiple: float = typer.Option(
+        None, "--target-multiple",
+        help="return target the run is judged against (default: config report.target_return_multiple)"),
+    target_years: int = typer.Option(
+        None, "--target-years", help="horizon for --target-multiple (default: config report.target_years)"),
 ) -> None:
     """Phase 2: run the three Tier-2 agents onto the evidence graph and publish the dual-verdict report.
 
@@ -456,7 +461,7 @@ def deep_dive(
             store, ticker, run_date, provider=llm, answers=prepared, filing=latest_filing,
             agents=roster_agents, coverage_gaps=coverage_gaps, peers=peer,
             company_name=company or ticker, model=model, reports_root=reports_root,
-            write=not force,
+            write=not force, target_multiple=target_multiple, target_years=target_years,
             # A verified reading already covers the numeric rows; the walker re-registering them would
             # put unverified row-locator figures beside verified ones under the same grade (ADR-0055).
             # The latest filing's notes/CARO/section scanning still runs either way.
