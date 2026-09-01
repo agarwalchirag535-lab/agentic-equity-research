@@ -3292,3 +3292,38 @@ uniform across the calibration set is indistinguishable from a property of the w
 thresholds against the undated 6.5% fallback would fit a parameter to the firm's own dating error and
 carry it forever. Until the six rows land, every cash-yield floor rests on the fallback **and says so in
 the check's own detail**, which is the difference between a known limitation and a hidden one.
+
+### ADR-0083 — The sign-off sheet, shaped against the circularity it exists inside
+
+**Date** 2026-09-01 · **Status** accepted · **Files** `core/eval/review.py` (new), `cli.py`,
+`evals/GOLDEN_SET_REVIEW.md` (generated), `tests/eval/test_review_sheet.py` (new) ·
+**1024 tests, compute 100%**
+
+GOLDEN_SET.md §0 opens by naming how this set fails: **"by validating itself."** Human sign-off is the
+moment that either happens or does not, so the sheet is designed around one distinction.
+
+**What a reviewer is asked to confirm** — the two things no machine can check: that the **label** is a
+real, dated, externally-cited event and not something the firm inferred (and for a `clean` case, that
+the *absence* of such an event is genuinely true, which is a weaker and easier-to-fudge judgment, so the
+sheet says so); and that the **verified facts** were read correctly off the filing page they cite —
+these are what separate an extraction failure from a judgment failure, so a wrong one misattributes
+every error built on top of it.
+
+**What a reviewer is explicitly NOT asked to confirm:** whether the firm's verdict was right. A case
+signed because the screen returned what the reviewer expected makes the set a measurement of this
+system against its own output, and every threshold calibrated on it inherits that. The sheet says this
+in its own words, and the screen result appears **last on every case, labelled as context** — a
+reviewer reads the claim and the evidence before they see the answer.
+
+**Generated, never hand-written.** `firm eval --review PATH` builds it from the case files, so the sheet
+a person signs cannot drift from what the harness reads. A test renders the repo's real eight cases and
+asserts each appears with the exact file path to edit.
+
+**It also carries the sequencing.** `firm rates` reports six fiscal years with no dated rate, so every
+cash-yield floor rests on the undated fallback; the sheet says sign-off comes first and calibration only
+after the rates land, because calibrating before then fits a parameter to the firm's own dating error
+(ADR-0078/0082).
+
+**Nothing was self-signed and no threshold was calibrated.** All eight cases remain
+`human_signed_off: false`. The run is clean — 0 regressions, 0 judgment failures, positives 2/2, one
+recorded extraction failure (GAYATRI-FY18, CAP-EPC) — and a clean run is not a signature.

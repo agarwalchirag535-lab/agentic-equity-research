@@ -968,6 +968,9 @@ def eval_golden(
     cases: str = typer.Option("evals/golden_set", "--cases", help="directory of golden-set case files"),
     bronze: str = typer.Option("data/bronze", "--bronze"),
     case: list[str] = typer.Option([], "--case", help="run only these case ids; repeatable"),
+    review: str = typer.Option(
+        None, "--review", metavar="PATH",
+        help="also write the sign-off sheet here (e.g. evals/GOLDEN_SET_REVIEW.md)"),
 ) -> None:
     """Phase 6: replay the golden set and report EXTRACTION and JUDGMENT failures separately.
 
@@ -980,6 +983,21 @@ def eval_golden(
 
     report = run_golden_set(cases, bronze=bronze, only=tuple(case))
     typer.echo(report.render())
+
+    if review:
+        # Generated from the case files, never hand-written, so the sheet a person signs cannot drift
+        # from what the harness actually reads (ADR-0083).
+        from pathlib import Path
+
+        from firm.core.eval.golden import load_cases
+        from firm.core.eval.review import render_review
+
+        loaded = load_cases(cases)
+        Path(review).write_text(render_review(loaded, report.results))
+        unsigned = [c for c in loaded if not c.human_signed_off]
+        typer.echo(f"\nsign-off sheet: {review} ({len(unsigned)} of {len(loaded)} case(s) awaiting "
+                   f"a human)")
+
     if report.regressions:
         raise typer.Exit(code=1)
 
