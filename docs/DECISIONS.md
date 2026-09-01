@@ -3081,3 +3081,42 @@ predictions each is noise wearing a decimal point — the same reasoning as
 **Run against the real ledger it reports, correctly, that it can propose nothing:** 18 lessons, 0
 classified, 0 clusters — and the firm's actual calibration to date, Brier 0.2244 over the 3 resolved
 PC Jeweller predictions. The honest first output of a learning loop is usually "not yet".
+
+### ADR-0078 — Reference rates become point-in-time, and the fallback stops being silent
+
+**Date** 2026-09-01 · **Status** accepted · **Unblocks (partly)** GOLDEN_SET.md §1 · **Files**
+`config/reference_rates.yaml` (new), `core/compute/rates.py` (new), `core/config.py`,
+`core/pipeline/checks.py`, `tests/compute/test_reference_rates.py` (new) · **970 tests, compute 100%**
+
+**The defect.** `thresholds.forensic.risk_free_rate` was one constant — 6.5% — applied to every vintage.
+The cash-reality check asks whether the yield a company earned on its cash is plausible, and that
+question has a different answer in every rate environment: Indian short rates ranged roughly 3.5% to
+7.5% across the golden set's 2015-2021 window. This does not make the check approximate. It makes it
+**wrong in a direction that depends on the year**, demonstrated by test in both directions:
+
+* FY21 (market ~3.5%): a company earning 2.0% on its cash is unremarkable, and the flat floor **flags
+  it** — a false accusation.
+* FY15 (market ~7.5%): a company earning 2.8% is well under market, and the flat floor **clears it** —
+  the check's whole purpose, missed.
+
+GOLDEN_SET.md §1 lists this as a prerequisite and states exactly why: *"a bug uniform across the
+calibration set is indistinguishable from a property of the world."* Calibrating forensic thresholds on
+top of a mis-dated rate would fit a parameter to the firm's own dating error and carry it forever.
+
+**What is built, and what is deliberately not.** `config/reference_rates.yaml` + `risk_free_for(period,
+rates)` give the rate a point-in-time lookup by fiscal year, with the source travelling on every entry
+exactly as provenance travels with a fact. `by_fiscal_year` ships **empty**: typing RBI yields in from
+memory would fabricate a primary input, and it is the worst failure mode available here because nothing
+downstream could detect it — every cash-reality verdict would be quietly miscalibrated. So the firm uses
+the undated fallback and **says so in the check's own detail**, because a check silently resting on the
+wrong vintage while reading like a normal verdict is the defect, not a state to hide.
+
+**The prerequisite is therefore half-closed and marked `[~]`, not `[x]`.** The mechanism is the part
+that needed designing; the rows need a citable series (RBI Handbook Table 71, or the 91-day T-bill /
+10-year G-sec, stated in the file so the choice is visible and arguable). Whoever adds them is adding
+data, not code.
+
+**A smaller thing, worth recording because the guard from ADR-0074 did not catch it.** `ReferenceRate`
+shipped with a `__float__` convenience nothing called. The orphan guard skips dunders, and the 100%
+compute-coverage gate is what caught it. It was deleted rather than tested — code that exists only to
+be tested is the same dead weight in a nicer shape.

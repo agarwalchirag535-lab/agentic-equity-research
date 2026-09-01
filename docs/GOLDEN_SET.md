@@ -43,9 +43,15 @@ inside the golden set catches that; it has to be fixed upstream.
 - [x] **Attribution split** — our extraction failures are never the company's disclosure gap
       (ADR-0055, ADR-0059).
 - [x] **Deterministic replay** — filings are content-addressed in bronze; a re-run is bit-identical.
-- [ ] **Dated reference rates.** `risk_free_rate` is one constant for all vintages while Indian short
-      rates ranged ~3.5%–7.5% across the window. Needed as point-in-time INPUT data, not as a fix for any
-      particular case.
+- [~] **Dated reference rates.** MECHANISM BUILT, DATA NOT YET SUPPLIED (ADR-0078).
+      `config/reference_rates.yaml` + `core/compute/rates.py` give `risk_free_rate` a point-in-time
+      lookup by fiscal year, and the cash-yield check now states which vintage's rate its floor came
+      from. `by_fiscal_year` is deliberately EMPTY: typing RBI yields in from memory would fabricate a
+      primary input, and nothing downstream could detect it. Until rows are added from a citable
+      published series the firm uses the undated 6.5% fallback and says so in every check that rests on
+      it. **This item is not closed until the rows exist** — a test shows the flat rate false-positives
+      in a low-rate year and false-negatives in a high-rate one, which is exactly the year-dependent
+      error §1 warns calibration would learn to compensate for.
 - [ ] **Pre-Ind AS extraction.** Everything validated so far is FY17+. Cases before FY2017 use the old
       Schedule III and have no Ind AS 109 / IRACP table at all. Either the window starts at FY2017 or the
       extractors are proven on older filings first — decide with evidence, not by assumption.

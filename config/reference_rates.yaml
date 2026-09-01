@@ -1,0 +1,34 @@
+# reference_rates.yaml — dated market reference series (GOLDEN_SET.md §1 prerequisite, ADR-0078).
+#
+# WHY THIS FILE EXISTS. `thresholds.forensic.risk_free_rate` was ONE constant, 6.5%, applied to every
+# vintage. The cash-reality check asks "is the yield this company earned on its cash plausible?", and
+# that question has a different answer in every rate environment: Indian short rates ranged roughly
+# 3.5% to 7.5% across the golden set's 2015-2021 window. A flat 6.5% floor makes a FY21 company earning
+# a perfectly ordinary 3.5% look like it is hiding something, and lets a FY15 company earning 4% pass.
+#
+# THAT IS EXACTLY THE FAILURE GOLDEN_SET.md §1 WARNS ABOUT: "a bug uniform across the calibration set is
+# indistinguishable from a property of the world." Calibrating thresholds against a mis-dated rate would
+# teach the firm a compensating error and bake it in.
+#
+# THE RULE FOR ADDING A RATE. Every entry carries the SOURCE it was read from and the date it refers to,
+# exactly like a fact in the store. A rate typed in from memory is a fabricated primary input, and it
+# would silently miscalibrate every cash-reality verdict that used it — the worst failure mode this
+# repo has, because nothing downstream can detect it. Add rows only from a citable published series
+# (RBI's Weighted Average Call Rate or the 91-day T-bill / 10-year G-sec yield, as the reader prefers,
+# stated here so the choice is visible and arguable).
+#
+# UNTIL ROWS EXIST the firm uses `fallback` and SAYS SO in every check that used it. A silent fallback
+# would be the same defect wearing a config file.
+
+risk_free_rate:
+  fallback: 0.065
+  fallback_basis: >-
+    undated 6.5% reference, carried over from thresholds.forensic.risk_free_rate. NOT vintage-correct:
+    it is the flat constant this file exists to replace, and any check resting on it says so.
+  # fiscal-year end (Indian FY, 31 March) -> {rate, source, as_of}
+  # Example of the required shape, deliberately left unpopulated rather than filled from memory:
+  #   FY21:
+  #     rate: 0.035
+  #     source: "RBI Handbook of Statistics on the Indian Economy, Table 71 (91-day T-bill, annual avg)"
+  #     as_of: "2021-03-31"
+  by_fiscal_year: {}

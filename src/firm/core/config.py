@@ -23,6 +23,12 @@ def load_thresholds() -> dict[str, Any]:
     return load_yaml("thresholds.yaml")
 
 
+def reference_rates() -> dict[str, Any]:
+    """Dated market reference series (ADR-0078). Separate from thresholds on purpose: a threshold is a
+    policy this firm chooses, a reference rate is a measurement of the world with a source."""
+    return load_yaml("reference_rates.yaml")
+
+
 def forensic_thresholds_raw() -> dict:
     """The whole `forensic` config block, for callers that need keys the typed struct does not carry
     (the cumulative-window floor, for one). The typed `forensic_thresholds()` stays the screen's input."""

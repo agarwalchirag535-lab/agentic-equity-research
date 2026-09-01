@@ -25,6 +25,8 @@ from dataclasses import dataclass, replace
 from typing import Any, Mapping, Sequence
 
 from firm.core.compute import quality
+from firm.core.compute.rates import risk_free_for
+from firm.core.config import reference_rates
 from firm.core.compute.models import Playbook
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
@@ -328,6 +330,9 @@ def evaluate_checks(
     check_inputs: Mapping[str, float] | None = None,
     lender: Mapping[str, float] | None = None,
     financial: Mapping[str, float] | None = None,
+    #: `config/reference_rates.yaml` — dated market series (ADR-0078). Defaults to the file so every
+    #: caller gets vintage-matching without opting in; a test may pass its own.
+    rates: Mapping[str, Any] | None = None,
 ) -> CheckEvaluation:
     """Evaluate every check the playbook selects, and mark every suppressed check NOT_APPLICABLE.
 
@@ -337,6 +342,7 @@ def evaluate_checks(
     Checks the playbook does not name at all are simply not in the report — that is what a playbook is
     for; the *suppressed* ones are recorded, because a suppression is a decision worth publishing.
     """
+    rates = reference_rates() if rates is None else rates
     if check_inputs is None:
         from firm.core.config import check_input_thresholds
 
@@ -414,8 +420,13 @@ def evaluate_checks(
             # by more than double (16.7% against a true 7.8%), which is the difference between a check
             # that would wave through a fabricated balance and one that would not.
             yield_on_cash = derived.get("cash_yield_latest")
+            # THE RATE MUST MATCH THE VINTAGE (ADR-0078). "Is this yield plausible?" has a different
+            # answer in every rate environment, and one constant across 2015-2021 makes the check wrong
+            # in a year-dependent direction — the shape of error a calibration run learns to compensate
+            # for and then carries forever (GOLDEN_SET.md §1).
+            rate = risk_free_for(derived.last_period, rates or {})
             if yield_on_cash is not None:
-                floor = forensic["cash_yield_floor_ratio"] * forensic["risk_free_rate"]
+                floor = forensic["cash_yield_floor_ratio"] * rate.value
                 band = yield_on_cash.band
                 if band is not None and band.indeterminate_below(floor):
                     # THE CHECK'S ONLY LIVE FLAG WAS THIS CASE (ADR-0059). Alkyl Amines FY23: cash and
@@ -439,6 +450,9 @@ def evaluate_checks(
                               f"floor {floor:.2%} ({yield_on_cash.formula})")
                     if band is not None:
                         detail += f"; endpoints support {band.low:.2%}-{band.high:.2%}"
+                    # The rate the floor rests on travels with the verdict. A reader cannot judge a
+                    # cash-yield flag without knowing which year's rate it was measured against.
+                    detail += f"; floor from {rate.basis}"
                     r.ran(check, flagged, detail, yield_on_cash.fact_ids)
             elif ext.cash is None or ext.interest_income is None:
                 absent = [name for name, present in (
@@ -450,11 +464,11 @@ def evaluate_checks(
             else:
                 implied, flagged = quality.cash_interest_consistency(
                     ext.interest_income, ext.cash,
-                    forensic["risk_free_rate"], forensic["cash_yield_floor_ratio"])
+                    rate.value, forensic["cash_yield_floor_ratio"])
                 r.ran(check, flagged,
                       f"implied yield on cash {implied:.2%} vs floor "
-                      f"{forensic['cash_yield_floor_ratio'] * forensic['risk_free_rate']:.2%} "
-                      f"({ext.locator(check) or 'AR'})", ext.ids(check))
+                      f"{forensic['cash_yield_floor_ratio'] * rate.value:.2%} "
+                      f"({ext.locator(check) or 'AR'}); floor from {rate.basis}", ext.ids(check))
 
         elif check == "cash_debt_paradox":
             # The average-balance rate is the better denominator (see `cost_of_debt_average`); the
