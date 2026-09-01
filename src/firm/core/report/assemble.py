@@ -375,7 +375,8 @@ def build_valuation(result: Any | None) -> ValuationSection | None:
         status=result.status, missing=list(result.missing), price=result.price,
         price_on=result.price_on, shares_cr=result.shares_cr, market_cap_cr=result.market_cap_cr,
         net_debt_cr=result.net_debt_cr, enterprise_value_cr=result.enterprise_value_cr,
-        base_fcf_cr=result.base_fcf_cr, realised_growth=result.realised_growth,
+        base_fcf_cr=result.base_fcf_cr, base_fcf_basis=result.base_fcf_basis,
+        realised_growth=result.realised_growth,
         implied_growth=result.implied_growth, implied_growth_note=result.implied_growth_note,
         scenarios=[
             ValuationScenario(name=s.name, growth=s.growth, value_per_share=s.value_per_share,

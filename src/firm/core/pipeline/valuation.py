@@ -47,6 +47,9 @@ class ValuationResult:
     net_debt_cr: float | None = None
     enterprise_value_cr: float | None = None
     base_fcf_cr: float | None = None
+    #: How the base cash flow was arrived at — a median over a window, or one year with
+    #: that fact stated. A reader who cannot see which is which cannot judge the bear case.
+    base_fcf_basis: str = ""
     realised_growth: float | None = None
     #: The growth the quoted price already demands. None when the price implies growth outside the
     #: configured bracket — which is itself reported, in `implied_growth_note`.
@@ -77,6 +80,48 @@ def _shares_outstanding(facts: CompanyFacts, period: str) -> tuple[float | None,
         return None, ()
     shares = pat.value / eps.value
     return (shares, (pat, eps)) if shares > 0 else (None, ())
+
+
+def _normalised_base_fcf(
+    facts: CompanyFacts, period: str, policy: Mapping[str, Any]
+) -> tuple[float | None, str, tuple[Any, ...]]:
+    """`(base FCF, how it was derived, the facts behind it)` — normalised over a cycle where possible.
+
+    One year is the wrong base for a cyclical business. A trough year makes the bear case look
+    inevitable, a peak year makes the bull look cheap, and the scenario grid inherits whichever year it
+    was handed — which is how a valuation ends up being a statement about the last twelve months.
+
+    The median over the window, not the mean: a single extraordinary year (an asset sale, a one-off
+    working-capital swing) moves a mean and barely moves a median.
+
+    Below `base_fcf_min_periods` the firm does NOT claim to have normalised anything. It uses the
+    latest year and SAYS SO, the same rule `cumulative_cfo_pat_min_periods` applies to cash conversion:
+    a claim about a cycle needs a cycle of data, and dressing one year up as a normalised figure is
+    worse than admitting it is one year.
+    """
+    window = int(policy.get("base_fcf_years", 1))
+    minimum = int(policy.get("base_fcf_min_periods", 1))
+    dated = [p for p in facts.periods if p <= period and facts.fact(D.FCF, p) is not None]
+    recent = dated[-window:]
+    if not recent:                                    # unreachable: the caller checked the latest year
+        return None, f"no {D.FCF} readable at or before {period}", ()
+
+    if len(recent) < minimum:
+        latest = facts.fact(D.FCF, recent[-1])
+        return (latest.value,
+                (f"free cash flow for {recent[-1]} alone — only {len(recent)} year(s) of it are "
+                 f"readable and a normalised base needs {minimum}; treat the scenario grid as "
+                 f"resting on one year"),
+                (latest,))
+
+    used = [facts.fact(D.FCF, p) for p in recent]
+    values = sorted(f.value for f in used)
+    mid = len(values) // 2
+    median = values[mid] if len(values) % 2 else (values[mid - 1] + values[mid]) / 2
+    return (median,
+            (f"the median of {len(values)} years of free cash flow ({recent[0]}-{recent[-1]}), "
+             f"normalising a single trough or peak year out of the base"),
+            tuple(used))
 
 
 def value_company(
@@ -111,15 +156,28 @@ def value_company(
     else:
         ids.extend(share_ids)
 
-    fcf = facts.fact(D.FCF, period)
-    if fcf is None:
+    # THE LATEST YEAR DECIDES WHETHER TO VALUE AT ALL; the window decides the base to value FROM.
+    # Normalising first would smooth a current cash burn into a comfortable median and value a company
+    # whose trend may have broken — the one case where the smoothing is the error.
+    base_fcf: float | None = None
+    base_fcf_basis = ""
+    latest_fcf = facts.fact(D.FCF, period)
+    if latest_fcf is None:
         missing.append(f"{D.FCF} {period} (the cash the business itself produced)")
-    elif fcf.value <= 0:
+    elif latest_fcf.value <= 0:
         missing.append(
-            f"{D.FCF} {period} is {fcf.value:,.2f}cr — a company burning cash cannot be valued by "
-            "discounting it; the question is funding, not price")
+            f"{D.FCF} {period} is {latest_fcf.value:,.2f}cr — a company burning cash cannot be "
+            f"valued by discounting it; the question is funding, not price")
     else:
-        ids.append(fcf)
+        base_fcf, base_fcf_basis, fcf_facts = _normalised_base_fcf(facts, period, policy)
+        if base_fcf is None or base_fcf <= 0:
+            missing.append(
+                f"a positive normalised base free cash flow — {base_fcf_basis} gives "
+                f"{base_fcf:,.2f}cr; the latest year is positive but the cycle is not, so the question "
+                f"is funding, not price")
+            base_fcf = None
+        else:
+            ids.extend(fcf_facts)
 
     net_cash = derived.get("net_cash_position")
     if net_cash is None:
@@ -133,7 +191,7 @@ def value_company(
         return ValuationResult("unavailable", tuple(missing), price=price, price_on=price_on,
                                assumptions=dict(policy))
 
-    assert price is not None and shares is not None and fcf is not None
+    assert price is not None and shares is not None and base_fcf is not None
     assert net_cash is not None and growth is not None
     ids.extend(net_cash.inputs)
     ids.extend(growth.inputs)
@@ -146,7 +204,7 @@ def value_company(
     note = ""
     try:
         implied = reverse_dcf.implied_growth_rate(
-            enterprise_value, fcf.value, policy["discount_rate"], policy["terminal_growth"],
+            enterprise_value, base_fcf, policy["discount_rate"], policy["terminal_growth"],
             int(policy["explicit_years"]),
             low=policy["implied_growth_min"], high=policy["implied_growth_max"])
     except ValueError:
@@ -162,13 +220,14 @@ def value_company(
         growth.value, bull_spread=policy["bull_spread"], bear_spread=policy["bear_spread"],
         disaster_growth=policy["disaster_growth"])
     scenarios = value_scenario_grid(
-        base_fcf=fcf.value, growth_by_scenario=grid, discount_rate=policy["discount_rate"],
+        base_fcf=base_fcf, growth_by_scenario=grid, discount_rate=policy["discount_rate"],
         terminal_growth=policy["terminal_growth"], years=int(policy["explicit_years"]),
         net_debt=net_debt, shares_outstanding=shares, price_today=price)
 
     return ValuationResult(
         "valued", (), price=price, price_on=price_on, shares_cr=shares, market_cap_cr=market_cap,
-        net_debt_cr=net_debt, enterprise_value_cr=enterprise_value, base_fcf_cr=fcf.value,
+        net_debt_cr=net_debt, enterprise_value_cr=enterprise_value, base_fcf_cr=base_fcf,
+        base_fcf_basis=base_fcf_basis,
         realised_growth=growth.value, implied_growth=implied, implied_growth_note=note,
         scenarios=tuple(scenarios), assumptions=dict(policy),
         inputs=tuple({f.fact_id: f for f in ids}.values()),

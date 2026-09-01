@@ -280,6 +280,9 @@ class ValuationSection(BaseModel):
     net_debt_cr: float | None = None
     enterprise_value_cr: float | None = None
     base_fcf_cr: float | None = None
+    #: How that base was arrived at — a median over a window, or one year with that fact stated. A
+    #: reader who cannot tell which is which cannot judge the bear case (ADR-0072).
+    base_fcf_basis: str = ""
     #: What the business has actually compounded — the grid is centred here, never on a house guess.
     realised_growth: float | None = None
     #: The growth the quoted price already demands. None when it falls outside the configured bracket,

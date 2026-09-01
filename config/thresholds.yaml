@@ -17,6 +17,14 @@ valuation:
   bull_spread: 0.06
   bear_spread: 0.08
   disaster_growth: -0.10        # absolute: the disaster case is the business SHRINKING, for everyone
+  # NORMALISING THE BASE CASH FLOW. One year's FCF is the wrong base for a cyclical business: a trough
+  # year makes the bear case look inevitable and a peak year makes the bull look cheap, and the grid
+  # inherits whichever it was handed. The median over a window is robust to a single outlier in a way
+  # the mean is not. Below `base_fcf_min_periods` the firm does NOT claim to have normalised anything —
+  # it uses the latest year and says so, the same discipline `cumulative_cfo_pat_min_periods` applies to
+  # cash conversion (a cycle claim needs a cycle of data).
+  base_fcf_years: 5
+  base_fcf_min_periods: 3
   # Reverse-DCF bracket. A price implying growth outside this band cannot be justified by discounted
   # cash flow at all — which is a finding about the price, reported as one, not an error.
   implied_growth_min: -0.50

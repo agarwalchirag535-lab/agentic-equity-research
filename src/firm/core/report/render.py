@@ -264,6 +264,8 @@ def render_markdown(report: ResearchReport) -> str:
                  f"base FCF ₹{v.base_fcf_cr:,.0f}cr"),
                 "",
             ]
+            if v.base_fcf_basis:
+                out += [f"_Base cash flow: {v.base_fcf_basis}._", ""]
             if v.implied_growth is not None:
                 realised = ("no realised growth figure" if v.realised_growth is None
                             else f"has realised **{v.realised_growth:+.1%}**")

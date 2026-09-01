@@ -2886,3 +2886,35 @@ point-in-time pin, and duplicating it is how one of them eventually loses it. An
 in the golden-set report existed, was documented as "the only number Wave 2 exists for", and was
 unused while `render()` recomputed its count inline — so the firm's most expensive error, clearing a
 positive, was printed as a bare count that never named the company. It now names them.
+
+### ADR-0072 — The base cash flow is normalised over a cycle, and a current burn still refuses
+
+**Date** 2026-09-01 · **Status** accepted · **Closes the last Phase-4 defect** named in ADR-0062 ·
+**Files** `core/pipeline/valuation.py`, `config/thresholds.yaml`, `schemas/report.py`,
+`core/report/assemble.py`, `core/report/render.py`, `tests/pipeline/test_base_fcf.py` (new) ·
+**918 tests, compute 100%**
+
+**The defect.** The valuation discounted ONE year of free cash flow. For a cyclical business that is
+the wrong base: a trough year makes the bear case look inevitable, a peak year makes the bull look
+cheap, and the entire scenario grid inherits whichever twelve months it happened to be handed. ADR-0062
+recorded it with the standing instruction that the fix is the missing input, **never a nudged discount
+rate** — a rate tuned until the answer looks right is not a valuation.
+
+**The fix, and the rule it must not break.** The base is now the **median** of free cash flow over
+`base_fcf_years` (5), where at least `base_fcf_min_periods` (3) are readable. Median rather than mean
+because a single asset sale or working-capital swing moves a mean and barely moves a median. Below the
+floor the firm does **not** claim to have normalised anything: it uses the latest year and says so, the
+same rule `cumulative_cfo_pat_min_periods` applies to cash conversion — a claim about a cycle needs a
+cycle of data, and dressing one year up as a normalised figure is worse than admitting it is one year.
+
+**The rule normalisation must not break, found by an existing test.** The first version smoothed the
+base before checking the latest year, and turned a company whose newest year was −₹95cr into a valued
+one at a comfortable median. `test_a_cash_burning_company_is_refused_rather_than_valued` failed, and it
+was right to: the test, not the change, was correct. **The latest year decides whether to value the
+company at all; the window only decides the base to value FROM.** A company that has just gone cash
+negative is precisely the case where smoothing is itself the error, and the mirror case — one good year
+on top of a losing cycle — is refused too, naming which of the two refused it.
+
+**The basis is printed.** `base_fcf_basis` states in the report whether the figure is a median over N
+years or a single year. A reader who cannot tell which is which cannot judge the bear case, and the
+number would otherwise look equally authoritative either way.
