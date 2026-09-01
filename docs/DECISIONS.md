@@ -3334,7 +3334,7 @@ recorded extraction failure (GAYATRI-FY18, CAP-EPC) — and a clean run is not a
 for golden-set sign-off and calibration (owner directive) · **Files**
 `core/monitoring/dashboard.py` (new), `core/pipeline/deep_dive.py`, `schemas/report.py`,
 `core/report/assemble.py`, `cli.py`, `config/thresholds.yaml`, `tests/monitoring/test_dashboard.py`
-(new) · **1040 tests, compute 100%**
+(new) · **1036 tests, compute 100%**
 
 **Four panels, one discipline.** Brier per agent version, the over/under-confidence curve, hit rate by
 claim type, attribution. Every panel refuses below a configured floor and says what it is waiting for:
@@ -3369,7 +3369,7 @@ predictions, every other panel honestly waiting.
 **Date** 2026-09-01 · **Status** accepted · **The owner's 2026-08-01 goal item** · **Files**
 `core/screen/sweep.py` (new), `core/screen/pipeline.py` (finally wired), `cli.py`,
 `config/thresholds.yaml` (`screen.emerging_min_years`), `tests/screen/test_sweep.py` (new) ·
-**1049 tests, compute 100%**
+**1045 tests, compute 100%**
 
 **What it is.** Many companies through the pieces a deep dive already runs — facts, derived metrics,
 model detection, the check playbook, the forensic screen, the feasibility gate, the priced view,
@@ -3400,7 +3400,7 @@ it is listed with that exact reason, not dropped.
 ### ADR-0086 — `make lint` goes green, and the rule set stops being implicit
 
 **Date** 2026-09-01 · **Status** accepted · **Files** ~60 across `src/` and `tests/`,
-`pyproject.toml` · **1049 tests, compute 100%**
+`pyproject.toml` · **1045 tests, compute 100%**
 
 **How a repo wakes up with 180 findings.** `pyproject.toml` configured ruff's line length and target
 and nothing else, so the lint gate meant "whatever this ruff version defaults to" — and ruff 0.16's
@@ -3428,3 +3428,12 @@ fetcher/extractor where one dead document must not kill a backfill, and each rec
 
 **The policy is now explicit.** `[tool.ruff.lint]` pins what the gate means, so the next ruff upgrade
 changes findings by decision rather than by surprise.
+
+### Correction note — the test counts in ADR-0084/0085/0086
+
+**Date** 2026-09-01. ADR-0084 stated 1040 tests where the measured count at that commit is **1036**;
+the +4 arithmetic slip propagated into ADR-0085 and ADR-0086 as "1049" where the measured count is
+**1045**. No test was ever lost — verified by re-collecting the suite at each commit in a throwaway
+worktree, and by diffing the lint commit for removed test functions (zero). The numbers above are now
+the measured ones. The lesson is the repo's own, applied to its author: a stated number is measured or
+it is not stated — ADR counts were being incremented by arithmetic instead of read from the run.
