@@ -3246,3 +3246,49 @@ member, and that is correct: `COMPOUNDER` means *clears the bar this run was ask
 the bar is now yours to set, a good business you tested at 5x and that clears 2x is a run away from
 being a COMPOUNDER. Adding a second positive rung would have re-hardcoded a house opinion about which
 targets deserve applause — the exact error ADR-0063 was written to remove.
+
+### ADR-0082 — The reference-rate file is validated, and its six missing rows are named
+
+**Date** 2026-09-01 · **Status** accepted · **Extends** ADR-0078 · **Files**
+`core/compute/rate_check.py` (new), `config/reference_rates.yaml`, `cli.py`,
+`tests/compute/test_rate_check.py` (new) · **1013 tests, compute 100%**
+
+**The attempt, and why it stopped where it did.** The owner asked for the dated RBI series, from citable
+primary sources only, with no inference. Four RBI routes were tried on 2026-09-01: the Handbook of
+Statistics tables (Table 59 "Structure of Interest Rates" and Table 103) return a **CAPTCHA page**
+rather than the file, to both a browser-agent download and a fetcher; DBIE (`data.rbi.org.in`) is a
+JavaScript application with no data in the HTML and no reachable API; the Weekly Statistical Supplement
+sits behind **F5 bot protection**; and the one RBI page that does serve data — the Special Data
+Dissemination page — carries only recent *fortnightly* yields, not the historical financial-year series
+the golden set's 2018–2023 vintages need.
+
+Every accessible alternative found by search (CEIC, Kaggle, dataful.in, Moody's) is an aggregator, which
+`adapters/base/sourcing.py` grades **B** — and a grade-B reference rate would undermine every forensic
+verdict computed against it. **So no historical rate was entered.** Typing them from memory is the one
+error this repo has no defence against: it would miscalibrate every cash-reality verdict and nothing
+downstream could detect it.
+
+**What was built instead.** The manual task was made small, specific and typo-proof.
+
+* `firm rates` reads the golden set, derives the Indian fiscal year each case's `as_of` falls in — the
+  FY ends 31 March, so a June-2019 run needs FY19's rate environment, not the one on the day the report
+  was written — and names **exactly six** years as missing: FY18, FY19, FY21, FY22, FY23, FY26. Six
+  values, not a decade.
+* `config/reference_rates.yaml` now carries the ready-to-fill rows with the source string already
+  written, the decision of **which** rate to use stated and argued (the 91-day T-bill, because the check
+  asks what a company earned on cash held in current accounts and short deposits — not the 10-year
+  G-sec, which prices duration the company is not taking), and the record of why they are empty.
+* `validate_reference_rates` catches the two silent hand-entry failures: an **uncited** rate, which is
+  indistinguishable downstream from a sourced one; and a **misplaced decimal**, where `6.5` for `0.065`
+  sets the cash-yield floor to 260% and flags every company on earth.
+
+**A band chosen by evidence, after the first one failed.** The plausibility band was set at 0.5%–20%
+and a test immediately showed `0.0065` — a 10× slip from 6.5% — passing it. Indian short rates have
+ranged roughly 3%–9%, so a 10× slip from the lowest lands at 0.32%; the floor now sits at 1%,
+comfortably below any real value and above any slipped one.
+
+**The sequencing this protects.** GOLDEN_SET.md §1 lists dated rates as a prerequisite because "a bug
+uniform across the calibration set is indistinguishable from a property of the world." Calibrating
+thresholds against the undated 6.5% fallback would fit a parameter to the firm's own dating error and
+carry it forever. Until the six rows land, every cash-yield floor rests on the fallback **and says so in
+the check's own detail**, which is the difference between a known limitation and a hidden one.

@@ -25,10 +25,34 @@ risk_free_rate:
   fallback_basis: >-
     undated 6.5% reference, carried over from thresholds.forensic.risk_free_rate. NOT vintage-correct:
     it is the flat constant this file exists to replace, and any check resting on it says so.
-  # fiscal-year end (Indian FY, 31 March) -> {rate, source, as_of}
-  # Example of the required shape, deliberately left unpopulated rather than filled from memory:
-  #   FY21:
-  #     rate: 0.035
-  #     source: "RBI Handbook of Statistics on the Indian Economy, Table 71 (91-day T-bill, annual avg)"
-  #     as_of: "2021-03-31"
+  # ---------------------------------------------------------------------------------------------
+  # HOW TO FILL THIS IN (ADR-0082). Six rows, and the golden set needs exactly these six — run
+  # `python -m firm rates` to re-derive the list and to validate whatever you enter.
+  #
+  # SOURCE, decided and stated so the choice is arguable rather than implicit:
+  #   RBI, Handbook of Statistics on the Indian Economy — Table 59, "Structure of Interest Rates",
+  #   row "91-day Treasury Bill (Primary) Yield", financial-year average.
+  #   Landing page: https://www.rbi.org.in/Scripts/AnnualPublications.aspx?head=Handbook+of+Statistics+on+Indian+Economy
+  #
+  # WHY THE 91-DAY BILL. The check this feeds asks whether the yield a company earned ON ITS CASH is
+  # plausible. Cash sits in current accounts and short deposits, so the comparable is a short
+  # sovereign rate — not the 10-year G-sec, which prices duration the company is not taking.
+  #
+  # WHY THESE ARE NOT ALREADY FILLED IN: RBI serves the Handbook behind a CAPTCHA and its bulletin
+  # behind bot protection, so the historical series could not be fetched programmatically on
+  # 2026-09-01. They were NOT typed from memory. A rate invented here would miscalibrate every
+  # cash-reality verdict downstream and nothing in the system could detect it — the one failure mode
+  # this repo has no defence against.
+  #
+  # RATES ARE DECIMALS: 6.5% is 0.065. `firm rates` rejects anything outside 0.5%-20% precisely to
+  # catch a misplaced point, because 6.5 would set the cash-yield floor to 260% and flag every
+  # company on earth.
+  #
+  #   FY18: { rate: 0.0__, source: "RBI Handbook of Statistics, Table 59, 91-day T-bill (primary) yield, FY2017-18 average", as_of: "2018-03-31" }
+  #   FY19: { rate: 0.0__, source: "RBI Handbook of Statistics, Table 59, 91-day T-bill (primary) yield, FY2018-19 average", as_of: "2019-03-31" }
+  #   FY21: { rate: 0.0__, source: "RBI Handbook of Statistics, Table 59, 91-day T-bill (primary) yield, FY2020-21 average", as_of: "2021-03-31" }
+  #   FY22: { rate: 0.0__, source: "RBI Handbook of Statistics, Table 59, 91-day T-bill (primary) yield, FY2021-22 average", as_of: "2022-03-31" }
+  #   FY23: { rate: 0.0__, source: "RBI Handbook of Statistics, Table 59, 91-day T-bill (primary) yield, FY2022-23 average", as_of: "2023-03-31" }
+  #   FY26: { rate: 0.0__, source: "RBI Handbook of Statistics, Table 59, 91-day T-bill (primary) yield, FY2025-26 average", as_of: "2026-03-31" }
+  # ---------------------------------------------------------------------------------------------
   by_fiscal_year: {}

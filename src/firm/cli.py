@@ -850,6 +850,56 @@ def resolve_cmd(
                    f"P={r.prediction.probability:.2f} and broke — record why in memory/lessons.jsonl")
 
 
+@app.command("rates")
+def rates_cmd(
+    golden: str = typer.Option("evals/golden_set", "--golden",
+                               help="golden-set directory, to report which fiscal years are needed"),
+) -> None:
+    """Validate `config/reference_rates.yaml` and name the fiscal years still missing a dated rate.
+
+    The one config file holding a MEASUREMENT rather than a policy this firm chose, entered by hand from
+    a published series. Both hand-entry failure modes are silent — an uncited rate is indistinguishable
+    from a sourced one, and `6.5` where `0.065` was meant sets the cash-yield floor to 260% — so the
+    file is validated rather than trusted (ADR-0082).
+    """
+    from datetime import date as _date
+    from pathlib import Path
+
+    import yaml as _yaml
+
+    from firm.core.compute.rate_check import fiscal_years_needed, validate_reference_rates
+    from firm.core.config import reference_rates
+
+    rates = reference_rates()
+    problems = validate_reference_rates(rates)
+    dated = dict(rates.get("risk_free_rate", {}).get("by_fiscal_year") or {})
+
+    typer.echo(f"config/reference_rates.yaml: {len(dated)} dated row(s), {len(problems)} problem(s)")
+    for p in problems:
+        typer.echo(f"  {p.fiscal_year}: {p.problem}")
+
+    stamps: list[_date] = []
+    for case in sorted(Path(golden).glob("*.yaml")):
+        loaded = _yaml.safe_load(case.read_text()) or {}
+        if loaded.get("as_of"):
+            value = loaded["as_of"]
+            stamps.append(value if isinstance(value, _date) else _date.fromisoformat(str(value)))
+    if stamps:
+        needed = fiscal_years_needed(stamps)
+        missing = [y for y in needed if y not in dated]
+        typer.echo(f"\ngolden set spans {len(stamps)} case(s) across {', '.join(needed)}")
+        if missing:
+            typer.echo(f"  MISSING a dated rate: {', '.join(missing)}")
+            typer.echo("  Until these exist every cash-yield floor rests on the undated fallback and")
+            typer.echo("  says so in the check's own detail. Calibrating thresholds before they land")
+            typer.echo("  would fit a parameter to the firm's own dating error (GOLDEN_SET.md section 1).")
+        else:
+            typer.echo("  every fiscal year the golden set touches has a dated, sourced rate")
+
+    if problems:
+        raise typer.Exit(1)
+
+
 @app.command("evolve")
 def evolve_cmd(
     memory: str = typer.Option("memory", "--memory", help="directory holding lessons/predictions"),
