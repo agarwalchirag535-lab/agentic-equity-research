@@ -122,8 +122,9 @@ def test_it_argues_both_sides_even_when_nothing_could_be_evaluated():
     assert narration.anti_thesis.strip() and narration.open_questions
 
 
-def test_open_questions_separate_managements_gap_from_the_firms(store):
-    """ADR-0051: publishing our unfinished extractor as their opacity is a false accusation."""
+def test_open_questions_carry_the_firms_gaps_and_point_at_the_companys(store):
+    """ADR-0051 + ADR-0066: our unfinished extractor is never published as their opacity, and the
+    company's gaps are not printed twice — they live in the structured management-questions section."""
     theirs = deterministic_narration(
         evaluation=_evaluation(unavailable=3, gap=GapKind.DISCLOSURE), screen=CLEAN_SCREEN,
         notes=FULL_NOTES).open_questions
@@ -131,9 +132,10 @@ def test_open_questions_separate_managements_gap_from_the_firms(store):
         evaluation=_evaluation(unavailable=3, gap=GapKind.CAPABILITY), screen=CLEAN_SCREEN,
         notes=FULL_NOTES).open_questions
 
-    assert any(q.startswith("For management:") for q in theirs)
-    assert not any(q.startswith("For management:") for q in ours)
+    assert any("Questions for management" in q for q in theirs)
+    assert not any("Firm backlog" in q for q in theirs)
     assert any("Firm backlog" in q for q in ours)
+    assert not any("Questions for management" in q for q in ours)
 
 
 def test_flags_reach_the_anti_thesis_with_a_replication_route_and_no_accusation():

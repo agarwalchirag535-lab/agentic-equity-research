@@ -385,6 +385,11 @@ def assemble_report(
     Criteria are attached by verdict class, not by taste: positives get kill criteria, negatives get
     rehabilitation criteria (ADR-0016 symmetry, enforced by the P2 validator).
     """
+    # Imported here, not at module scope: `questions` needs `NotesReview` from this module, so a
+    # top-level import would close the cycle. The alternative — moving NotesReview into a third module —
+    # would touch a dozen import sites to save one deferred import.
+    from firm.core.report.questions import management_questions
+
     checklist = build_checklist(evaluation, models, notes)
     computed = {name: d.value for name, d in derived.values.items()}
     citations = {name: d.citation for name, d in derived.values.items()}
@@ -413,6 +418,9 @@ def assemble_report(
         thesis=narration.thesis,
         anti_thesis=narration.anti_thesis,
         open_questions=list(dict.fromkeys(narration.open_questions)),
+        # ADR-0066: computed on EVERY report, from the same records the verdict rests on. Not narration
+        # — an agent cannot add to this list or remove from it.
+        management_questions=management_questions(evaluation, notes, interrogation),
         replication_notes=list(narration.replication_notes),
         unavailable_items=_unavailable_items(evaluation, coverage_gaps),
         restatements=[

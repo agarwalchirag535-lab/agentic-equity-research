@@ -166,6 +166,30 @@ class Criterion(BaseModel):
     load_bearing: bool = False
 
 
+class ManagementQuestion(BaseModel):
+    """One specific question to put to the company, with the reason it matters and what would settle it.
+
+    Distinct from `open_questions`, which is the analysts' own statement of what they do not know
+    (house style §3). This list is deterministic, built from the checks that flagged, the checks the
+    filings could not feed, and the line-by-line questions the sources were asked and did not answer —
+    so it is the same list whoever runs the report, and every entry names its origin.
+
+    Only the COMPANY's gaps belong here (ADR-0051). A question blocked on an extractor the firm has not
+    built is the firm's backlog and appears in `disclosure_backlog`; asking management to answer for our
+    unfinished parser wastes the one meeting the owner gets.
+    """
+
+    question: str
+    #: What conclusion the answer unblocks — a question with no consequence does not earn a slot.
+    why: str
+    #: Where the answer would come from: a filing row, a note, a disclosure the law already mandates.
+    answerable_from: list[str] = Field(default_factory=list)
+    severity: str = "medium"
+    #: The check name or line item that generated it, so a reader can trace the question to its origin.
+    source: str = ""
+    fact_ids: list[str] = Field(default_factory=list)
+
+
 class ReportClaim(BaseModel):
     """A claim in the report body, carrying its grade inline (house style §8: grade in the body, not a
     footnote)."""
@@ -249,6 +273,9 @@ class ResearchReport(BaseModel):
 
     # 10-11. predictions + appendix
     open_questions: list[str] = Field(default_factory=list)
+    #: The deterministic list to take to a management meeting (ADR-0066). Present on EVERY report,
+    #: whatever the verdict: a report the owner cannot act on is half a report.
+    management_questions: list[ManagementQuestion] = Field(default_factory=list)
     replication_notes: list[str] = Field(default_factory=list)
     unavailable_items: list[str] = Field(default_factory=list)
 

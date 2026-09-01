@@ -217,6 +217,23 @@ def render_markdown(report: ResearchReport) -> str:
     # 10-11. open questions + appendix
     if r.open_questions:
         out += ["## Open questions", ""] + [f"- {q}" for q in r.open_questions] + [""]
+    if r.management_questions:
+        out += [
+            "## Questions for management",
+            "",
+            ("_Deterministic, from the checks that flagged, the checks the filings could not feed, and "
+             "the line-by-line questions the sources did not answer. Every one is the company's to "
+             "answer — gaps in the firm's own extraction are listed separately under the disclosure "
+             "backlog, not asked of management._"),
+            "",
+        ]
+        for i, q in enumerate(r.management_questions, 1):
+            out += [f"{i}. **[{q.severity}]** {q.question}", f"   - _Why it matters:_ {q.why}"]
+            if q.answerable_from:
+                out += [f"   - _Answerable from:_ {'; '.join(q.answerable_from)}"]
+            if q.source:
+                out += [f"   - _Raised by:_ `{q.source}`"]
+        out += [""]
     if r.unavailable_items:
         out += ["## Not available from primary sources", "",
                 "_Reported as unavailable rather than estimated._", ""]

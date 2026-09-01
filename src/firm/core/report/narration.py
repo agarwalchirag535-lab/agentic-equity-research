@@ -150,27 +150,15 @@ def _open_questions(
     notes: NotesReview,
     interrogation: Interrogation | None,
 ) -> tuple[str, ...]:
-    """Ordered: what management should answer first, then the firm's own backlog.
+    """What the firm does not know — its OWN gaps, plus a pointer to the company's.
 
-    Nothing is truncated. The owner takes these to a management meeting, and a question dropped for
-    tidiness is a question that never gets asked.
+    Since ADR-0066 the company-side gaps have their own structured section (`management_questions`),
+    built from the same records. Repeating them verbatim here would print the same sentence twice in
+    one document, so this field keeps what that section deliberately excludes: the questions blocked on
+    an extractor the firm has not built, which are ours to close and no use to ask management about.
+    Nothing is truncated — a question dropped for tidiness is a question that never gets asked.
     """
     out: list[str] = []
-    for record in evaluation.applicable:
-        if record.outcome is CheckOutcome.UNAVAILABLE and record.gap is GapKind.DISCLOSURE:
-            out.append(
-                f"For management: the filings do not disclose the input for `{record.name}` — "
-                f"{record.reason or 'input not found'}. Where is it disclosed, and if it is not, why?"
-            )
-    if interrogation is not None:
-        for answer in interrogation.undisclosed_high:
-            needs = "; ".join(answer.needs)
-            out.append(
-                f"For management ({answer.line_item}): {answer.question}"
-                + (f" — answerable from: {needs}." if needs else "")
-            )
-    for gap in notes.disclosure_gaps:
-        out.append(f"For management: {gap}")
     for record in evaluation.applicable:
         if record.outcome is CheckOutcome.UNAVAILABLE and record.gap is not GapKind.DISCLOSURE:
             out.append(
@@ -180,6 +168,18 @@ def _open_questions(
     if interrogation is not None:
         for need in interrogation.needs_index():
             out.append(f"Firm backlog (our gap, not the company's): read {need}.")
+
+    company_side = (
+        any(r.outcome is CheckOutcome.UNAVAILABLE and r.gap is GapKind.DISCLOSURE
+            for r in evaluation.applicable)
+        or bool(notes.disclosure_gaps)
+        or (interrogation is not None and bool(interrogation.undisclosed_high))
+    )
+    if company_side:
+        out.append(
+            "What the filings themselves do not answer is listed, question by question, under "
+            "'Questions for management' — those are the company's to close, not ours."
+        )
     if not out:
         out.append(
             "Every applicable check ran and every question the playbook asks was answered from the "

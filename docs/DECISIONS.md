@@ -2635,3 +2635,42 @@ which is the artifact worth debugging.
 **Refinement left on the table:** a graph violation currently falls all the way to rung 4, discarding
 every agent claim rather than pruning the offending ones. Surgical pruning is a later improvement; the
 current behaviour is safe (it drops too much, never too little) and simple.
+
+### ADR-0066 — Questions for management become a standing deliverable, computed on every report
+
+**Date** 2026-09-01 · **Status** accepted · **Implements** ADR-0064 flag #4 · **Files**
+`core/report/questions.py` (new), `schemas/report.py`, `core/report/assemble.py`,
+`core/report/render.py`, `core/report/narration.py`, `tests/report/test_management_questions.py` (new)
+· **883 tests, compute 100%**
+
+**Why now.** The owner's stated use for this system is not only a verdict: *"surface questions that I
+can take directly to management."* That artifact existed only in pieces — scattered across
+`open_questions` (agent-authored, so it varied run to run), the disclosure backlog (the firm's own
+extraction gaps, mixed in with the company's) and the unanswered line items — and after ADR-0065 the
+best version of it appeared **only when a report was degraded**, which is exactly backwards.
+
+**The decision.** `management_questions` is a first-class report field, computed deterministically on
+every report from four sources that are each already a question in disguise: a check that **flagged**
+(the pattern is observable; the explanation is management's to give), a check the filings **could not
+feed** (for a listed company the datum is public by law, so its absence is a question rather than a
+neutral result), a **high-severity line-item question** the sources were asked and did not answer, and
+a **mandated disclosure the notes walker looked for and did not find**. Each carries why it matters,
+what would answer it, its severity and the check or line item that raised it, so a reader can trace
+every question to its origin.
+
+**Deterministic, not narrated — and that is the point.** An agent can neither add a question nor drop
+one. The same filings produce the same list whoever runs the report, which is what makes it a
+deliverable rather than a mood. It also keeps Law 1 intact at the one place it would be tempting to
+bend: the most useful question in the list is usually the one attached to a flagged number, and a
+number is never the LLM's to author.
+
+**Whose gap, again.** Only the COMPANY's gaps are put to the company (ADR-0051). A question blocked on
+an extractor the firm has not built stays in `open_questions` labelled as the firm's backlog. Asking
+management to account for our unfinished parser would spend the one meeting the owner gets on our own
+to-do list, and would be a false accusation besides. `open_questions` and this section were also split
+so they no longer print the same sentence twice: the former now carries the firm's own gaps plus a
+pointer, the latter carries the company's, in full.
+
+**Not done:** a standalone `questions.md` written beside `report.md`, and a `firm questions --ticker X`
+command. The section is on the report, which meets the requirement; the standalone artifact is a small
+addition to `write_report` when the owner wants one.
