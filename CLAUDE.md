@@ -9,11 +9,14 @@ build plan + corrections). When in doubt, SPEC wins; when SPEC and PLAN disagree
 ADR resolves it.
 
 ## What this project is
-A **firm of specialised agents** that produces auditable investment research on Indian
-micro/small/mid-caps (₹300cr–₹30,000cr). It answers ONE question: *can this business plausibly
-compound into a 5–10x over 5–8 years, self-funded, under honest management?* It **rejects** anything
-that can't prove it, with a full evidence chain. It is **not** a screener with a chatbot, and it
-**never** places orders or emits "buy this."
+A **firm of specialised agents** that produces **complete, auditable, standalone research reports** on
+Indian listed companies (ADR-0063). A report covers the full case — business quality, growth,
+financials, earnings quality, valuation, management/governance, forensic red flags, risks,
+industry/peers — and lands on an evidence-backed verdict, positive or negative. The §6
+return-potential question (*can this compound 5–10x over 5–8 years, self-funded, under honest
+management?*) is a mandatory SECTION of every report, not the system's sole purpose. Discovery sweeps
+target ₹300cr–₹30,000cr; a deep dive runs on ANY company the owner names. It is **not** a screener
+with a chatbot, and it **never** places orders or emits "buy this."
 
 ## The 7 laws (violating any is a build failure)
 1. **Deterministic compute / LLM narration separation.** No financial number is ever produced by an
@@ -52,6 +55,11 @@ a management claim is data about *management*, not about the *business* · cite 
 - Do NOT make Benford's Law a load-bearing forensic signal (see DECISIONS ADR-0003).
 - Do NOT run Beneish/Piotroski on banks/NBFCs/insurers (see DECISIONS ADR-0002).
 - Do NOT connect to any broker execution API. Ever. Research artifacts only.
+- Do NOT refuse a report because the company looks bad (ADR-0064). Research eligibility and
+  investment verdict are separate: an owner-chosen company ALWAYS gets a report — suspicion, gate
+  failure, or opacity are conclusions to document, never reasons not to research. Integrity gates
+  (P1-P4, R1-R6) police the firm's honesty, not the company's quality; their terminal fallback is a
+  degraded honest verdict, never no artifact.
 
 ## Build order (do not proceed until acceptance test passes AND the human confirms)
 Phase 0 skeleton+contracts → 1 compute → 2 three agents → 3 full roster+orchestrator →

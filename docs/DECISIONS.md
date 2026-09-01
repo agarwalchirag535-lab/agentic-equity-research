@@ -2441,3 +2441,125 @@ Amines' FY26 cash flow follows a cyclical trough, so a one-year base understates
 business and the 34.1% implied-growth figure is correspondingly flattering to the bear case. A
 normalised or multi-year base is the honest input, and — per the ADR-0059 discipline — the fix is the
 missing input, not a nudged discount rate.
+
+### ADR-0063 — The mandate broadens: a complete report on any chosen company; 5–10x becomes a section, not the charter
+
+**Date** 2026-09-01 · **Status** accepted · **Source** owner directive, 2026-09-01, recorded
+near-verbatim · **Amends** the objective statements of SPEC §0–§1, CLAUDE.md and README.md (an ADR is
+the established mechanism for amending SPEC) · **Changes no law** — Laws 1–7, the publication gates
+and the validators stand unchanged
+
+**The directive.** The system is **not** to be limited to identifying 5–10x multibagger candidates.
+The goal is a **complete, standalone equity research report for any company the owner chooses to
+analyze**, regardless of whether the conclusion is positive or negative: business quality, growth,
+financials, earnings quality, valuation, management/governance, forensic/fraud red flags, risks,
+industry/peers — arriving at an evidence-backed verdict. The 5–10x compounding question **remains an
+important part of the analysis — a component of the research report, not the sole purpose of the
+system.**
+
+**What already aligns — most of the machine.** The narrowness lives in the charter prose and the
+verdict layer; the machinery below them is general and needs no rework:
+
+* Dual-verdict publishing (ADR-0016) already mandates a professional report *whatever* the verdict.
+* The 14-agent roster already spans the full case: business, financial statements, forensics,
+  management, ownership, sector/peers, valuation, red team.
+* The evidence graph, the ~35-question line-item interrogation (ADR-0022), the forensic library, the
+  point-in-time store, and the DISCLOSURE/CAPABILITY gap split are verdict-agnostic.
+* `deep-dive` already accepts any ticker: the ₹300cr–₹30,000cr band binds only the discovery sweep
+  and the golden-set candidate filter (`adapters/india/register.py`, `config/universe.yaml`) —
+  verified today, and it must stay that way.
+* The valuation layer (ADR-0062) already computes the continuous answer — reverse-DCF implied growth
+  and a scenario grid anchored to the company's own record — not merely a 5x pass/fail.
+
+**The flags — where the 5–10x question is load-bearing and, under this directive, should not be:**
+
+1. **The verdict ladder has one positive rung, and it asserts multibagger candidacy.**
+   `src/firm/schemas/report.py` — `COMPOUNDER` is the sole member of `POSITIVE_VERDICTS`. A well-run,
+   fairly-priced 12%-grower has no positive verdict available; its nearest landing spot,
+   `QUALITY_WRONG_PRICE`, is a *negative* verdict.
+2. **A feasibility miss degrades the whole report.** `core/report/assemble.py:choose_verdict` — a
+   forensically clean company whose §6.3 gate returns HARD_FAIL / NEEDS_EXTERNAL_FUNDING lands on
+   `QUALITY_WRONG_PRICE`; an un-runnable gate withholds the verdict. Under the broad mandate,
+   feasibility-vs-target is a finding *inside* the return-potential section, not the ladder's spine.
+3. **The judged-against target is hardwired.** `config/thresholds.yaml` →
+   `report.target_return_multiple: 5` / `target_years: 7` — the published verdict is currently a
+   verdict on 5x/7y specifically.
+4. **`thesis_synthesizer`'s mandate is the Nx decomposition alone.** `agents/thesis_synthesizer.md`
+   step 1 lets a feasibility HARD_FAIL end the thesis. It should own the *overall* investment case,
+   with the "Nx if and only if A, B, C" decomposition as one pillar.
+5. **The charter prose.** SPEC §0–§1 ("the objective is not to find profitable companies … one
+   question"), CLAUDE.md's "answers ONE question", README's first sentence, and
+   `src/firm/__init__.py`'s docstring. Amended by this ADR; the files are updated alongside it.
+6. **The eval's scoring frame.** SPEC §9 scores blow-up detection and compounder recall — the
+   discovery question. ADR-0061's register already spans 7 event kinds; the golden set should also
+   grade per-section report completeness and accuracy, not only verdict direction.
+
+**Design direction (binding on Phase-4+ wiring; this ADR ships no code):**
+
+1. **The report is the unit of output**, with standing sections — business quality, growth,
+   financials, earnings quality/forensics, management/governance, industry/peers, valuation, risks,
+   and **return potential (the §6 decomposition, teeth intact)** — each carrying its own
+   evidence-graded conclusion.
+2. **The top-line verdict becomes two axes rather than one candidacy ladder**: forensic/quality
+   integrity × valuation-versus-price. `COMPOUNDER` survives as one cell (clean + feasible at target
+   + priced for it); a positive rung exists for the clean, fairly-priced business that is no
+   multibagger.
+3. **`target_return_multiple` / `target_years` become per-run parameters** (5x/7y stays the default);
+   the reverse DCF already reports the continuous implied-growth answer beside the gate.
+4. The INSUFFICIENT_* semantics, the forensic veto, and "the veto can only make a verdict worse"
+   carry over unchanged — they are about honesty, not about the target.
+
+### ADR-0064 — Research eligibility and investment verdict are separate: every chosen company gets a report
+
+**Date** 2026-09-01 · **Status** accepted · **Source** owner directive, 2026-09-01, recorded
+near-verbatim · **Companion to** ADR-0063 (the report is the product) · **Changes no law**
+
+**The directive.** A company must **never** be rejected from producing a research report because it
+looks bad, fails the multibagger test, or fails an investment gate. Research *eligibility* and
+investment *verdict* are completely separate. A weak, overvalued, suspicious, poorly governed, or
+potentially fraudulent company still gets the full investigation: document the evidence, identify the
+contradictions and red flags, explain what could not be verified, and produce **specific open
+questions for management**. Every chosen company gets a report; only the *conclusions* vary (PASS /
+FAIL / MIXED / INSUFFICIENT_EVIDENCE, …). The goal is not to filter bad companies out before
+research — it is to research them deeply enough to explain *why* they are good or bad.
+
+**What already complies (audited today, `run_deep_dive` path):**
+
+* **No code path aborts a run for company badness.** A deterministic HARD_FAIL flows into
+  `choose_verdict` and publishes as a `FORENSIC_CAUTION` report (PC Jeweller's REJECT is the live
+  proof). The `AgentDisciplineError` raises in `deep_dive.py` police the FIRM's agents (citing
+  nonexistent facts, narrating past a HARD_FAIL) — never the company.
+* **Opacity publishes.** `INSUFFICIENT_DISCLOSURE` / `INSUFFICIENT_EVIDENCE` are publishable
+  verdicts, exempted from the P1 note-coverage floor precisely so a report about a gap cannot be
+  blocked by the gap it reports (ADR-0051).
+* **Dual-verdict (ADR-0016)** already mandates a professional report whatever the verdict, and P4's
+  asymmetry runs in the honest direction: unanswered high-severity questions block only *positive*
+  verdicts, never the publication of a negative one.
+* **The raw material for management questions exists**: every report carries a mandatory non-empty
+  `open_questions`, the `disclosure_backlog`, and per-line-item UNANSWERED questions that name the
+  filing row that would close them.
+* The screen's refusal to opine below `screen_min_ran_share` lands as a verdict
+  (INSUFFICIENT_EVIDENCE, ADR-0058), not a refusal to report.
+
+**The flags — where the current design can still leave the owner with no report:**
+
+1. **A gate-blocked run writes no artifact.** `deep_dive.py`: publication (P1–P4) or graph (R1–R6)
+   violations return a debuggable result object and write nothing to disk. The gates are integrity
+   gates and MUST stay blocking — but for an owner-chosen company the terminal failure mode must
+   never be silence. Phase-4 wiring owes a **degrade-and-republish fallback**: on an unresolvable
+   violation, re-assemble at INSUFFICIENT_EVIDENCE (or deterministic-only, dropping the offending
+   narration) so an honest, weaker report ships instead of none. The same applies to a repeated
+   `AgentDisciplineError` after its corrective retry: the agent is dropped and reported as a
+   coverage gap; the report still ships.
+2. **Discovery gates must never become report-eligibility gates.** SPEC §8's Gates A–E and the §6.3
+   "quick-kill before deep work" framing are for the *sweep*, where the firm chooses. When the OWNER
+   chooses the company, the Phase-3/4 orchestrator must run in a mode where every gate outcome is a
+   **finding in the report** — annotating, never skipping deep work, never dropping the company.
+   (`deep-dive` already behaves this way; the constraint binds the orchestrator sequencing work.)
+3. **The verdict vocabulary.** The owner's PASS / FAIL / MIXED / INSUFFICIENT_EVIDENCE maps onto
+   ADR-0063's two-axis direction — MIXED is a first-class cell (clean forensics × infeasible price,
+   or flagged forensics × discounted price), not an error state. The ladder rework must include it.
+4. **Questions-for-management graduates from "on the board" to owed.** The directive makes the
+   management-questions artifact (assembled from `open_questions` + `disclosure_backlog` +
+   UNANSWERED line items, deduplicated, cited, ordered by severity) a standing deliverable of every
+   report — a section and/or `firm questions --ticker X` — not a someday item.

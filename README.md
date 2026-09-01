@@ -1,9 +1,13 @@
 # equity-firm
 
-An **agentic equity research firm** — auditable multibagger discovery for Indian micro/small/mid-caps
-(₹300cr–₹30,000cr). It answers one question with an evidence chain: *can this business plausibly compound
-into a 5–10x over 5–8 years, self-funded, under honest management?* — and **rejects** everything that
-can't prove it. It produces research artifacts only: **no orders, no broker, never "buy this."**
+An **agentic equity research firm** — complete, auditable, standalone research reports on Indian listed
+companies (ADR-0063). A report covers the full investment case — business quality, growth, financials,
+earnings quality, valuation, management/governance, forensic red flags, risks, industry/peers — and
+arrives at an evidence-backed verdict, positive or negative. One section keeps its teeth: *can this
+business plausibly compound into a 5–10x over 5–8 years, self-funded, under honest management?* — an
+important component of every report, not the sole purpose of the system. Discovery sweeps target
+micro/small/mid-caps (₹300cr–₹30,000cr); a deep dive runs on **any company the owner names**. It
+produces research artifacts only: **no orders, no broker, never "buy this."**
 
 **👉 New here (new session, new agent, new platform)? Read [`docs/STATUS.md`](docs/STATUS.md) first** —
 what is built, what is not, standing owner directives, and hard-won gotchas.

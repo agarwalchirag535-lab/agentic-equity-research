@@ -2,7 +2,7 @@
 
 > **Read this first if you are new to this repo** (new session, new agent, new platform, or the owner
 > after a break). It is the single authoritative answer to *"what is built, what is not, and what
-> should happen next."* Last updated **2026-08-31**.
+> should happen next."* Last updated **2026-09-01**.
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
@@ -10,12 +10,19 @@
 
 ---
 
-## 0. The one question
+## 0. The mandate
 
-> *Can this business plausibly compound into a 5–10x over 5–8 years, self-funded, under honest
-> management?*
+**A complete, standalone, evidence-backed research report on any company the owner chooses to
+analyze** (ADR-0063, owner directive 2026-09-01) — business quality, growth, financials, earnings
+quality, valuation, management/governance, forensic red flags, risks, industry/peers — landing on a
+verdict the evidence chain supports, positive or negative.
 
-Everything serves that. Output is **research artifacts only** — never an order, never "buy this".
+Within it, one section keeps its teeth: the §6 return-potential decomposition — *can this business
+plausibly compound into a 5–10x over 5–8 years, self-funded, under honest management?* It is a
+component of the report, **not the sole purpose of the system**. ADR-0063 lists where the old
+charter's narrowness still lives in code (the verdict ladder, `choose_verdict`, the hardwired 5x/7y
+target, `thesis_synthesizer`'s mandate). Output is **research artifacts only** — never an order,
+never "buy this".
 
 ## 1. Where the project stands
 
@@ -317,6 +324,16 @@ blank — see the ALKYLAMINE note.
    *method references only*, not the goal. n companies, n structures.
 6. **Line by line.** Notes-to-accounts get enumerated and dispositioned, not keyword-spotted.
 7. **Critique honestly.** The owner explicitly wants flaws named, not rubber-stamping.
+8. **The report is the product, not the filter** (ADR-0063, 2026-09-01). A full standalone research
+   report on any chosen company, whatever the conclusion; the 5–10x question is one section of it.
+   Do not let a feasibility miss against the 5x/7y target masquerade as a negative verdict on a clean,
+   fairly-priced business, and do not gate an owner-requested deep dive on the discovery universe band.
+9. **Research eligibility ≠ investment verdict** (ADR-0064, 2026-09-01). A company is NEVER refused a
+   report for looking bad, failing the multibagger test, or failing an investment gate — bad companies
+   get investigated, not filtered. Only conclusions vary (PASS/FAIL/MIXED/INSUFFICIENT_*). Integrity
+   gates police the firm's honesty and stay blocking, but the terminal failure mode for an owner-chosen
+   company must be a degraded honest report (INSUFFICIENT_EVIDENCE / deterministic-only), never
+   silence. Every report surfaces specific questions the owner can take directly to management.
 
 ## 5. Gotchas discovered the hard way (do not re-learn these)
 
