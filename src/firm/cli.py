@@ -17,6 +17,29 @@ from firm.core.facts.store import Document, FactStore
 app = typer.Typer(add_completion=False, help="Agentic equity research firm — research artifacts only.")
 
 
+def http_get(url: str, *, timeout: int = 60) -> str:
+    """GET a URL as text, with a CA bundle that actually works on macOS.
+
+    A framework Python on macOS ships no CA bundle for urllib (curl works because it uses the system
+    store), so an https page fails with CERTIFICATE_VERIFY_FAILED. `certifi` is already a declared
+    dependency of the india extra; verification is never disabled — a research firm reading a company's
+    own disclosures must know it reached that company.
+    """
+    import ssl
+    import urllib.request
+
+    try:
+        import certifi
+
+        context = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:  # pragma: no cover - falls back to the interpreter's default trust store
+        context = ssl.create_default_context()
+
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+
 @app.command("gate-demo")
 def gate_demo() -> None:
     """Phase 1 acceptance demo: the feasibility gate rejects an under-returning company and passes a
@@ -116,6 +139,36 @@ def ingest(
     store.close()
 
 
+@app.command("ingest-prices")
+def ingest_prices_cmd(
+    ticker: str = typer.Option(..., "--ticker"),
+    scrip: str = typer.Option(..., "--scrip", help="BSE scrip code (e.g. 506767 for Alkyl Amines)"),
+    as_of: str = typer.Option(None, "--as-of", help="ISO date; default today"),
+    db: str = typer.Option("data/firm.db", "--db"),
+) -> None:
+    """Register the settled BSE close at `as_of` (and its trailing ADV) as grade-A facts.
+
+    ADR-0062 built this ingest and nothing called it, so `market:Close` could only ever reach the store
+    programmatically and every valuation reported UNAVAILABLE for want of a price. The exchange's own
+    settled close is grade A and free; an aggregator's would be grade B, and a grade-B price would
+    undermine every number the valuation rests on.
+    """
+    from firm.core.ingest.prices import ingest_prices
+
+    run_date = date.fromisoformat(as_of) if as_of else date.today()
+    store = FactStore(db)
+    result = ingest_prices(store, ticker, scrip, run_date, fetch=http_get)
+
+    if result.status != "registered":
+        typer.echo(f"{ticker}: no price registered — {result.detail}")
+        raise typer.Exit(1)
+    typer.echo(f"{ticker}: close Rs {result.close.price:,.2f} on {result.close.on} "
+               f"({len(result.fact_ids)} facts registered, grade A, cited to BSE)")
+    if result.adv_cr is not None:
+        typer.echo(f"  average daily traded value: Rs {result.adv_cr:,.2f}cr "
+                   f"(SPEC section 8 Gate A liquidity floor applies to this)")
+
+
 @app.command("forensic")
 def forensic(
     ticker: str = typer.Option(..., "--ticker"),
@@ -208,24 +261,9 @@ def discover_filings_cmd(
     Fill in `sha256`/`bytes` after retrieving, then run `firm deep-dive --filings <manifest>`.
     """
     import json
-    import ssl
-    import urllib.request
     from pathlib import Path
 
-    # A framework Python on macOS ships no CA bundle for urllib (curl works because it uses the system
-    # store), so an IR page over https fails with CERTIFICATE_VERIFY_FAILED. `certifi` is already a
-    # declared dependency of the india extra; verification is never disabled — a research firm reading a
-    # company's own disclosures must know it reached that company.
-    try:
-        import certifi
-
-        context = ssl.create_default_context(cafile=certifi.where())
-    except ImportError:  # pragma: no cover - falls back to the interpreter's default trust store
-        context = ssl.create_default_context()
-
-    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(request, timeout=60, context=context) as response:  # noqa: S310
-        html = response.read().decode("utf-8", errors="replace")
+    html = http_get(url)
 
     from firm.adapters.india.ir_pages import discover_filings
 
@@ -435,6 +473,13 @@ def deep_dive(
                            f"{len(quoted)} of {len(calls)} transcripts registered as facts")
         if latest_filing is not None:
             satisfied |= {"financials", "filing", "segments"}
+        # `prices` has been listed as portfolio_manager's prerequisite, and as NOT INGESTED, since
+        # Phase 3. It is satisfied by a settled close already in the store at or before the run date
+        # (`firm ingest-prices`) — read here rather than assumed, so a roster that plans the agent is a
+        # roster whose valuation actually has a price to work from.
+        if [f for f in store.query_metric_prefix(ticker, "market:Close", run_date)
+                if f.period <= run_date.isoformat()]:
+            satisfied |= {"prices"}
         # `peers` is satisfied by another company's FACTS, not by a document in this company's manifest,
         # so it is resolved here rather than in `available_inputs_from`. And it counts only when the
         # comparison actually yields a row: naming a peer we hold no data on would otherwise let the

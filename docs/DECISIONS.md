@@ -2801,3 +2801,48 @@ The note says the true thing instead: the arithmetic is there, and no analyst ha
 `thesis_synthesizer`, `red_team`, `portfolio_manager`) are prompts that do not run, Gates D/E gate
 nothing, and the base FCF is a single year — a trough year flatters the bear case, and the fix is the
 missing input (ADR-0059), never a nudged discount rate.
+
+### ADR-0070 — The judgment tier runs, and the Law-1 check that guards it is finally called
+
+**Date** 2026-09-01 · **Status** accepted · **Completes the narration half of** ADR-0062 · **Files**
+`core/pipeline/deep_dive.py`, `cli.py`, `tests/pipeline/test_judgment_tier.py` (new) ·
+**905 tests, compute 100%**
+
+**The bug this work found, which matters more than the feature.** `_scenario_discipline` was written by
+ADR-0062 to check an agent's scenario lines item by item against the priced grid. Its own docstring
+called `ScenalineLine.return_multiple` "the single easiest way to launder an invented number through
+this system", and `NESTED_COMPUTED_FIELDS` was created to move it out of the judgment allowlist. **The
+function was never called.** `_run_one_agent` ran `_numeric_discipline` and `_citation_problems` and
+nothing else, so an agent could write "bull: 4.2x" beside a computed 0.03x and pass every gate. It was
+latent only because no judgment agent had ever run; wiring the tier is what exposed it. It is now
+called, and a test asserts the run fails on an invented multiple.
+
+The general lesson, and the second time this repo has learned it: **a check that nothing calls is
+indistinguishable from a check that does not exist.** The registry test (`test_numeric_registry`)
+enforces that every numeric FIELD is classified, and that test passed throughout — because the hole was
+not a missing classification but a missing call site.
+
+**Three blockers cleared so the tier can run at all.**
+
+1. **Nothing ingested prices.** ADR-0062 built `ingest_prices` and no command called it, so
+   `market:Close` could only reach the store programmatically and every valuation reported UNAVAILABLE.
+   `firm ingest-prices --ticker X --scrip N` closes it, reusing an `http_get` helper extracted from
+   `discover-filings` (same certifi handling; verification never disabled).
+2. **`prices` was never marked satisfied**, so `portfolio_manager` — whose only extra prerequisite it
+   is — could never be planned. It is now read from the store rather than assumed, so a roster that
+   plans the agent is one whose valuation actually has a price.
+3. **The priced grid never reached the agents.** The valuation's *scalars* already did, as derivations
+   on the `DerivedSet`; the scenario *rows* did not, and `valuation_modeler` cannot assign probabilities
+   to scenarios it cannot see. The payload now carries them with the rule attached.
+
+**Rendering, by the ADR-0034 rule.** `thesis_synthesizer` owns the thesis, with its three load-bearing
+assumptions listed rather than buried — they are what a reader checks first. Its `feasibility_verdict`
+is deliberately NOT printed: the gate's verdict is computed and already renders in Return potential,
+and printing an agent's restatement beside it invites the two to disagree. `red_team`'s bear case and
+kill criteria go into the anti-thesis, where P2 makes them structural. `valuation_modeler` and
+`portfolio_manager` render in the Valuation section, and `staged_entry` — a schema field that had no
+reader at all — is printed framed as a research view, never as an instruction (SPEC §1).
+
+**A test fixture that the citation gate rejected, correctly.** The first version of the
+`thesis_synthesizer` answer said an assumption held "within 10% of the current cycle average". The
+validator failed the run for an uncited number in agent prose. The fixture was wrong, not the gate.

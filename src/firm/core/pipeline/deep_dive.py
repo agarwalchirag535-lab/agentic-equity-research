@@ -333,6 +333,7 @@ def agent_facts_payload(
     feasibility: multibagger.FeasibilityResult | None, models: Sequence[BusinessModel],
     notes: NotesReview, guidance: Sequence[Fact] = (),
     peers: Sequence[PeerComparison] = (),
+    valuation: Any | None = None,
 ) -> dict[str, Any]:
     """What the agents are shown: computed numbers WITH their fact ids, and nothing they must compute.
 
@@ -391,6 +392,29 @@ def agent_facts_payload(
             }
             for f in guidance
         ],
+        # The priced grid, for the judgment tier (ADR-0070). The valuation's SCALARS already reach the
+        # agent through `computed_metrics` (they are derivations on the run's DerivedSet, so they carry
+        # citable ids); the scenario ROWS do not, and `valuation_modeler` cannot assign probabilities to
+        # scenarios it cannot see. Every row here is priced by the compute layer: the agent argues about
+        # how likely each is, never about what each is worth.
+        "valuation": None if valuation is None else {
+            "status": valuation.status,
+            "missing": list(valuation.missing),
+            "price": valuation.price,
+            "price_on": valuation.price_on.isoformat() if valuation.price_on else None,
+            "implied_growth": valuation.implied_growth,
+            "implied_growth_note": valuation.implied_growth_note,
+            "realised_growth": valuation.realised_growth,
+            "scenarios": [
+                {"name": s.name, "growth": s.growth, "value_per_share": s.value_per_share,
+                 "return_multiple": s.return_multiple}
+                for s in valuation.scenarios
+            ],
+            "assumptions": dict(valuation.assumptions),
+            "rule": ("these numbers are computed. Assign probabilities and argue about them; restating "
+                     "a value per share or a return multiple differently from the rows above is a "
+                     "Law-1 violation and fails the run"),
+        },
         "feasibility_gate": None if feasibility is None else {
             "target": (f"{feasibility.g_required:.1%} earnings CAGR — the growth the run's return "
                        f"target demands with no re-rating and no dilution (SPEC §6.2)"),
@@ -530,6 +554,9 @@ def _run_one_agent(
     known_fact_ids: set[str],
     known_values: Mapping[str, float],
     max_citation_retries: int,
+    #: {scenario name: return multiple} from the priced grid, for `_scenario_discipline`. Empty when the
+    #: valuation could not run — in which case an agent quoting ANY return multiple is authoring it.
+    priced_scenarios: Mapping[str, float] | None = None,
 ) -> AgentOutputBase:
     """Run an agent and hold it to Laws 1 and 2, with one corrective retry before failing the run."""
     prompt = user
@@ -537,6 +564,7 @@ def _run_one_agent(
     for attempt in range(max_citation_retries + 1):
         output = run_agent(provider, system=system, user=prompt, model=model, schema=schema)
         problems = (_numeric_discipline(output, derived)
+                    + _scenario_discipline(output, priced_scenarios or {})
                     + _citation_problems(output, known_fact_ids, known_values))
         if not problems:
             return output
@@ -570,6 +598,34 @@ def build_packets(
         system, user = build_packet(spec, dict(payload), schema.model_json_schema(), house)
         out[name] = (spec, system, user)
     return out
+
+
+def _thesis_prose(
+    outputs: Mapping[str, AgentOutputBase], ba: AgentOutputBase | None
+) -> str:
+    """The thesis: `thesis_synthesizer`'s when it ran, the business analyst's case when it did not.
+
+    `thesis_synthesizer` owns the "this returns Nx if and only if A, B and C" form (SPEC §7), and its
+    three load-bearing assumptions are the part a reader checks first — so they are rendered as a list
+    rather than buried in the paragraph. Its `feasibility_verdict` is NOT printed here: the gate's own
+    verdict is computed and already rendered in the Return-potential section, and printing an agent's
+    restatement beside it invites the two to disagree.
+    """
+    ts = outputs.get("thesis_synthesizer")
+    if ts is None:
+        return ba.narrative if ba is not None else ""
+    parts = [ts.narrative.strip()] if ts.narrative.strip() else []
+    if getattr(ts, "return_multiple_if", "").strip():
+        parts.append(f"**Returns its multiple if and only if:** {ts.return_multiple_if.strip()}")
+    assumptions = [a for a in getattr(ts, "three_load_bearing_assumptions", []) if a.strip()]
+    if assumptions:
+        parts.append(
+            "**The load-bearing assumptions — the thesis fails if any of these fails:**\n"
+            + "\n".join(f"{i}. {a.strip()}" for i, a in enumerate(assumptions, 1))
+        )
+    if ba is not None and ba.narrative.strip():
+        parts.append(f"**business_analyst:** {ba.narrative.strip()}")
+    return "\n\n".join(parts)
 
 
 def _narration(
@@ -612,21 +668,56 @@ def _narration(
             "this company includes everything we could not look at."
         )
 
-    # The deterministic Valuation section now carries the reverse DCF and the priced grid (ADR-0069),
-    # so this note must not claim that tier is missing — it renders directly above this text. What it
-    # says instead is the one thing the computed section cannot: that no agent has argued with it yet.
-    valuation = (
-        "No analyst has yet argued with the computed valuation above. The reverse DCF and the scenario "
-        "grid are deterministic — priced from the company's own realised growth against the settled "
-        "exchange close — and the judgment tier that would weigh their probabilities "
-        "(`valuation_modeler`, `red_team`) is not staffed in this run. Read the section above as "
-        "arithmetic about the price, not as a view on it."
-        if feasibility is None else
-        f"The self-funding test and the price test are different questions and both are answered here. "
-        f"Feasibility: {feasibility.rationale} The computed valuation above answers the second. No "
-        f"analyst has yet argued with either — the judgment tier that would weigh the scenarios' "
-        f"probabilities is not staffed in this run."
+    # THE JUDGMENT TIER (ADR-0070). Same rule as the sector and governance sections: list the
+    # section's authors and render whoever ran, so a newly staffed agent appears the day it is added
+    # rather than the day someone remembers to edit this function (the ADR-0034 lesson).
+    #
+    # The deterministic Valuation section carries the reverse DCF and the priced grid (ADR-0069), so
+    # this note must never claim that tier is missing — it renders directly above this text. When no
+    # judgment agent ran, it says the true thing instead: the arithmetic is there and nobody has
+    # argued with it.
+    judgment_agents = [n for n in ("valuation_modeler", "portfolio_manager") if n in outputs]
+    judgment_prose = "\n\n".join(
+        f"**{n}:** {outputs[n].narrative.strip()}"
+        for n in judgment_agents if outputs[n].narrative.strip()
     )
+    if judgment_prose:
+        valuation = judgment_prose
+        # `staged_entry` is a schema field with no reader — the ADR-0034 failure at field level. It is
+        # the one part of the portfolio manager's output that says WHEN, and it is framed as staging
+        # against evidence rather than as an instruction: this firm publishes research, never orders.
+        staged = getattr(outputs.get("portfolio_manager"), "staged_entry", None)
+        if staged and staged.strip():
+            valuation += f"\n\n**Staging (research view, not an instruction):** {staged.strip()}"
+        absent_judgment = [n for n in ("valuation_modeler", "portfolio_manager")
+                           if n not in outputs]
+        if absent_judgment:
+            valuation += (
+                f"\n\nNot staffed on this run: {', '.join(f'`{n}`' for n in absent_judgment)} — that "
+                "reading is absent rather than favourable."
+            )
+    else:
+        base = (
+            "No analyst has yet argued with the computed valuation above. The reverse DCF and the "
+            "scenario grid are deterministic — priced from the company's own realised growth against "
+            "the settled exchange close — and the judgment tier that would weigh their probabilities "
+            "(`valuation_modeler`, `red_team`) is not staffed in this run. Read the section above as "
+            "arithmetic about the price, not as a view on it."
+        )
+        valuation = base if feasibility is None else (
+            f"The self-funding test and the price test are different questions and both are answered "
+            f"here. Feasibility: {feasibility.rationale} {base}"
+        )
+
+    # The red team's bear case belongs in the anti-thesis, where P2 makes it structural, and its
+    # narrative is prefixed like every other disconfirming contribution so the author is visible.
+    rt = outputs.get("red_team")
+    if rt is not None:
+        bear = getattr(rt, "bear_case", "").strip()
+        if bear:
+            anti_parts.insert(0, f"**red_team (bear case):** {bear}")
+        for criterion in getattr(rt, "kill_criteria", []):
+            anti_parts.append(f"**red_team (kill criterion):** {criterion}")
     # EVERY AGENT THAT RAN MUST BE READABLE SOMEWHERE. `sector_analyst`, `macro_strategist` and
     # `unit_economics_analyst` were validating, entering `agent_versions` — so the report named them as
     # contributors — and then having their narratives dropped, because `_narration` only read six agents
@@ -698,7 +789,7 @@ def _narration(
         sector_narrative=sector,
         management_narrative=management,
         valuation_narrative=valuation,
-        thesis=(ba.narrative if ba is not None else ""),
+        thesis=_thesis_prose(outputs, ba),
         anti_thesis="\n\n".join(anti_parts),
         open_questions=tuple(dict.fromkeys(open_questions)),
         replication_notes=tuple(replication),
@@ -821,7 +912,7 @@ def run_deep_dive(
     peer_comparisons = load_peer_comparisons(store, ticker, peers, as_of, start_year=start_year)
     peer_values = peer_citable_values(peer_comparisons)
     payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes,
-                                  guidance=guidance, peers=peer_comparisons)
+                                  guidance=guidance, peers=peer_comparisons, valuation=valuation)
     packets = build_packets(payload, agents_dir=agents_path, repo_root=repo, agents=agents)
     known_fact_ids = (set(facts.all_fact_ids()) | {f"derived:{n}" for n in derived.values}
                       | {f.fact_id for f in guidance} | set(peer_values))
@@ -850,6 +941,12 @@ def run_deep_dive(
                 f"agents you have answered."
             )
 
+    # The priced grid, keyed by name, so `_scenario_discipline` can check an agent's scenario lines item
+    # by item. ADR-0062 wrote that check — calling it "the single easiest way to launder an invented
+    # number through this system" — and nothing ever called it, so until now an agent could write
+    # "bull: 4.2x" beside a computed 0.03x and pass every gate (ADR-0070).
+    priced_scenarios = {s.name: s.return_multiple for s in valuation.scenarios}
+
     run = _AgentRun()
     specs = [spec for spec, _, _ in packets.values()]
     # Guidance and peer ids join the key: two runs seeing different transcripts, or a different peer set,
@@ -867,7 +964,7 @@ def run_deep_dive(
         output = _run_one_agent(
             spec, AGENT_OUTPUTS[name], provider=agent_provider, model=model, system=system, user=user,
             derived=derived, known_fact_ids=known_fact_ids, known_values=known_values,
-            max_citation_retries=max_citation_retries,
+            max_citation_retries=max_citation_retries, priced_scenarios=priced_scenarios,
         )
         run.outputs[name] = output
         run.fragments.append(build_fragment(
