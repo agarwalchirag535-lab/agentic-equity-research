@@ -2990,3 +2990,29 @@ compute-layer entries — which is the failure mode above. The narrow check buys
 exceptions. The public case stays a review question, and the sweep that found these
 (cross-referencing every definition against uses outside its module) is worth re-running when a phase
 completes.
+
+### ADR-0075 — The envelope is not the answer: agent replies survive a markdown fence
+
+**Date** 2026-09-01 · **Status** accepted · **Files** `core/agents/runner.py`,
+`tests/agents/test_runner_envelope.py` (new) · **933 tests, compute 100%**
+
+**The defect, found by tracing the owner's actual path.** `run_agent` called
+`schema.model_validate_json(resp.text)` on the provider's raw text, which requires the reply to be a
+bare JSON object and nothing else. The no-API-key path this project depends on shells out to
+`claude -p` (ADR-0062), and that CLI — like essentially every chat model asked to emit JSON —
+habitually returns a ```json fence, frequently with a line of preamble. Such a reply failed validation
+for its punctuation rather than its content, burned all three attempts, and raised
+`AgentValidationError`. **The firm's primary free path could fail on formatting while the agent's
+answer was correct**, and the error message would have sent the reader looking at the schema.
+
+**The fix.** `candidate_payloads` returns the reply, then progressively less of its envelope: the raw
+text first, then any fenced block, then the outermost balanced `{...}`. Order is the conservative
+direction — a reply that IS the object is used as-is and never unwrapped further, and the brace scan
+takes the OUTERMOST pair so a JSON snippet the agent quotes inside its own narrative cannot displace
+the real answer enclosing it. The reported error remains the failure of the most literal reading, so a
+genuinely malformed answer still points at the right problem.
+
+**What is deliberately not loosened**, and is asserted by test: the extracted object must still satisfy
+the Pydantic schema (Law 4); prose containing no object still fails the run; and every downstream gate
+— numeric discipline, the scenario grid check, the citation validator — runs unchanged on whatever
+comes out. Tolerating an envelope is not tolerating an answer.
