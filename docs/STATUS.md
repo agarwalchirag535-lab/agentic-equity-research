@@ -33,10 +33,10 @@ never "buy this".
 | **2 — three agents, deep** | ✅ **complete — acceptance test passes; first report published (§6a)** |
 | 3 — full roster + orchestrator | ✅ **complete — acceptance run published 2026-08-01 (§6b)**: 9 of 9 agents staffed and rendered, every data prerequisite satisfiable (ADR-0030–0044) |
 | 4 — judgment tier | ✅ **complete 2026-09-01 (ADR-0069/0070/0071/0072)**: the valuation reaches the report, the four judgment agents narrate, Gates A–E are reported as findings (never as filters — ADR-0064), and the base FCF is normalised over a cycle. `firm ingest-prices` finally puts a grade-A close in the store |
-| 5 — memory loop | ⚠️ half-built (see §3) |
+| 5 — memory loop | ⚠️ **loop closed 2026-09-01 (ADR-0073)**: `firm resolve` scores due predictions point-in-time and prints the Brier score. Remaining: `core/evolution/` (SPEC §7.3 prompt evolution) is still empty |
 | 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0061)**: 8 cases, 7 in band + CAP-EPC recorded, positives **2/2**; register spans 7 event kinds; awaiting human sign-off |
 
-**Tests:** 918 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 923 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules

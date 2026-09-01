@@ -731,6 +731,70 @@ def packets(
                f"python -m firm deep-dive --ticker {ticker} --as-of {run_date} --answers {out_dir}")
 
 
+@app.command("resolve")
+def resolve_cmd(
+    ticker: str = typer.Option(..., "--ticker"),
+    as_of: str = typer.Option(..., "--as-of",
+                              help="ISO date to resolve AT — later filings than this do not exist"),
+    db: str = typer.Option("data/firm.db", "--db"),
+    memory: str = typer.Option("memory", "--memory", help="directory holding predictions.jsonl"),
+    start_year: int = typer.Option(None, "--start-year",
+                                   help="window the criteria were computed under (cumulative metrics)"),
+) -> None:
+    """Score this company's due predictions against what later filings actually showed (SPEC §7.2).
+
+    The last open half of Phase 5. `resolve_due` and `brier_score` have both existed and been tested
+    since Phase 0, and nothing ever called them: the ledger had inputs and no loop, so the firm logged
+    forecasts and never learned whether it was right. Predictions only enter the ledger from PUBLISHED
+    reports, so scoring them is the only measure of the firm's calibration that is not self-assessment.
+
+    Point-in-time discipline applies to resolution exactly as to research: the actual is recomputed from
+    facts published on or before `--as-of`, so replaying history cannot leak the future into the score.
+    """
+    from pathlib import Path
+
+    from firm.core.monitoring.brier import brier_score
+    from firm.core.monitoring.predictions import read_jsonl
+    from firm.core.monitoring.resolver import resolve_due
+
+    run_date = date.fromisoformat(as_of)
+    ledger_path = Path(memory) / "predictions.jsonl"
+    if not ledger_path.exists():
+        typer.echo(f"no prediction ledger at {ledger_path} — nothing has been published to resolve")
+        raise typer.Exit(1)
+
+    resolutions = resolve_due(FactStore(db), ledger_path, ticker, run_date, start_year=start_year)
+    if not resolutions:
+        typer.echo(f"{ticker}: no prediction is due for resolution at {run_date}")
+        return
+
+    scored = [r for r in resolutions if r.actual is not None]
+    typer.echo(f"{ticker} as-of {run_date}: {len(resolutions)} prediction(s) due, "
+               f"{len(scored)} scoreable")
+    for r in resolutions:
+        if r.actual is None:
+            # OUR reach, not their disclosure — the ADR-0051 distinction, applied to resolution.
+            typer.echo(f"  UNSCOREABLE {r.prediction.metric}: {r.reason}")
+            continue
+        held = r.prediction.outcome
+        typer.echo(f"  {'HELD    ' if held else 'BROKE   '} {r.prediction.metric} "
+                   f"{r.prediction.operator} {r.prediction.threshold:g} — actual {r.actual:,.4g} "
+                   f"(the report put P={r.prediction.probability:.2f} on it holding)")
+
+    # The score the firm is judged by. A confident prediction that broke costs more than a hedged one,
+    # which is the whole point of logging a probability rather than a verdict.
+    resolved = [p for p in read_jsonl(ledger_path) if p.resolved and p.outcome is not None]
+    if resolved:
+        score = brier_score([(p.probability, bool(p.outcome)) for p in resolved])
+        typer.echo(f"\nBrier score across {len(resolved)} resolved prediction(s): {score:.4f} "
+                   f"(0 = perfect, 0.25 = a coin flip stated at 50%)")
+    surprises = [r for r in scored if r.prediction.outcome is False
+                 and r.prediction.probability >= 0.7]
+    for r in surprises:
+        typer.echo(f"  LESSON CANDIDATE: `{r.prediction.metric}` was put at "
+                   f"P={r.prediction.probability:.2f} and broke — record why in memory/lessons.jsonl")
+
+
 @app.command("eval")
 def eval_golden(
     cases: str = typer.Option("evals/golden_set", "--cases", help="directory of golden-set case files"),

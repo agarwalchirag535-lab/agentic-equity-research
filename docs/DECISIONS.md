@@ -2918,3 +2918,35 @@ on top of a losing cycle — is refused too, naming which of the two refused it.
 **The basis is printed.** `base_fcf_basis` states in the report whether the figure is a median over N
 years or a single year. A reader who cannot tell which is which cannot judge the bear case, and the
 number would otherwise look equally authoritative either way.
+
+### ADR-0073 — `firm resolve`: the memory loop finally closes
+
+**Date** 2026-09-01 · **Status** accepted · **Phase 5** · **Files** `cli.py`,
+`tests/monitoring/test_resolve_command.py` (new) · **923 tests, compute 100%**
+
+**The gap.** `resolve_due` (SPEC §7.2) and `brier_score` have existed and been unit-tested since
+Phase 0, and **nothing ever called either of them.** STATUS has recorded it plainly since ADR-0023:
+"the ledger has inputs and no loop". The firm logged forecasts from every published report and never
+found out whether it was right — which makes every confidence number in every report an assertion
+rather than a track record. This is the third instance of the same class of defect found today
+(`_scenario_discipline`, `cleared_a_positive`, and now the whole resolver): **a capability nothing
+calls is indistinguishable from one that does not exist**, and unit tests do not catch it because the
+unit works.
+
+**`firm resolve --ticker X --as-of D`** scores every due, unresolved prediction against the metric as
+the firm recomputes it from the point-in-time store, rewrites the ledger with the outcomes, and prints
+the Brier score across everything resolved so far. Point-in-time discipline applies to resolution
+exactly as to research — an actual recomputed from a filing published after the resolution date would
+score the firm against information it could not have had, which flatters every backtest ever run.
+
+**Three deliberate details.** An unscoreable prediction is printed as UNSCOREABLE with its reason
+rather than dropped — the ADR-0051 whose-gap distinction, applied to resolution. Predictions enter the
+ledger only from *published* reports (ADR-0023) and only undegraded ones (ADR-0065), so what is scored
+is exactly what the firm was willing to stand behind. And a **confident** miss — probability ≥ 0.7 and
+the criterion broke — is named as a lesson candidate: a hedged miss is ordinary and costs little Brier,
+while a confident one is where a lesson actually lives. The lesson itself is not auto-written;
+inventing the reason a forecast failed is exactly the kind of narration this firm forbids.
+
+**Still open in Phase 5:** `core/evolution/` remains empty — the prompt-evolution job (SPEC §7.3) was
+never written, and now that resolutions produce a real score there is finally something for it to
+learn from.
