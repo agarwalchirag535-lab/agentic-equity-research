@@ -1,0 +1,31 @@
+{
+  "ticker": "GAYATRI",
+  "company_name": "Gayatri Projects Limited",
+  "source": "https://api.bseindia.com/BseIndiaAPI/api/AnnualReport_New/w?scripcode=532767",
+  "retrieved_at": "2026-08-31",
+  "filings": [
+    {
+      "file": "GAYATRI-AR-FY18.pdf",
+      "period": "FY18",
+      "prior_period": "FY17",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/532767/5327670318.pdf",
+      "published_at": "2018-10-16",
+      "published_at_basis": "exchange-authorise-date",
+      "grade": "A",
+      "sha256": "354b88ec480ae2ea8eefc0161e4aa0caf4554963c5b4a1a06bc03bbe4b147bc8",
+      "bytes": 1174178
+    },
+    {
+      "file": "GAYATRI-AR-FY17.pdf",
+      "period": "FY17",
+      "prior_period": "FY16",
+      "source_url": "https://www.bseindia.com/bseplus/AnnualReport/532767/5327670317.pdf",
+      "published_at": "2018-01-02",
+      "published_at_basis": "exchange-authorise-date",
+      "grade": "A",
+      "sha256": "9178dfbbd809d355293f08ce51a3f2705ed9e6000aea1d5ca725baf1a2970f95",
+      "bytes": 16706866
+    }
+  ],
+  "note": "Golden-set manifest (wave 3, ADR-0061). published_at is the exchange's Fld_AuthoriseDate for the annual-report row \u2014 the date BSE authorised the document for dissemination \u2014 which is the point-in-time boundary a replay must respect."
+}

@@ -644,6 +644,14 @@ def register_reading(
                  ("balance_sheet:Debt Securities",
                   "balance_sheet:Borrowings (Other than Debt Securities)",
                   "balance_sheet:Subordinated Liabilities")),
+                # A lender with no subordinated debt prints only the first two of the three kinds
+                # (Five-Star's whole balance sheet has no such row), so the two-part sum is tried after
+                # the three-part one. The accepted risk is the same one the current/non-current rule
+                # already carries: a proposer who omits a row the filing DOES print composes a short
+                # total — bounded by the cross-filing quarantine, not by this module.
+                ("balance_sheet:Borrowings",
+                 ("balance_sheet:Debt Securities",
+                  "balance_sheet:Borrowings (Other than Debt Securities)")),
                 ("balance_sheet:Borrowings",
                  ("balance_sheet:Non-Current Borrowings", "balance_sheet:Current Borrowings")),
                 ("balance_sheet:Trade Payables",
@@ -841,6 +849,11 @@ READING_VOCABULARY: Mapping[str, str] = {
                            "below instead when the filing stages each lending book separately",
     "notes:Stage 3 Gross (Group)": "Stage 3 gross carrying value, group / joint-liability lending book",
     "notes:Stage 3 Gross (Individual)": "Stage 3 gross carrying value, individual lending book",
+    "notes:Stage 3 Allowance": "impairment loss allowance held against Stage 3 loans alone — the "
+                               "stage-3 column of the ECL allowance reconciliation's closing row, NOT "
+                               "the whole-book allowance",
+    "notes:Secured Loans": "gross loans secured by tangible assets (loans note, 'Based on security')",
+    "notes:Unsecured Loans": "gross unsecured loans (loans note, 'Based on security')",
     "notes:Net Loans": "net loans after impairment allowance (loans note, 'Total - Net') — transcribed "
                        "so the note can be reconciled against the balance sheet",
     "balance_sheet:Fixed Assets": "property, plant and equipment (tangible assets, net block)",

@@ -239,10 +239,13 @@ class FilingWalk:
     external: ExternalInputs
     registered_fact_ids: tuple[str, ...]
     caro_flags: tuple[tuple[str, str], ...]
+    #: Mandated rows and sections the COMPANY did not publish. The only kind that may move a verdict.
     missing_disclosures: tuple[str, ...]
     rows: Mapping[str, ExtractedValue]
     #: note LABEL ('36a') -> (status, why) from `reconcile_notes`, for `disposition_notes`.
     reconciliations: Mapping[int, tuple[str, str]] = field(default_factory=dict)
+    #: Rows the company published that THIS FIRM could not read (ADR-0059). Reported, never charged.
+    unreadable_rows: tuple[str, ...] = ()
 
 
 #: Metrics the filing does not print but that follow by arithmetic from rows it does print, as
@@ -467,10 +470,12 @@ def walk_filing(
     schedule_missing, _ = schedule_iii_gaps(
         scan_schedule_iii(filing.pages), fiscal_year, face_rows_present=face_present)
     caro = tuple(caro_candidate_flags(parse_caro_clauses(text)))
-    # A row found but unusable is a disclosure/extraction gap in its own right, and must surface rather
-    # than vanish into a silently shorter `rows` mapping.
-    missing = tuple(sorted({*sections_missing, *schedule_missing, *(
-        f"{metric}: {why}" for metric, why in unresolved.items())}))
+    # A row found but unusable must surface rather than vanish into a silently shorter `rows` mapping —
+    # but it is OURS (ADR-0059). It was published; we could not read it. Folding it in here made
+    # `disclosure_gap` say "mandated disclosures absent: balance_sheet:Total Assets ..." about a company
+    # whose balance sheet prints the total on the page our locator missed.
+    missing = tuple(sorted({*sections_missing, *schedule_missing}))
+    unreadable = tuple(sorted(f"{metric}: {why}" for metric, why in unresolved.items()))
 
     # UNITS, AGAIN — and this is the half the first fix missed. `register_filing_facts` normalises what it
     # writes to the fact store, but `ExternalInputs` was still built from `row.values`, i.e. the figure AS
@@ -523,12 +528,13 @@ def walk_filing(
         related_party_categories=tuple(sorted(rp.categories)),
         kmp_remuneration_cr=rp.remuneration_cr,
         disclosure_gaps=missing,
+        extraction_gaps=unreadable,
         disclosure_scanned=True,
         source_locators=locators,
         fact_ids=ids_by_check,
     )
     return FilingWalk(notes, external, fact_ids, caro, missing, rows,
-                      reconcile_notes(filing, notes, values))
+                      reconcile_notes(filing, notes, values), unreadable_rows=unreadable)
 
 
 #: Note title keyword -> the statement line the note details. A note to the accounts is not free prose:

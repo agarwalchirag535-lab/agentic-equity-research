@@ -300,3 +300,92 @@ def test_a_check_reports_the_provenance_span_it_rests_on(store):
     # Every screener-sourced check is grade B and must name it.
     assert all("(grade B)" in r.detail for r in ran)
     assert not any("mixed provenance" in r.detail for r in ran)
+
+
+def _cash_series(cash: list[float], other_bank: list[float], interest_income: list[float]) -> dict:
+    """`clean_series` plus the three rows the cash-yield check needs to run at all."""
+    return {
+        **clean_series(),
+        "balance_sheet:Cash Equivalents": cash,
+        "balance_sheet:Other Bank Balances": other_bank,
+        "cashflow:Interest Income": interest_income,
+    }
+
+
+def test_cash_yield_below_the_floor_is_unavailable_when_the_balance_moved(store):
+    """ADR-0059, on the shape of ALKYLAMINE FY23: a 71% drawdown, a 2.55% point estimate, no claim.
+
+    The point estimate is below the floor and the endpoints are equally consistent with a yield well
+    above it. The check must say it cannot tell — not flag, and emphatically not pass.
+    """
+    series = _cash_series(
+        cash=[60, 60, 60, 60, 62.5712, 18.2321],
+        other_bank=[0, 0, 0, 0, 0, 0],
+        interest_income=[4, 4, 4, 4, 4, 1.0286],
+    )
+    evaluation, derived = _evaluate(store, "ACME", series, [BusinessModel.MANUFACTURER])
+    record = evaluation.record("cash_interest_inconsistent")
+    assert derived.value("cash_yield_latest") < TH["forensic"]["cash_yield_floor_ratio"] * TH[
+        "forensic"]["risk_free_rate"]
+    assert record.outcome is CheckOutcome.UNAVAILABLE
+    assert "1.64% to 5.64%" in record.reason and "71%" in record.reason
+    assert "half-yearly" in record.reason        # and it names what would resolve it
+
+
+def test_cash_yield_still_flags_a_stable_balance_that_earns_nothing(store):
+    """The claim the check exists to make survives: money that sat still and did not earn."""
+    series = _cash_series(
+        cash=[500, 500, 500, 500, 500, 500],
+        other_bank=[0, 0, 0, 0, 0, 0],
+        interest_income=[2, 2, 2, 2, 2, 2],
+    )
+    evaluation, _ = _evaluate(store, "ACME", series, [BusinessModel.MANUFACTURER])
+    record = evaluation.record("cash_interest_inconsistent")
+    assert record.outcome is CheckOutcome.FLAG
+    assert "0.40%" in record.detail and "endpoints support 0.40%-0.40%" in record.detail
+
+
+def test_cash_yield_passes_a_healthy_stable_balance_and_shows_the_band(store):
+    series = _cash_series(
+        cash=[100, 100, 100, 100, 204.0558, 201.7030],
+        other_bank=[0, 0, 0, 0, 0, 0],
+        interest_income=[7, 7, 7, 7, 7, 15.7788],
+    )
+    evaluation, _ = _evaluate(store, "ACME", series, [BusinessModel.MANUFACTURER])
+    record = evaluation.record("cash_interest_inconsistent")
+    assert record.outcome is CheckOutcome.PASS
+    assert "endpoints support 7.73%-7.82%" in record.detail
+
+
+def test_a_row_this_firm_could_not_read_is_never_charged_to_the_company(store):
+    """ADR-0059, live on ALKYLAMINE FY23: our row-locator's miss was published as their disclosure gap.
+
+    The check must PASS on the company — it published everything the law asks — while still naming the
+    row we failed to read, because a capability gap that vanishes is how the backlog stops generating
+    itself.
+    """
+    external = ExternalInputs(
+        disclosure_scanned=True,
+        disclosure_gaps=(),
+        extraction_gaps=("balance_sheet:Total Assets: the row labelled for this metric read 49,881.61 "
+                         "against 1,59,008.74 on the balancing line at p.86",),
+    )
+    evaluation, _ = _evaluate(store, "ACME", clean_series(), [BusinessModel.MANUFACTURER],
+                              external=external)
+    record = evaluation.record("disclosure_gap")
+    assert record.outcome is CheckOutcome.PASS
+    assert "could not read (ours, not the company's)" in record.detail
+    assert "balance_sheet:Total Assets" in record.detail
+
+
+def test_a_genuinely_absent_mandated_row_still_flags(store):
+    external = ExternalInputs(
+        disclosure_scanned=True,
+        disclosure_gaps=("related-party transactions (Ind AS 24)",),
+        extraction_gaps=("balance_sheet:Total Assets: unreadable",),
+    )
+    evaluation, _ = _evaluate(store, "ACME", clean_series(), [BusinessModel.MANUFACTURER],
+                              external=external)
+    record = evaluation.record("disclosure_gap")
+    assert record.outcome is CheckOutcome.FLAG
+    assert "mandated disclosures absent: related-party transactions" in record.detail

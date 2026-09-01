@@ -188,7 +188,10 @@ def test_an_undeclared_scale_is_refused_and_reported_rather_than_assumed(store):
 
     assert store.query_fact("NOUNIT", D.RECEIVABLES, "FY26", as_of=AS_OF) is None
     assert D.RECEIVABLES not in walk.rows
-    assert any("scale is unknown" in gap for gap in walk.missing_disclosures)
+    # OURS, not theirs (ADR-0059): the row is printed, we could not read its scale. It surfaces under
+    # `unreadable_rows` and must NOT reach the disclosure gaps the company is charged with.
+    assert any("scale is unknown" in gap for gap in walk.unreadable_rows)
+    assert not any("scale is unknown" in gap for gap in walk.missing_disclosures)
 
 
 # ------------------------------------------------------------------------------------------------

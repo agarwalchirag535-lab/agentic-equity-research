@@ -64,6 +64,97 @@ def cumulative_cfo_pat_ratio(cfo_series: Sequence[float], pat_series: Sequence[f
     return sum(cfo_series) / total_pat
 
 
+@dataclass(frozen=True)
+class FlowOverStock:
+    """A flow divided by a stock that MOVED during the period — a band, not a number (ADR-0059).
+
+    THE DEFECT THIS EXISTS FOR. Every rate in this library of the form "a year of flow over an average
+    balance" — implied cash yield, cost of debt, credit cost — is computed from two endpoints and then
+    compared to a threshold as though it were measured. It is not measured. Interest accrues against the
+    balance held on every day of the year, and an annual balance sheet reports two of those 365 days.
+
+    Alkyl Amines FY23 is the worked example. Cash and bank balances fell from ₹62.57cr to ₹18.23cr and
+    the company earned ₹1.03cr of interest. The two-point mean says the yield was 2.55%, which is below
+    the 2.60% floor, which is a SEVERE flag, which is a HARD_FAIL on a company with no fraud, no
+    restatement and no governance event. But the same two endpoints are equally consistent with the
+    drawdown happening in April — average balance ₹18cr, yield 5.6%, entirely ordinary. Nothing in the
+    filing distinguishes those two stories, and the check picked one of them without saying so.
+
+    WHAT THE BAND IS, AND WHAT IT IS NOT. `low` and `high` are the rates implied if the balance sat at
+    its higher endpoint all year and at its lower endpoint all year. That is not a proof of containment:
+    a balance can excursion outside both endpoints mid-year and no annual filing would show it. It is
+    the weaker and sufficient claim — **these are ordinary timing stories the same two endpoints tell,
+    so a threshold claim that fails on any of them has not been established.** To assert "the yield is
+    below the floor" the whole band must be below the floor; to assert "the rate is above the ceiling"
+    the whole band must be above it.
+
+    Where the endpoints are close the band collapses and nothing changes: Alkyl FY26 moved 1% and reads
+    7.73%–7.82%. Where the endpoints are far apart the band is the honest width of the firm's ignorance:
+    FY25 moved +550% and reads 4.03%–26.20%, a "measurement" spanning a factor of six.
+    """
+
+    #: The conventional estimate: flow / mean(opening, closing). Kept because it is what a reader of the
+    #: statements would compute, and what every report has printed until now.
+    point: float
+    #: The lower end of the band: the rate against whichever endpoint makes it smaller. For a positive
+    #: flow that is the HIGHER balance; for a negative one (accruals run both ways) it is the lower, so
+    #: the two are ordered rather than assigned by endpoint.
+    low: float
+    #: The upper end of the band, by the same ordering.
+    high: float
+    opening: float
+    closing: float
+
+    @property
+    def drift(self) -> float:
+        """How far the endpoints are apart, as a fraction of the larger — 0.0 when the stock held still.
+
+        This is the width of the band expressed on the inputs rather than the output, and it is what a
+        report should print next to any of these rates: `drift` 0.01 means the number means something,
+        `drift` 0.85 means it does not.
+        """
+        return abs(self.closing - self.opening) / max(self.opening, self.closing)
+
+    def below(self, floor: float) -> bool:
+        """Is the rate below `floor` under EVERY timing story the endpoints tell?"""
+        return self.high < floor
+
+    def above(self, ceiling: float) -> bool:
+        """Is the rate above `ceiling` under EVERY timing story the endpoints tell?"""
+        return self.low > ceiling
+
+    def outside(self, limit: float) -> bool:
+        """Is |rate| above `limit` under EVERY timing story? The two-sided claim (accruals run both ways)."""
+        return self.above(limit) or self.below(-limit)
+
+    def indeterminate_below(self, floor: float) -> bool:
+        """The conventional estimate is below `floor` but the band is not — the artefact case.
+
+        Distinguished from a plain "not flagged" because the two deserve different words in a report: a
+        rate of 7.8% is a finding of nothing, and a rate of "somewhere between 1.6% and 5.6%" against a
+        2.6% floor is a question the firm cannot answer with what it read.
+        """
+        return self.point < floor <= self.high
+
+
+def flow_over_stock(flow: float, opening: float, closing: float) -> FlowOverStock:
+    """A year's flow over a balance observed only at its two endpoints, as the band they support.
+
+    Both endpoints must be positive: a rate against a balance that was zero at either end is not a wide
+    measurement, it is a different question (money that arrived, or left, entirely within the year).
+    """
+    if opening <= 0 or closing <= 0:
+        raise ValueError("both endpoints must be positive to bound the average balance")
+    ends = (flow / opening, flow / closing)
+    return FlowOverStock(
+        point=flow / ((opening + closing) / 2.0),
+        low=min(ends),
+        high=max(ends),
+        opening=opening,
+        closing=closing,
+    )
+
+
 def cash_interest_consistency(
     interest_income: float, avg_cash: float, risk_free_rate: float, floor_ratio: float
 ) -> tuple[float, bool]:
@@ -71,6 +162,11 @@ def cash_interest_consistency(
 
     If ₹X of cash earns interest implying a yield far below risk-free, the cash may be fictitious,
     encumbered, or parked with related parties. Returns (implied_yield, is_flagged).
+
+    A SINGLE AVERAGE BALANCE IS ALL THIS CAN BE TOLD, so it answers on the point estimate. Where the two
+    endpoints are available — which is everywhere the filing was read rather than summarised — the
+    caller should bound the claim with `flow_over_stock` instead; see `FlowOverStock` for why the point
+    estimate produced this library's only live false positive.
     """
     if avg_cash <= 0:
         raise ValueError("avg_cash must be positive")

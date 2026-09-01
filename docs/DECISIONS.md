@@ -2090,3 +2090,354 @@ threshold: the screen lacked evidence-quantity; reserve_suppression lacked stres
 promoter_lending lacked amounts; disclosure_gap lacked face-row existence. The golden set's real
 output is a list of inputs the verdict layer was silently doing without — which is exactly what a
 calibration instrument should find before anyone tunes a number.
+
+---
+
+### ADR-0059 — A rate over an average balance is a band, and CAL-1 closes without moving a threshold
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0058 · **Closes** CAL-1 (docs/GOLDEN_SET.md
+§6) · **Method** measure the whole series first, diagnose second, and let the fix fall where it falls
+
+**Where this started.** ADR-0058's lesson was that every judgment failure decomposed into a missing
+input rather than a wrong threshold. The set's one remaining calibration failure, CAL-1, looked like
+the exception: `cash_interest_inconsistent` fired SEVERE on Alkyl Amines FY23 at an implied cash yield
+of 2.55% against a 2.60% floor, and the honest options seemed to be "the band is wrong", "the severity
+is wrong" or "the flag is right and the company is merely unpunished by events". All three are
+threshold questions, and the invariants forbid answering any of them from one observation.
+
+**So the series was measured instead of the case.** Twelve company-years, every one the firm can read:
+
+| | FY19 | FY20 | FY21 | FY22 | FY23 | FY24 | FY25 | FY26 |
+|---|---|---|---|---|---|---|---|---|
+| ALKYLAMINE point | 2.69% | 6.85% | 3.36% | 3.56% | **2.55%** | 3.64% | 6.98% | 7.78% |
+| balance moved | +525% | +60% | +291% | −50% | −71% | +72% | +550% | −1% |
+| endpoints support | 1.6–9.8% | 5.6–8.9% | 2.1–8.3% | 2.7–5.4% | 1.6–5.6% | 2.9–5.0% | 4.0–26.2% | 7.7–7.8% |
+
+PC Jeweller — the set's one positive, and a real pre-collapse fraud — reads 5.34% / 5.38% / 4.23% and
+has never come close to the floor. **The check fired exactly once in twelve company-years, on the
+clean company, in the year its cash balance fell 71%.**
+
+**The diagnosis, and it is a missing input after all.** The yield is a year of interest divided by the
+MEAN of two balance-sheet endpoints. Interest accrues against the balance held on every day of the
+year; an annual balance sheet reports two of those 365 days. When the endpoints are close the mean is
+a measurement — Alkyl FY26 moved 1% and reads 7.73%–7.82%. When they are far apart it is one arbitrary
+point inside a wide band: FY23's same two endpoints are equally consistent with 5.64%, the ordinary
+story where the drawdown happened in April, and with 1.64%. Nothing in an annual filing distinguishes
+them. **The verdict layer was doing without the uncertainty of its own denominator**, and it asserted
+the strongest accusation the deterministic screen can make on the strength of a point estimate it had
+no right to.
+
+Confirmed against the page rather than assumed: Alkyl's FY23 note 11/11A prints cash and bank as
+current accounts ₹757.69 lakh + deposits ₹960.00 lakh against FY22's ₹645.01 + ₹5,506.53 lakh, and
+note 28 breaks the ₹102.86 lakh of "interest income" into ₹51.26 lakh of bank interest and ₹51.60 lakh
+earned on things that are not bank balances at all. The composition widens the question; it does not
+settle it.
+
+**Decision.** `quality.FlowOverStock` + `flow_over_stock()`: a flow over an average balance is carried
+as `(point, low, high)` where the ends are the rate against each endpoint. This is NOT a containment
+proof — a balance can excursion outside both endpoints mid-year and no annual filing would show it. It
+is the weaker and sufficient claim: **these are ordinary timing stories the same two endpoints tell,
+so a threshold claim that fails on any of them has not been established.** A "below the floor" claim
+needs `high < floor`; an "above the ceiling" claim needs `low > ceiling`; a two-sided one needs both
+ends outside. `derive.add_rate_over_balance` attaches the band to `cash_yield_latest`,
+`cost_of_debt_average` and `accrual_ratio_latest`; `Derivation.value` stays the conventional estimate
+because that is what a reader of the statements computes.
+
+Where the point estimate is below the floor and the band is not, the check reports **UNAVAILABLE
+naming the drift, the band, and what would close it** — half-yearly balance-sheet balances (Reg 33) or
+the cash-and-bank note's current-account/term-deposit split. Not a flag, and emphatically not a pass.
+No threshold moved: `cash_yield_floor_ratio` is still 0.40 and `risk_free_rate` still 0.065.
+
+**What this does NOT establish, and the sentence matters more than the scorecard.** CAL-1 closes as
+*the observation was uninterpretable*, not as *the threshold is right*. Eleven of the twelve
+company-years have bands too wide to test any floor at all. The check has never been shown to fire on
+a fraud and now cannot fire on most company-years — which is a stronger version of GOLDEN_SET §6.5's
+UNCALIBRATED rule than the rule itself, and it is a capability gap with a named remedy rather than a
+threshold to argue about.
+
+**The second defect the same run exposed, and it is the standing directive's forbidden move.** Alkyl
+Amines FY23 also carried `disclosure_gap` FLAG MEDIUM reading *"mandated disclosures absent:
+balance_sheet:Total Assets: the row labelled for this metric read 49,881.61 against 1,59,008.74 on the
+balancing line at p.86"*. That is our row-locator matching the wrong line on a page that prints the
+total plainly — a capability gap published as a governance finding about a real listed company, which
+ADR-0051 fixed for unavailable checks and this path reproduced one layer over. `ExternalInputs`
+now separates `disclosure_gaps` (mandated rows the COMPANY did not publish — the only kind that may
+move a verdict) from `extraction_gaps` (rows it published that this firm could not read). The check
+flags on the first and NAMES the second in its detail, so the backlog keeps generating itself without
+the company being charged for it. CreditAccess's `undisclosed_income` gap is untouched — it is real —
+which is the control that says the split did not simply silence the check.
+
+Worth reading the recovered detail: the FY23 message ends *"the figures were recovered from p.86 l.55
+('TOTAL EQUITY AND LIABILITIES'), which satisfies the identity"* — the firm had already read the number
+correctly from the balancing line. It was publishing a governance flag about a company over a locator
+miss it had itself repaired.
+
+**Scorecard: 5/7 → 6/7 in band, 0 regressions, positives 1/1.** ALKYLAMINE-FY23 lands on REVIEW off
+`ageing_cwip` alone — which its own pre-registered rationale named in advance as the defensible answer
+(*"ageing_cwip at MEDIUM is defensible on its own and REVIEW is an acceptable outcome"*), written
+before any of this. The case file records the closure with its reason; its expectation is untouched.
+PC Jeweller stays HARD_FAIL with its cash yield reading a tight 3.74%–4.87% band, and CreditAccess
+stays REVIEW on the disclosure gap that is really theirs. PORT-1b (Five-Star) remains the one open
+failure. Tests 827 → 836, `core/compute` still 100%.
+
+**How wide the problem is, measured rather than asserted.** Replaying all four companies at every
+year they can be read gives **35 banded rates, of which 16 (46%) are pinned to within 20% of their own
+value and 19 are not.** The offenders are not marginal: Alkyl Amines FY24 `cost_of_debt_average` reads
+a point estimate of 10.2% inside a band of 5.1%–689.9% (borrowings ran down to almost nothing), FY25
+reads 47.6% inside 28.0%–158.3%, and FY25 `cash_yield_latest` reads 6.98% inside 4.03%–26.20%.
+`accrual_ratio_latest` is the honourable exception — total assets rarely move much in a year, so its
+bands run 1%–39% wide and mostly behave. **Cost of debt and cash yield are the two rates this firm has
+been quoting to readers as though they were measurements, and roughly half the time they are not.**
+(`config/line_items.yaml`'s 2–30% plausibility band already refuses to *narrate* the worst of them —
+which means the narration layer has been catching a defect the check layer was consuming.)
+
+**The architecture lesson, sharpened.** ADR-0058 found four inputs the verdict layer was doing
+without. This one found a fifth of a different kind: not a fact the filing carries and we had not
+read, but **the error bar on a fact we had**. A point estimate presented to a threshold is a claim
+about precision, and every flow-over-average-stock ratio in this library was making one it could not
+support. The generalisation to look for next is every other place a computed number meets a threshold
+without carrying how well it is known — window CAGRs read off two endpoint years, and ratios with a
+near-zero denominator (PC Jeweller's `other_income_share` reads 695.5% of a PBT that had collapsed).
+
+**And a lesson about the instrument itself.** All of this came from ONE company's eight-year series,
+not from the labelled case. A series holds the company constant and varies the year, so it separates
+"the check saw something" from "the estimator wobbled" — and it needs no label, no lead time and no
+human verification. It is much cheaper than a golden case and it found what six cases could not.
+`docs/GOLDEN_SET.md` §9 now makes the series sweep a standing step beside the labelled cases rather
+than a thing that happened once.
+
+---
+
+### ADR-0060 — Five-Star reads end-to-end, and both of its open questions turn out to be about honesty of measurement
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0058/0059 · **Closes** PORT-1b's
+extraction half · **Records** CAL-2 · **Method** author the missing readings, then interrogate every
+check record the new facts light up, charging nothing to the company without reading the page
+
+**PORT-1b, the extraction half.** Five-Star Business Finance FY25/FY26 verified readings authored
+through the propose→verify gate: 148 figures across statements, the loans note, the ECL staging
+reconciliations and the security split — **0 violations first pass**, both filings registered, the
+two-part borrowings composition (a lender with no subordinated debt) and the `notes:Stage 3
+Allowance` / `notes:Secured Loans` vocabulary added on the way. The golden case's four
+human-verified facts were re-keyed from the third line's metric ids to the trunk's (values, units,
+locators, methods untouched — an id names a store slot, not a fact) and all four now reproduce.
+**The golden set reads 7/7 in band for the first time**: extraction 0 failures, judgment 0
+failures, positives 1/1. `gnpa_drift` fires HIGH on the genuine deterioration (Stage-3 share 1.79%
+→ 3.37%, the company's own staging note) and the screen lands REVIEW — the hard_deterioration and
+hard_model_mismatch halves of the case both pinned, pre-registered, before the run.
+
+**But the case passed its provision-coverage assertion for the wrong reason, and saying so is the
+point.** The pre-registered `must_not_flag: provision_coverage_low` was written about a 41.4%
+stage-3 PCR on a 99.98%-secured book. The check as wired never computed that number: it divides the
+WHOLE book's ECL allowance — stages 1 and 2 included — by the Stage-3 gross. The sweep across every
+readable lender-year:
+
+| lender-year | whole-book allowance / Stage-3 | stage-3 PCR | secured share |
+|---|---|---|---|
+| FIVESTAR FY24 | 119% | 54.3% | 97.9% |
+| FIVESTAR FY25 | 91% | 51.3% | 99.97% |
+| FIVESTAR FY26 | **55%** | **41.4%** | 99.98% |
+| CREDITACC FY25 | 107% | unread | ~0 (unsecured MFI) |
+| CREDITACC FY26 | 121% | unread (co. states 65.4%) | ~0 |
+
+The 50% floor has never fired and structurally cannot on the whole-book measure — any lender
+provisioning a growing performing book clears it, and 121% is not a number a reader would recognise
+as a "coverage ratio". The stage-3 PCR would fire — on exactly the lender whose case pre-registers
+that firing as the wrong answer, because the floor is a claim about unsecured recovery and no lender
+discloses collateral value against Stage-3. **CAL-2 (docs/GOLDEN_SET.md §6): the floor is
+UNCALIBRATED on either measure, the measure question and the collateral gate are one question, and
+neither moves until a lender positive exists** (wave 3's register has the candidates). What changed
+now is honesty only: the detail names the measure ("whole-book impairment allowance"), and the
+stage-3 PCR and secured share are computed and REPORTED beside it, explicitly non-load-bearing. The
+missing inputs are read; the threshold waits for calibration. That order is the ADR-0058 principle.
+
+**The third finding is ADR-0059's forbidden move again, one layer down — and the first theory about
+it was wrong.** The run charged Five-Star `disclosure_gap` MEDIUM for three "mandated disclosures
+absent": `cwip_ageing`, `payables_ageing`, `ratios_disclosure`. First hypothesis — Schedule III
+Division III (NBFC) doesn't mandate them — **killed by the control**: CreditAccess, the other
+Division III filer in bronze, prints all three. The truth, from the pages: Five-Star prints them
+too. p.182 heads the very table "**CWIP aging schedule**" (American spelling), p.192 prints "Trade
+payables (**Ageing** Schedule)" (a parenthesis between the words), and the ratio table prints
+"**Debt/Equity** Ratio" (a slash where the keyword has a hyphen). Three false governance charges,
+each exactly one character of orthography wide, made by a literal substring scan. (The near-miss is
+worth recording: the first grep for "aging" drowned the disclosed table under 30 hits of
+"Managing" — a pattern echo is not a reading. The charge fell only when the note itself was read.)
+`scan_schedule_iii` now canonicalises both keyword and line — lowercase, punctuation to spaces,
+one spelling of ageing — before matching: a claim of "this table is absent" must survive
+typography. All three charges convert to found; genuinely absent rows still report absent.
+
+**Scorecard: 6/7 → 7/7 in band, 0 regressions, positives 1/1, all six negative classes green.**
+838 tests, `core/compute` 100%. Human sign-off on all seven cases remains the open gate, now with
+nothing red behind it.
+
+**The lesson, appended to ADR-0058's list.** The verdict layer's missing inputs so far: evidence
+quantity, stress direction, amounts, face-row existence, the error bar on a denominator — and now
+twice in one run, **the name of the measure actually computed**. A check that prints "coverage"
+while computing something laxer, and a scan that prints "not disclosed" while meaning "my pattern
+didn't match", are the same defect: the words a deterministic layer publishes are part of its
+contract, and the golden set only stays honest if a case passing for the wrong reason is treated as
+a finding rather than a pass.
+
+---
+
+### ADR-0061 — Wave 3: the register grows teeth, and an unfamiliar company meets the pipeline cold
+
+**Date** 2026-08-31 · **Status** accepted · **Extends** ADR-0057/0060 · **Adds** GAYATRI-FY18, the
+set's second positive · **Method** read the letters → measure the yield → extend the enumeration to
+the streams that confess → select by rule → pre-register → run cold → record what broke
+
+**The letters, finally read and recorded.** The twenty largest auditor-resignation candidates from
+wave 2's register were fetched and their letters read this session — the step GOLDEN_SET §3 calls
+"the whole of the selection", whose conclusions had never been durably recorded. The tally:
+**1 adverse (PC Jeweller, already cased), 16 routine with benign stated reasons** (fee disputes both
+directions, tenure limits, group-auditor alignment, age, capacity), **2 intimations with no reasons
+at all** (Mrugesh Trading, EFC (I) — the 2019 circular's detailed-reasons requirement simply unmet),
+and **1 unreadable image attachment** (Sheela Foam's Kurlon letter — Big-4, mid-term, immediate
+effect: open pending OCR). Every verdict lives in `_letters_read.jsonl` with its quote; the sixteen
+routine ones moved to `_excluded.jsonl` with reasons. **Yield: ~1 adverse in 20.** That number is the
+argument for what follows.
+
+**The register extension: enumerate the streams that confess.** BSE's own vocabulary (censused from
+the API, not guessed — a paired category is required, and the CIRP subcategory carries a double space
+that would have made a "corrected" string enumerate zero events forever) now backs four new kinds:
+`loan_default`, `debt_security_default`, `cirp_update`, `coc_meeting`. A company disclosing its own
+payment default has self-declared the qualifying event; the reading step confirms rather than
+classifies. Three enumeration defects fixed on the way, each measured live: **(1)** page-1-only
+fetching sampled busy months while claiming completeness — now paged to the partial page; **(2)** a
+transient timeout aborted a 96-window sweep with nothing written — the fetcher retries; **(3)** the
+worst one: under a sustained request stream BSE returns PARTIAL pages with no error — a 39-window
+sweep saw 3 of one month's 10 default disclosures, and the same window alone returned all 10 three
+times in a row. Enumeration is now two passes unioned. One pass is a sample; two agreeing passes are
+an enumeration. 265 new company-events landed; `firm triage` (new, committed — the universe filter
+had been an uncommitted manual step) recorded 50 candidates and 215 exclusions with reasons, noting
+in each floor exclusion that TODAY'S market cap is a biased proxy that under-admits the hardest-hit
+true positives.
+
+**GAYATRI-FY18 — selected by rule, pre-registered, run cold.** Gayatri Projects: the largest
+in-universe candidate with its full descent inside the window, and the set's first EPC/infrastructure
+contractor. The label was de-censored per-scrip to the company's FIRST default-regime confession
+(2020-01-31, default date 31.12.2019, a 12-bank consortium, a funded-interest term loan — capitalised
+unpaid interest from an earlier restructuring — among the defaulted facilities), with the regime's
+own start date (2020-01-01) recorded as the bound it is. `as_of` 2019-01-31 precedes every default
+disclosure that exists by twelve months; any later date would test news-reading. The FY18 filing —
+hand-read for the case's six verified facts — already confesses the shape: receivables +50.2% on
+revenue +37.7% (142 days), interest cover ~1.76×, claims receivable up 3× to ₹206cr, ₹713.8cr of
+advances to sub-contractors for works that NEVER COMMENCED, which the auditor's own Emphasis of
+Matter calls "long pending for recovery". The expectation was pre-registered before any run:
+HARD_FAIL at worst, REVIEW at best, and — honestly — an empty `must_flag`, because no wired check
+measures the geometry that carries the signal.
+
+**What the cold run measured.** Screen: **REVIEW, in band — the firm did not clear the company**
+(positives now 2/2). But the diagnostic is in how: the walker registered the FY17 AR's statements
+and the FY18 AR's consolidated P&L, and the FY18 AR's balance sheet and cash flow **not at all** —
+five of six verified facts unreproduced. The REVIEW came from `inventory_divergent` and
+`other_income_heavy` computed off FY17-era rows: the right verdict carried by little of the real
+signal. And the one "wrong" value was the run's best find: the pipeline read FY17 receivables as
+850.36cr from the FY17 AR's own face while the case pinned 754.65cr from the FY18 AR's comparative —
+**the two audited filings genuinely disagree by ₹95.7cr (11.3%)**, a quiet re-presentation across
+the Ind AS transition that the walker read faithfully and the restatement radar exists to surface.
+Both extraction halves are recorded in the case's `known_failure` (CAP-EPC), alongside the judgment
+half: the EPC playbook — contract assets, unbilled-work divergence, capitalised advances,
+guarantees-to-net-worth — stays declared-but-unwired until this company's own documents wire it
+(the ADR-0051 rule).
+
+**Scorecard: 8 cases, 7 in band + 1 recorded failure, 0 regressions, positives 2/2.** The set now
+spans two positives of different fraud texture (working-capital jewellery, levered EPC), six hard
+negatives, four business models. Tests 838 → 845. Open: CAP-EPC (readings + playbook), CAL-2,
+Sheela Foam's OCR read, historical-mcap triage, and human sign-off on all eight cases.
+
+**The lesson.** The register only enumerates what the exchange's vocabulary can name, the exchange
+only serves what a hardened client insists on, and a case is only as honest as its worst date. Every
+step of wave 3 that failed, failed SILENTLY — the wrong category returned zero rows, the throttled
+sweep returned partial pages, the censored window made a late event look early. The instrument-grade
+habit that caught all three is the same one ADR-0059/0060 taught the checks: never let an absence
+claim rest on a mechanism that cannot distinguish "none" from "didn't look properly".
+
+---
+
+### ADR-0062 — Phase 4 begins: a price the firm can cite, and a valuation that argues with it
+
+**Date** 2026-09-01 · **Status** accepted · **Phase 4 opened on the owner's explicit go** (CLAUDE.md
+build order) · **Extends** ADR-0043's null-only numeric registry · **Method** answer the cost question
+with evidence, then build the half of the judgment tier that is arithmetic before the half that is prose
+
+**The cost question, answered by reading the code rather than shopping.** The owner asked whether the
+project's API needs could be met free (github.com/public-apis/public-apis, no budget). Two distinct
+needs, and neither wants that directory:
+
+* **The LLM.** Already solved and already committed: `core/llm/provider.py` carries
+  `ClaudeCodeAdapter` — "no API key, no per-token billing" — which shells out to the headless
+  `claude -p` CLI on the owner's existing subscription, plus the ADR-0010 packet flow that lets any
+  agent run with no key at all. The judgment tier therefore costs nothing per company to narrate.
+* **Prices.** `config/roster.yaml` has listed `prices` as `portfolio_manager`'s prerequisite, and as
+  NOT INGESTED, since Phase 3. The tempting fix is a free market-data aggregator. It is the wrong fix
+  for a reason that outranks money: `adapters/base/sourcing.py` grades a primary filing A and an
+  aggregator B, and a price is the one number the whole valuation pivots on. A grade-B price with an
+  uncheckable citation would undermine every figure downstream of it. **BSE publishes its own settled
+  daily closes, keyed by scrip, with no API key** — `StockReachGraph?flag=1`, the same origin as the
+  announcements and annual reports that are already this firm's point-in-time spine. 2,139 closes
+  back to 2018 for Alkyl Amines, grade A, cited to the exchange, for nothing. The public-apis
+  directory is the right answer to a question this project does not have.
+
+**`adapters/india/prices.py` + `core/ingest/prices.py`.** `close_on_or_before` is the ONLY accessor
+and the raw series is never handed out: a price series is the easiest place in the system to leak the
+future, and one careless `series[-1]` in a replay of 2019 values a company at today's price and turns
+every backtest into a fantasy. Verified live: `as_of` 2026-08-30 (a Sunday) resolves to the
+2026-08-28 close and CARRIES THAT DATE, so the citation names the day it actually rests on. Two facts
+are registered, not the series — `market:Close`, and `market:ADV`, the trailing traded VALUE that
+SPEC §8's Gate A liquidity floor has specified since Phase 0 and never had a number to apply to.
+
+**The valuation, and where Law 1 falls inside it.** `core/pipeline/valuation.py` is shaped like
+`checks.py` on purpose: every input it lacks is NAMED, never defaulted, because a valuation that
+quietly substitutes a zero for missing net debt is worse than none — it looks like a valuation. Its
+outputs become `Derivation`s merged onto the run's `DerivedSet`, so the same Law-1 validator that
+polices `incremental_roic` polices `reverse_dcf_implied_growth`, and the same citation machinery
+grades them by their worst input fact. Three design choices worth the ink:
+
+1. **The scenario grid is anchored to the company's own realised growth**, with only the spreads in
+   config. A fixed house grid ("base = 10% for everybody") makes every valuation a statement about
+   the grid; a business compounding 25% and one managing 3% do not share a base case. `disaster`
+   stays absolute — the disaster case is the business shrinking, and that is the same question for
+   everyone.
+2. **The return multiple is intrinsic value over the quoted price — no exit multiple anywhere.** The
+   prompt names the failure mode it must not commit ("silently assuming a 3x re-rating and calling it
+   conservative"), and an assumed exit multiple is exactly where that assumption hides.
+3. **`expectancy` is the Law-1 seam and stays null-only.** It is a function of a judgment (how likely
+   is the bull case?) and of computed multiples, so the agent supplies probabilities and
+   `scenarios.expectancy_from` computes the number. A value in that field means the LLM did the
+   arithmetic itself.
+
+**The registry hole that Phase 4 would have opened, closed.** `ScenarioLine.return_multiple` sat in
+`JUDGMENT_NUMERIC_FIELDS` — an allowlist — with a note from ADR-0043 saying to revisit it the day a
+valuation existed to check it against. This is that day. Allowlisting it now would let an agent write
+"bull: 4.2x" beside a computed 0.22x and pass every gate: the easiest way to launder an invented
+number through this system. A third bucket, `NESTED_COMPUTED_FIELDS`, and a `_scenario_discipline`
+check now match agent lines to the priced grid BY NAME — so an agent cannot quietly relabel which
+column is "base", the label an optimistic reading reassigns first.
+
+**Validated on real companies, not fixtures.** ALKYLAMINE at `as_of` 2026-08-30, from its own audited
+filings and the exchange's settled close: price ₹2,044.40, share count 5.11cr **from the filing's own
+PAT/EPS identity** (not a face-value assumption), market cap ₹10,454cr — which ties to the company's
+real market cap — net cash ₹202cr, base FCF ₹110.15cr, 95× market cap to FCF. **The reverse DCF's
+sentence: this price demands 34.1% FCF growth for ten years at a 13% discount, against 5.2% realised
+over FY17–FY26.** That is the falsifiable claim SPEC §5 asks for — a reader can check 34% for a
+decade against the base rate for Indian speciality chemicals and disagree with the firm on evidence.
+PC Jeweller at `as_of` 2017-12-31 returns `unavailable` and names all four gaps rather than valuing a
+company whose cash the store could not read — the honest half of the same machine.
+
+**Golden set: 8 cases, 0 regressions, positives 2/2** — the valuation additions touch `derive.py`,
+which feeds the forensic checks, and disturbed no verdict. 864 tests, `core/compute` still 100%.
+
+**What is NOT built, said plainly.** This is the arithmetic half of Phase 4. The four judgment agents
+(`valuation_modeler`, `red_team`, `thesis_synthesizer`, `portfolio_manager`) have prompts, schemas,
+roster entries and now real numbers to argue about — but they are not yet wired into `run_deep_dive`,
+no report renders a valuation section, and Gates D/E do not yet gate anything. The SPEC §11 Phase-4
+acceptance test — a complete thesis with reverse DCF, four probability-weighted scenarios, a bear case
+that engages the bull case, and dated kill criteria — is not met until that half lands. Building the
+numbers first was deliberate: an agent asked to narrate a valuation that does not exist invents one.
+
+**One limitation the next pass must attack, not inherit.** The base FCF is a SINGLE year. Alkyl
+Amines' FY26 cash flow follows a cyclical trough, so a one-year base understates a normalised
+business and the 34.1% implied-growth figure is correspondingly flattering to the bear case. A
+normalised or multi-year base is the honest input, and — per the ADR-0059 discipline — the fix is the
+missing input, not a nudged discount rate.

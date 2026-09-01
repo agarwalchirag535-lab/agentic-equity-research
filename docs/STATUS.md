@@ -6,7 +6,7 @@
 >
 > Reading order for a cold start: this file → [`CLAUDE.md`](../CLAUDE.md) (the laws) →
 > [`SPEC.md`](SPEC.md) (the constitution) → [`DECISIONS.md`](DECISIONS.md) (why things are the way they
-> are, ADR-0001…0058). Keep this file updated as work lands — a stale STATUS is worse than none.
+> are, ADR-0001…0062). Keep this file updated as work lands — a stale STATUS is worse than none.
 
 ---
 
@@ -25,9 +25,9 @@ Everything serves that. Output is **research artifacts only** — never an order
 | 1 — compute layer | ✅ complete (100% coverage enforced by `make cov`) |
 | **2 — three agents, deep** | ✅ **complete — acceptance test passes; first report published (§6a)** |
 | 3 — full roster + orchestrator | ✅ **complete — acceptance run published 2026-08-01 (§6b)**: 9 of 9 agents staffed and rendered, every data prerequisite satisfiable (ADR-0030–0044) |
-| 4 — judgment tier | ⚠️ prompts exist as markdown; numeric fields now registered null-only (ADR-0043) so wiring cannot open a Law-1 hole; **needs the owner's explicit go per CLAUDE.md build order** |
+| 4 — judgment tier | 🔨 **APPROVED AND STARTED 2026-09-01 (ADR-0062)**: prices ingested grade-A from BSE (free), valuation layer live (reverse DCF + scenario grid + expectancy seam), validated on ALKYLAMINE/PCJEWELLER. **Remaining: the four agents are not yet wired to narrate; no report renders a valuation section; Gates D/E gate nothing** |
 | 5 — memory loop | ⚠️ half-built (see §3) |
-| 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0058)**: 7 cases, 5 in band, positives 1/1, 0 regressions; CAL-1 + PORT-1b tracked |
+| 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0061)**: 8 cases, 7 in band + CAP-EPC recorded, positives **2/2**; register spans 7 event kinds; awaiting human sign-off |
 
 **Tests:** 827 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
@@ -775,6 +775,105 @@ direction its spec always needed; a regex category can no longer be a SEVERE acc
 schedules are owed only for face rows the company carries). Scorecard 5/7, positives 1/1,
 hard_recovery 1/1, 0 regressions. The lesson: every judgment failure was a missing INPUT, not a wrong
 threshold. Open: CAL-1, PORT-1b, and human sign-off on all seven cases.
+
+## 6l. CAL-1 closes, and not by moving a number (2026-08-31, ADR-0059)
+
+The set's one calibration failure looked like a threshold argument. Measuring the whole FY19–FY26
+series instead of the failing year showed it was not: `cash_interest_inconsistent` divides a year of
+interest by the MEAN of two balance-sheet endpoints, and Alkyl Amines' cash fell 71% during FY23, so
+the same two endpoints support 1.64% and 5.64% equally. A rate over an average balance is now carried
+as the band its endpoints support (`quality.FlowOverStock`), and a threshold claim is asserted only
+where every timing story in that band agrees with it — `cash_yield_floor_ratio` untouched at 0.40.
+
+**The uncomfortable half, which is the real result.** 11 of the 12 company-years the firm can read
+have bands too wide to test any floor, and the set's one positive (PC Jeweller: 5.34% / 5.38% / 4.23%)
+never approached it. The check fired exactly once in twelve years — on the clean company. The floor is
+not vindicated; it is **untestable from annual filings alone**. Closing that needs Reg 33 half-yearly
+balance sheets or the cash-and-bank note's current-account/term-deposit split — a capability item with
+a named remedy, now printed in the check's own UNAVAILABLE reason.
+
+**The second defect the same run exposed** was the standing directive's forbidden move, live on a real
+company: Alkyl FY23 carried `disclosure_gap` FLAG MEDIUM reading *"mandated disclosures absent:
+balance_sheet:Total Assets ..."* — our row-locator missing a total the page prints, and which the
+firm had already recovered from the balancing line. `ExternalInputs.disclosure_gaps` (theirs, may move
+a verdict) is now split from `extraction_gaps` (ours, named and never charged). CreditAccess's real
+`undisclosed_income` gap still flags, which is the control.
+
+Scorecard **6/7 in band, 0 regressions, positives 1/1**; 836 tests, `core/compute` 100%. Open:
+PORT-1b (Five-Star readings unauthored) and human sign-off on all seven cases.
+
+## 6m. Five-Star reads, the set goes fully green, and two checks get honest names (2026-08-31, ADR-0060)
+
+PORT-1b's extraction half closed the only way it could: FY25/FY26 verified readings authored through
+the propose→verify gate (148 figures + the security split, 0 violations first pass), the case re-keyed
+to the trunk vocabulary, and the golden set's first **7/7 in band** run — `gnpa_drift` firing HIGH on
+the real deterioration (Stage-3 1.79% → 3.37%) with the screen at REVIEW, both exactly as
+pre-registered. Two findings mattered more than the score:
+
+1. **The coverage check passed for the wrong reason.** It computes whole-book allowance / Stage-3
+   gross (never below 55% on any readable lender-year; CreditAccess reads 121%), not the stage-3 PCR
+   the case argued about (Five-Star: 54.3% → 51.3% → 41.4%, on a 99.98%-secured book). Recorded as
+   **CAL-2**; the detail now names its measure and reports the PCR + secured share non-load-bearing.
+   Nothing rewired: the floor waits for a lender positive (wave 3).
+2. **Three false disclosure charges, each one character wide.** The Schedule III scan reported CWIP
+   ageing, payables ageing and the ratios table absent from a filing that prints all three — as "CWIP
+   aging schedule", "Trade payables (Ageing Schedule)" and "Debt/Equity Ratio". The scan now
+   canonicalises typography before charging anyone; the CreditAccess control (which prints the same
+   tables findably) is what killed the tempting wrong theory that Division III exempts them.
+
+Open: human sign-off on all seven cases — now with nothing red behind it.
+
+## 6n. Wave 3 — the register grows teeth and Gayatri Projects meets the pipeline cold (2026-08-31, ADR-0061)
+
+The twenty largest auditor-resignation candidates' letters were read and durably recorded
+(`_letters_read.jsonl`): yield ~1 adverse in 20. So the register was extended to the streams where the
+company confesses the event itself — loan/NCD payment defaults and CIRP updates, in BSE's own verbatim
+vocabulary — after fixing three silent enumeration defects measured live (page-1 sampling, no retry,
+and BSE returning PARTIAL pages under sustained load: enumeration is now two passes unioned). `firm
+triage` commits the previously-manual universe filter, with today's-mcap bias named in every floor
+exclusion. 265 new company-events → 50 candidates.
+
+**GAYATRI-FY18** — the set's second positive, first EPC: selected by size rank from the loan_default
+stream, de-censored per-scrip to the first confession (2020-01-31; default date 31.12.2019; a 12-bank
+consortium; an FITL among the defaulted facilities), pre-registered at as_of 2019-01-31, and run COLD.
+Screen REVIEW — in band, the firm did not clear it — but for reasons carrying little of the real
+signal: the walker missed the FY18 balance sheet and cash flow entirely (5 of 6 verified facts
+unreproduced), and every EPC-geometry check the FY18 filing itself confesses against (₹713.8cr of
+advances for works never commenced, per the auditor's own Emphasis of Matter) is declared-unwired.
+Both halves recorded as CAP-EPC. Bonus find: the FY17 and FY18 ARs disagree by ₹95.7cr on FY17
+receivables — a quiet Ind AS-transition re-presentation the walker read faithfully.
+
+Next for this thread: author GAYATRI FY17/FY18 verified readings; wire the EPC playbook from those
+documents (ADR-0051 rule); OCR the Sheela Foam letter; historical-mcap triage.
+
+## 6o. Phase 4 opens — a citable price, and a valuation that argues with it (2026-09-01, ADR-0062)
+
+The owner approved Phase 4 and asked whether the project's API needs could be met for free. Answered
+from the code, not a vendor list: the LLM half was already solved (`ClaudeCodeAdapter` — no API key,
+no per-token billing — plus the ADR-0010 packet flow), and the price half is served by **BSE's own
+settled daily closes** (`StockReachGraph?flag=1`, no key, 2,139 closes back to 2018). That matters
+beyond money: `sourcing.py` grades an aggregator B, and a grade-B price would undermine every number
+downstream of it. The exchange's own close is grade A.
+
+Built and validated on real companies:
+- `adapters/india/prices.py` + `core/ingest/prices.py` — `close_on_or_before` is the ONLY accessor
+  (a price series is the easiest place in the system to leak the future); registers `market:Close` and
+  `market:ADV`, the latter finally giving SPEC §8's Gate A liquidity floor a number to apply to.
+- `core/pipeline/valuation.py` — reverse DCF first, a scenario grid anchored to the company's OWN
+  realised growth (never a house grid), return multiples as intrinsic value over the quoted price with
+  no exit multiple anywhere, and every missing input NAMED rather than defaulted.
+- Law 1 tightened, not loosened: the valuation's numbers become `Derivation`s so the existing validator
+  polices them, and `ScenarioLine.return_multiple` moved out of the judgment allowlist into a new
+  `NESTED_COMPUTED_FIELDS` bucket checked item-by-item against the priced grid.
+
+**ALKYLAMINE, as of 2026-08-30:** price ₹2,044.40, 5.11cr shares (the filing's own PAT/EPS identity),
+market cap ₹10,454cr, net cash ₹202cr, base FCF ₹110cr — **the price demands 34.1% FCF growth for ten
+years against 5.2% realised.** PC Jeweller returns `unavailable` with all four gaps named. Golden set
+8 cases, **0 regressions**, positives 2/2; 864 tests, compute 100%.
+
+**Remaining for Phase 4 acceptance:** wire the four judgment agents to narrate, render the valuation
+section, gate D/E, and normalise the base FCF (a single trough year currently flatters the bear case —
+the fix is the missing input, per ADR-0059, not a nudged discount rate).
 
 ## 7. Suggested next step
 

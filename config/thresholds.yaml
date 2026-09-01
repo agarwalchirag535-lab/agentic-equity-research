@@ -1,6 +1,27 @@
 # thresholds.yaml — EVERY hardcoded number lives here (SPEC §3, CLAUDE.md). Nowhere else.
 # The compute layer takes these as explicit parameters; no policy number is baked into code.
 
+# Phase-4 valuation policy (ADR-0062). READ THIS BLOCK DIFFERENTLY FROM THE FORENSIC ONES.
+# A forensic threshold is a claim about the world that the golden set can prove wrong (see CAL-1/CAL-2).
+# These are not that. A discount rate is the return THIS FIRM DEMANDS — a policy choice, not a
+# measurement — and no amount of backtesting makes 13% "correct". They are therefore held to a
+# different standard: stated prominently in every report that uses them, and sensitivity-tested rather
+# than calibrated. A valuation whose verdict flips inside this block's plausible range is not a
+# valuation, and the report has to say so.
+valuation:
+  discount_rate: 0.13           # cost of equity demanded of an Indian small/mid-cap. STATED, not derived.
+  terminal_growth: 0.04         # below the discount rate always, or Gordon diverges (enforced in code)
+  explicit_years: 10            # the SPEC §6 horizon: 5-8 years of compounding, valued to 10
+  # Scenario spreads AROUND THE COMPANY'S OWN REALISED GROWTH (never an absolute house grid — a
+  # business compounding 25% and one managing 3% do not share a base case).
+  bull_spread: 0.06
+  bear_spread: 0.08
+  disaster_growth: -0.10        # absolute: the disaster case is the business SHRINKING, for everyone
+  # Reverse-DCF bracket. A price implying growth outside this band cannot be justified by discounted
+  # cash flow at all — which is a finding about the price, reported as one, not an error.
+  implied_growth_min: -0.50
+  implied_growth_max: 1.00
+
 multibagger:
   # §6.3 feasibility gate boundaries on required_reinvestment_rate = g_required / ROIC
   self_fund_ceiling: 1.0        # > 1.0  → cannot self-fund → must model dilution/leverage

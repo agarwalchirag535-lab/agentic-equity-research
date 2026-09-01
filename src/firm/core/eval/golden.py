@@ -276,7 +276,8 @@ def _check_against_register(cases: Sequence[GoldenCase], register: Path) -> None
 
 
 #: Event kinds `firm register` enumerates, and therefore the ones a case can be traced back to.
-_REGISTER_KINDS = ("auditor_resignation", "cfo_resignation", "ceo_resignation")
+_REGISTER_KINDS = ("auditor_resignation", "cfo_resignation", "ceo_resignation",
+                   "loan_default", "debt_security_default", "cirp_update", "coc_meeting")
 
 
 #: The screen verdicts, worst first. A band is an inclusive range over this order.

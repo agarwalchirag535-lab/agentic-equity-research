@@ -118,7 +118,15 @@ class ExternalInputs:
     related_party_categories: tuple[str, ...] = ()
     kmp_remuneration_cr: float | None = None
     gross_margin: float | None = None
+    #: Mandated rows and sections the COMPANY did not publish. Only these may move a verdict.
     disclosure_gaps: tuple[str, ...] = ()
+    #: Rows the company DID publish that THIS FIRM could not read — an undeclared unit, a row-locator
+    #: that matched the wrong line, a total failing the balance-sheet identity. Kept apart from
+    #: `disclosure_gaps` because charging a company for our extractor is the standing directive's
+    #: one forbidden move (ADR-0051, ADR-0059): on Alkyl Amines FY23 a `Total Assets` row our locator
+    #: read as 49,881.61 against the page's own 1,59,008.74 was published as "mandated disclosures
+    #: absent" and flagged the company MEDIUM.
+    extraction_gaps: tuple[str, ...] = ()
     disclosure_scanned: bool = False
     source_locators: Mapping[str, str] | None = None    # check name -> "AR p.12 l.4"
     fact_ids: Mapping[str, tuple[str, ...]] | None = None
@@ -381,9 +389,16 @@ def evaluate_checks(
                 r.unavailable(check, missing_for("accrual_ratio_latest"))
             else:
                 limit = forensic["sloan_accrual_flag"]
-                r.value_check(check, d.value,
-                              f"accruals {d.value:+.3f} vs limit ±{limit:.2f} ({d.formula})",
-                              d.fact_ids, flagged=abs(d.value) > limit)
+                # Two-sided, and asserted against the band the asset endpoints support (ADR-0059):
+                # a company whose balance sheet doubled during the year has an "average total assets"
+                # the two endpoints cannot pin, and the ratio inherits that width.
+                band = d.band
+                detail = f"accruals {d.value:+.3f} vs limit ±{limit:.2f} ({d.formula})"
+                if band is not None:
+                    detail += f"; endpoints support {band.low:+.3f}/{band.high:+.3f}"
+                r.value_check(check, d.value, detail, d.fact_ids,
+                              flagged=band.outside(limit) if band is not None
+                              else abs(d.value) > limit)
 
         elif check == "beneish_manipulator":
             # Needs the 8-index input set (COGS, receivables, current assets, ...) — a summary feed
@@ -401,9 +416,30 @@ def evaluate_checks(
             yield_on_cash = derived.get("cash_yield_latest")
             if yield_on_cash is not None:
                 floor = forensic["cash_yield_floor_ratio"] * forensic["risk_free_rate"]
-                r.ran(check, yield_on_cash.value < floor,
-                      f"implied yield on cash and bank balances {yield_on_cash.value:.2%} vs floor "
-                      f"{floor:.2%} ({yield_on_cash.formula})", yield_on_cash.fact_ids)
+                band = yield_on_cash.band
+                if band is not None and band.indeterminate_below(floor):
+                    # THE CHECK'S ONLY LIVE FLAG WAS THIS CASE (ADR-0059). Alkyl Amines FY23: cash and
+                    # bank balances fell 71% during the year, the two-point mean says 2.55% against a
+                    # 2.60% floor, and the SAME two endpoints are equally consistent with 5.64% — the
+                    # ordinary story where the drawdown happened in April. The firm cannot tell those
+                    # apart from an annual balance sheet, and a SEVERE flag is not the way to say so.
+                    r.unavailable(check, [(
+                        f"an average cash balance the firm can bound: the balance moved "
+                        f"{band.drift:.0%} during {derived.last_period} "
+                        f"(₹{band.opening:,.2f}cr to ₹{band.closing:,.2f}cr), so the interest earned "
+                        f"implies a yield anywhere from {band.low:.2%} to {band.high:.2%} against a "
+                        f"{floor:.2%} floor — half-yearly balance-sheet balances (Reg 33), or the "
+                        f"cash-and-bank note's split between current accounts and term deposits, "
+                        f"would narrow it")])
+                else:
+                    # The claim is asserted only where every timing story the endpoints tell agrees with
+                    # it. Where the balance held still the band collapses and this is the old behaviour.
+                    flagged = band.below(floor) if band is not None else yield_on_cash.value < floor
+                    detail = (f"implied yield on cash and bank balances {yield_on_cash.value:.2%} vs "
+                              f"floor {floor:.2%} ({yield_on_cash.formula})")
+                    if band is not None:
+                        detail += f"; endpoints support {band.low:.2%}-{band.high:.2%}"
+                    r.ran(check, flagged, detail, yield_on_cash.fact_ids)
             elif ext.cash is None or ext.interest_income is None:
                 absent = [name for name, present in (
                     (D.CASH, ext.cash is not None),
@@ -455,14 +491,21 @@ def evaluate_checks(
                     f"({cod.value:.0%}) is an artefact of rounding rather than a rate the company pays"
                 ])
             else:
+                # The paradox asserts the cost of debt is HIGH, so it is established only if the whole
+                # band the borrowings' endpoints support is above the ceiling (ADR-0059). A company that
+                # repaid most of its debt during the year has an average the two endpoints cannot pin —
+                # the same defect that made the cash-yield check's only flag an artefact.
+                band = cod.band
+                paradox_rate = band.low if band is not None else cod.value
                 flagged = quality.cash_debt_paradox(
-                    ext.cash, assets.value, debt.value, cod.value,
+                    ext.cash, assets.value, debt.value, paradox_rate,
                     forensic["large_cash_to_assets"], forensic["high_cost_debt_rate"])
-                r.ran(check, flagged,
-                      f"cash/assets {ext.cash / assets.value:.1%} at cost of debt {cod.value:.1%} "
-                      f"(paradox above {forensic['large_cash_to_assets']:.0%} and "
-                      f"{forensic['high_cost_debt_rate']:.0%})",
-                      (*ext.ids(check), assets.fact_id, debt.fact_id))
+                detail = (f"cash/assets {ext.cash / assets.value:.1%} at cost of debt {cod.value:.1%} "
+                          f"(paradox above {forensic['large_cash_to_assets']:.0%} and "
+                          f"{forensic['high_cost_debt_rate']:.0%})")
+                if band is not None:
+                    detail += f"; endpoints support {band.low:.1%}-{band.high:.1%}"
+                r.ran(check, flagged, detail, (*ext.ids(check), assets.fact_id, debt.fact_id))
 
         elif check == "ageing_cwip":
             share = derived.get("cwip_share_latest")
@@ -532,11 +575,16 @@ def evaluate_checks(
                 r.unavailable(check, ("annual-report text (no filing was walked in this run)",),
                               GapKind.CAPABILITY)
             else:
-                r.ran(check, bool(ext.disclosure_gaps),
-                      ("mandated disclosures absent: " + ", ".join(ext.disclosure_gaps))
-                      if ext.disclosure_gaps
-                      else "every mandated Schedule III / forensic section located in the filing",
-                      ext.ids(check))
+                detail = (("mandated disclosures absent: " + ", ".join(ext.disclosure_gaps))
+                          if ext.disclosure_gaps
+                          else "every mandated Schedule III / forensic section located in the filing")
+                if ext.extraction_gaps:
+                    # Named, never counted. The rows are on the page; the failure to read them is ours,
+                    # and it belongs in the record without touching what the company is charged with.
+                    detail += ("; and " + str(len(ext.extraction_gaps)) + " published row(s) this firm "
+                               "could not read (ours, not the company's): "
+                               + ", ".join(ext.extraction_gaps))
+                r.ran(check, bool(ext.disclosure_gaps), detail, ext.ids(check))
 
         elif check == "promoter_lending":
             if ext.promoter_loans is None and ext.promoter_lending_disclosed is not None:
@@ -634,13 +682,34 @@ def evaluate_checks(
             if allowance is None or stage3 is None:
                 r.unavailable(check, (_LENDER_NOTE_INPUTS[check],))
             else:
+                # THE MEASURE IS NAMED, because it is not the PCR (ADR-0060). This divides the WHOLE
+                # book's ECL allowance — stages 1 and 2 included — by the Stage-3 gross, so a lender
+                # provisioning a growing performing book reads high whatever its impaired assets carry:
+                # CreditAccess FY26 reads 121% here against the 65.4% stage-3 PCR its own Reg 52(4)
+                # states. The stage-3-specific measure and the collateral profile are REPORTED beside
+                # it when read, and stay non-load-bearing until a lender positive calibrates the floor
+                # (CAL-2, docs/GOLDEN_SET.md §6): on the five lender-years readable today this measure
+                # never approaches 50%, while the stage-3 PCR would flag the one lender whose book is
+                # 99.98% secured — the pre-registered wrong answer.
                 flagged = quality.provision_coverage_flag(
                     allowance.value, stage3.value, financial["provision_coverage_min"])
                 pcr = allowance.value / stage3.value if stage3.value else 0.0
-                r.ran(check, flagged,
-                      f"impairment allowance {allowance.value:,.2f} on Stage-3 gross {stage3.value:,.2f} "
-                      f"= coverage {pcr:.0%} vs floor {financial['provision_coverage_min']:.0%}",
-                      (allowance.fact_id, stage3.fact_id))
+                detail = (f"whole-book impairment allowance {allowance.value:,.2f} on Stage-3 gross "
+                          f"{stage3.value:,.2f} = coverage {pcr:.0%} vs floor "
+                          f"{financial['provision_coverage_min']:.0%}")
+                ids = [allowance.fact_id, stage3.fact_id]
+                s3_allow = facts.fact(D.STAGE3_ALLOWANCE, derived.last_period or "")
+                if s3_allow is not None and stage3.value:
+                    detail += (f"; Stage-3-specific allowance {s3_allow.value:,.2f} = PCR "
+                               f"{s3_allow.value / stage3.value:.0%} (reported, not load-bearing — "
+                               "CAL-2)")
+                    ids.append(s3_allow.fact_id)
+                secured = facts.fact(D.SECURED_LOANS, derived.last_period or "")
+                gross = facts.fact(D.GROSS_LOANS, derived.last_period or "")
+                if secured is not None and gross is not None and gross.value:
+                    detail += f"; book {secured.value / gross.value:.2%} secured by tangible assets"
+                    ids.append(secured.fact_id)
+                r.ran(check, flagged, detail, tuple(ids))
 
         elif check == "gnpa_drift":
             stage3 = _consecutive_pair(facts, D.STAGE3_GROSS)

@@ -711,15 +711,74 @@ def register(
     from firm.adapters.india.register import adverse_events, deduplicate, fetch_url
 
     def polite(url: str) -> str:
-        time.sleep(0.25)   # one request per BSE month-window; do not hammer a public endpoint
+        # Slow on purpose: measured live, the endpoint degrades SILENTLY under a sustained stream —
+        # partial pages, no error — and a lossy register defeats its own point (ADR-0061).
+        time.sleep(0.6)
         return fetch_url(url)
 
     events = deduplicate(adverse_events(
-        date.fromisoformat(since), date.fromisoformat(until), kinds=tuple(kind), fetch=polite))
+        date.fromisoformat(since), date.fromisoformat(until), kinds=tuple(kind), fetch=polite,
+        passes=2))
     path = _Path(out)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(_json.dumps(e.as_dict()) for e in events) + "\n")
     typer.echo(f"{len(events)} distinct company-event(s) {since}..{until} -> {path}")
+
+
+@app.command("triage")
+def triage_cmd(
+    register_file: str = typer.Option("evals/golden_set/_register.jsonl", "--register"),
+    candidates_file: str = typer.Option("evals/golden_set/_candidates.jsonl", "--candidates"),
+    excluded_file: str = typer.Option("evals/golden_set/_excluded.jsonl", "--excluded"),
+    kind: list[str] = typer.Option([], "--kind", help="triage only these kinds (default: all)"),
+) -> None:
+    """Split register events into golden-set candidates and recorded exclusions by the universe band.
+
+    Append-only and idempotent: an event whose (scrip, kind) already sits in either file is skipped, so
+    re-running after a new enumeration triages only what is new. Only the mcap band is applied — for the
+    golden set a company under CIRP is not an exclusion, it is the label (docs/GOLDEN_SET.md §3).
+    """
+    import json as _json
+    import time
+    from pathlib import Path as _Path
+
+    from firm.adapters.india.register import AdverseEvent, fetch_url, market_cap_cr, triage
+    from firm.core.config import load_yaml
+
+    band = load_yaml("universe.yaml")["mcap_band_cr"]
+
+    def seen(path: _Path) -> set[tuple[str, str]]:
+        if not path.exists():
+            return set()
+        return {(r["scrip_code"], r["kind"]) for r in map(_json.loads, path.read_text().splitlines()) if r}
+
+    cand_path, excl_path = _Path(candidates_file), _Path(excluded_file)
+    already = seen(cand_path) | seen(excl_path)
+    events = []
+    for line in _Path(register_file).read_text().splitlines():
+        row = _json.loads(line)
+        if kind and row["kind"] not in kind:
+            continue
+        if (row["scrip_code"], row["kind"]) in already:
+            continue
+        events.append(AdverseEvent(kind=row["kind"], on=date.fromisoformat(row["date"]),
+                                   scrip_code=row["scrip_code"], company=row["company"],
+                                   headline=row["headline"], source=row["source"]))
+
+    def polite_mcap(scrip: str) -> float | None:
+        time.sleep(0.4)
+        return market_cap_cr(scrip, fetch_url)
+
+    candidates, excluded = triage(events, polite_mcap,
+                                  floor_cr=float(band["min"]), ceiling_cr=float(band["max"]))
+    with cand_path.open("a") as f:
+        for row in candidates:
+            f.write(_json.dumps(row) + "\n")
+    with excl_path.open("a") as f:
+        for row in excluded:
+            f.write(_json.dumps(row) + "\n")
+    typer.echo(f"triaged {len(events)} new event(s): {len(candidates)} candidate(s), "
+               f"{len(excluded)} excluded -> {cand_path}, {excl_path}")
 
 
 @app.command("run")

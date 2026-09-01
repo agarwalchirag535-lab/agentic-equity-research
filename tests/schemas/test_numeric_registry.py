@@ -14,7 +14,11 @@ import typing
 
 from pydantic import BaseModel
 
-from firm.core.pipeline.deep_dive import JUDGMENT_NUMERIC_FIELDS, NUMERIC_FIELD_SOURCES
+from firm.core.pipeline.deep_dive import (
+    JUDGMENT_NUMERIC_FIELDS,
+    NESTED_COMPUTED_FIELDS,
+    NUMERIC_FIELD_SOURCES,
+)
 from firm.schemas.agents import AGENT_OUTPUTS
 
 
@@ -61,7 +65,7 @@ def test_every_numeric_agent_field_is_registered_or_classified_as_judgment():
         f"NUMERIC_FIELD_SOURCES — with its derived-metric source, or None if the agent must return null."
     )
 
-    unclassified = nested - JUDGMENT_NUMERIC_FIELDS
+    unclassified = nested - (JUDGMENT_NUMERIC_FIELDS | NESTED_COMPUTED_FIELDS)
     assert not unclassified, (
         f"nested numeric fields that are neither validated nor classified as judgment scores: "
         f"{sorted(unclassified)}. Add to JUDGMENT_NUMERIC_FIELDS only if a bounded judgment; a "

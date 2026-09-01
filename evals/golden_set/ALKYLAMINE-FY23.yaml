@@ -5,23 +5,26 @@ label: clean
 negative_class: hard_cyclical
 manifest: evals/manifests/ALKYLAMINE.json
 human_signed_off: false
-known_failure: >-
-  CAL-1 (docs/GOLDEN_SET.md §6) — cash_interest_inconsistent fires SEVERE at 2.55% against a
-  provisional 2.60% floor, producing HARD_FAIL. Recorded rather than resolved: moving the
-  threshold because a company we believe is honest failed it is the one move the invariants
-  forbid. When this case starts passing the harness says so, and the question closes.
+notes: >-
+  CAL-1 CLOSED 2026-08-31 (ADR-0059), and NOT by moving cash_yield_floor_ratio, which is untouched at
+  0.40 and remains uncalibrated. The case was recorded as failing because the check fired SEVERE at an
+  implied cash yield of 2.55% against a 2.60% floor. The diagnosis, taken from the whole FY19-FY26
+  series rather than from this one year: the yield is a year of interest divided by the MEAN of two
+  balance-sheet endpoints, and Alkyl Amines' cash and bank balances fell 71% during FY23 (₹62.57cr to
+  ₹18.23cr). The same two endpoints are equally consistent with 1.64% and with 5.64% — the ordinary
+  story where the drawdown happened in April. The check now asserts the claim only where every timing
+  story the endpoints tell agrees with it, so FY23 reports UNAVAILABLE naming the balances that would
+  resolve it, and the screen comes out REVIEW on ageing_cwip and disclosure_gap — which is what this
+  case's rationale said in advance was the defensible answer.
+  THE THRESHOLD IS STILL UNTESTED. This observation never bore on it: 8 of Alkyl's 8 measurable years,
+  and 11 of the set's 12 company-years, have endpoint bands too wide to test any floor. What changed is
+  that the firm now knows that, and says so.
 
-# CAL-1 (docs/GOLDEN_SET.md §6). THIS CASE IS EXPECTED TO FAIL TODAY, AND THAT IS WHY IT IS HERE.
-#
-# The same company that comes out PASS in FY26 comes out HARD_FAIL when replayed at FY23, on
-# cash_interest_inconsistent firing SEVERE at an implied cash yield of 2.55% against a 2.60% floor —
-# 39.2% of risk-free against a band set at 40%. FY23 was a demand and margin downturn: no restatement, no
-# auditor change, no regulatory action, and the company is still solvent and self-funded three years on.
-#
-# The expectation is written from that record, NOT from what the system currently outputs. Recording a
-# failing expectation is the point of a golden set: it converts an argument about a threshold into a
-# regression that either closes or stays visible. Nobody should move cash_yield_floor_ratio until this
-# case, and negatives like it, say what the right value is.
+# THE CASE'S ORIGINAL RECORD, kept because the expectation below was pre-registered against it and has
+# not been edited. The same company that comes out PASS in FY26 came out HARD_FAIL when replayed at
+# FY23, on cash_interest_inconsistent firing SEVERE at 39.2% of risk-free against a band set at 40%.
+# FY23 was a demand and margin downturn: no restatement, no auditor change, no regulatory action, and
+# the company is still solvent and self-funded three years on.
 verified_facts:
   # Both values CORRECTED after the first run; see ALKYLAMINE-FY19.
   - metric: pnl:Sales

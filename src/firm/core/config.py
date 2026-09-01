@@ -39,6 +39,11 @@ def forensic_thresholds() -> ForensicThresholds:
     )
 
 
+def valuation_policy() -> dict[str, float]:
+    """The Phase-4 valuation assumptions (ADR-0062) — policy this firm states, not facts it measured."""
+    return load_thresholds()["valuation"]
+
+
 def originate_to_sell_thresholds() -> dict[str, float]:
     """Thresholds for the originate-to-sell / lender earnings-quality checks (quality.py)."""
     return load_thresholds()["originate_to_sell"]

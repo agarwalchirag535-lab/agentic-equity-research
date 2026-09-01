@@ -1,0 +1,109 @@
+case_id: GAYATRI-FY18
+ticker: GAYATRI
+as_of: 2019-01-31
+label: adverse
+manifest: evals/manifests/GAYATRI.json
+human_signed_off: false
+lead_months: 12
+label_event:
+  kind: loan_default
+  date: 2020-01-31
+  source: https://www.bseindia.com/xml-data/corpfiling/AttachHis/6d008b82-ee1a-40c3-8e95-f09c92e153a0.pdf
+  summary: >-
+    The company's own Regulation-30 disclosure of loan defaults continuing beyond 30 days: default
+    date 31.12.2019 on working-capital term loans AND funded-interest term loans (an FITL is itself
+    capitalised unpaid interest from an earlier restructuring) owed to a consortium of 12 banks led by
+    Bank of Baroda, against Rs 1,845.05cr of bank borrowings and Rs 3,299.04cr total indebtedness. The
+    letter states the amounts were first disclosed in the quarterly default disclosure of 2020-01-07.
+    NOTE ON THE DATE: SEBI's default-disclosure regime (CIR/CFD/CMD1/44/2019) took effect 2020-01-01,
+    so 2020-01-31 is the earliest a default COULD reach this register — it bounds the confession, not
+    the distress. The enumeration was walked back to 2018-01-01 and found nothing earlier (the regime
+    explains why), and the as_of precedes every default-regime disclosure that exists.
+
+# WAVE 3: THE FIRST POSITIVE SELECTED FROM THE EXTENDED REGISTER (loan_default stream, ADR-0061) —
+# and the first EPC/infrastructure contractor in the set. Selected by size rank within the stream's
+# in-universe candidates, then de-censored per-scrip to the first default disclosure that exists.
+#
+# WHY THIS CASE IS HARD, AND WHAT IT IS FOR. The FY18 filing — the latest annual report readable at
+# as_of — already carries the shape the default confessed twelve months later: receivable days at 142
+# and rising (+50.2% receivables on +37.7% revenue), interest cover ~1.76x, claims receivable up 3x to
+# Rs 205.97cr, Rs 713.81cr of advances to sub-contractors for works that had NOT COMMENCED — which the
+# auditor's own Emphasis of Matter (p.56) calls "long pending for recovery" — and Rs 114cr of loans to
+# subsidiaries and associates. And yet the UNIVERSAL check library is expected to read it as clean:
+# the receivables/revenue gap (+12.5pp) sits under the 25pp limit, CFO/PAT reads 1.13 (propped by
+# payables and contractee advances), and every check that would see the EPC-specific geometry —
+# contract assets, unbilled work, capitalised advances, guarantees — is declared UNIMPLEMENTED
+# (ADR-0051). A screen that PASSes this company is missing a capability, not finding a clean company.
+verified_facts:
+  - metric: balance_sheet:Trade Receivables
+    period: FY18
+    value: 113371.47
+    unit: INR_lakh
+    locator: p.61 "(i) Trade receivables" (standalone balance sheet, Note 7)
+    method: filing_page
+    source: read from the audited standalone balance sheet; printed 1,13,371.47
+  - metric: balance_sheet:Trade Receivables
+    period: FY17
+    value: 75464.88
+    unit: INR_lakh
+    locator: FY18 AR p.61 comparative column (standalone balance sheet)
+    method: filing_page
+    source: >-
+      printed 75,464.88 beside the FY18 figure. THE TWO FILINGS DISAGREE: the FY17 AR's own balance
+      sheet (its p.92) prints 85,036.43 for the same date — an Rs 95.7cr (11.3%) quiet re-presentation
+      between two audited documents, found by the first cold run when the walker faithfully read the
+      FY17 AR and this fact pinned the FY18 basis. This fact deliberately keeps the FY18 AR's Ind AS
+      comparative (the later, restated basis); reproducing it requires reading the FY18 AR's own
+      statements, and the disagreement itself is restatement-radar material.
+  - metric: pnl:Sales
+    period: FY18
+    value: 291231.24
+    unit: INR_lakh
+    locator: p.62 "(I) Revenue from operations" (standalone statement of profit and loss)
+    method: filing_page
+    source: printed 2,91,231.24
+  - metric: pnl:Net Profit
+    period: FY18
+    value: 18809.35
+    unit: INR_lakh
+    locator: p.62 "IX Profit for the year (VII-VIII)"
+    method: filing_page
+    source: printed 18,809.35
+  - metric: cashflow:Cash from Operating Activity
+    period: FY18
+    value: 21225.64
+    unit: INR_lakh
+    locator: p.64 "Net Cash (used in)/ generated from Operating Activities (A)"
+    method: filing_page
+    source: printed 21,225.64
+  - metric: balance_sheet:Total Assets
+    period: FY18
+    value: 498610.03
+    unit: INR_lakh
+    locator: p.61 "Total Assets" (standalone balance sheet)
+    method: filing_page
+    source: printed 4,98,610.03; equals Total Equity and Liabilities on the same page
+
+expectation:
+  screen_at_worst: HARD_FAIL
+  screen_at_best: REVIEW
+  must_flag: []
+  must_not_flag: []
+  rationale: >-
+    Twelve months before a confessed default to a 12-bank consortium — with the FY18 auditor already
+    naming unrecovered advances for works that never commenced, receivable days at 142, interest cover
+    of 1.76x and an FITL on the books from an earlier restructuring — the deterministic screen must not
+    clear the company. REVIEW is the floor of honesty; PASS is a miss. No individual check is
+    pre-registered in must_flag because, honestly, none of the wired checks measures the EPC geometry
+    that carries the signal — which is the capability this case exists to force.
+
+known_failure: >-
+  CAP-EPC (ADR-0061) — two halves, both measured by the first cold run (2026-08-31). EXTRACTION: the
+  walker registered the FY17 AR's statements and the FY18 AR's consolidated P&L, but the FY18 AR's
+  balance sheet and cash-flow statement not at all — 5 of 6 verified facts unreproduced — so the
+  screen judged FY18 on a store carrying no FY18 balance sheet; verified readings (ADR-0046 path) are
+  the known fix. JUDGMENT: the screen landed REVIEW (in band) off inventory_divergent and
+  other_income_heavy computed from the FY17-era rows — the right verdict for reasons that carry
+  little of the real signal, because every check that measures the EPC geometry the FY18 filing
+  confesses (advances for works never commenced, claims receivable, contract dues) is declared
+  UNIMPLEMENTED (ADR-0051). Recorded as the register-selected forcing function for both.

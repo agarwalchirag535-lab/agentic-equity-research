@@ -366,6 +366,25 @@ class ScheduleIIIFinding:
         return f"p.{self.page} l.{self.line}" if self.found else ""
 
 
+#: Both spellings of "ageing" are current in Indian filings — Five-Star FY26 heads the very table
+#: Schedule III mandates "CWIP aging schedule" while CreditAccess heads its "Trade Payables ageing
+#: schedule" — so the scan folds them to one token before matching.
+_AGING_WORD = re.compile(r"\baging\b")
+
+
+def _scan_canon(text: str) -> str:
+    """The canonical form both a mandate keyword and a filing line are reduced to before matching.
+
+    WHY THIS EXISTS (ADR-0060). The scan's job is to charge a company with NOT printing a mandated
+    table, and a literal substring match makes that charge through any orthographic accident: on one
+    real filing, three false charges each one character wide — "CWIP aging schedule" (American
+    spelling), "Trade payables (Ageing Schedule)" (a parenthesis between the words), "Debt/Equity
+    Ratio" (a slash where the keyword has a hyphen). Lowercase, punctuation to spaces, whitespace
+    collapsed, one spelling of ageing — the claim "this table is absent" must survive typography.
+    """
+    return _AGING_WORD.sub("ageing", re.sub(r"[^a-z0-9]+", " ", text.lower()).strip())
+
+
 def scan_schedule_iii(pages: Sequence[str]) -> list[ScheduleIIIFinding]:
     """Locate every Schedule III mandatory disclosure row, with a (page, line) anchor when present.
 
@@ -373,11 +392,12 @@ def scan_schedule_iii(pages: Sequence[str]) -> list[ScheduleIIIFinding]:
     either non-disclosure or an unreadable filing — both feed `disclosure_gap` (ADR-0014).
     """
     findings: list[ScheduleIIIFinding] = []
-    for row, keywords in SCHEDULE_III_ROWS:
+    canon_rows = [(row, tuple(_scan_canon(k) for k in keywords)) for row, keywords in SCHEDULE_III_ROWS]
+    for row, keywords in canon_rows:
         hit: ScheduleIIIFinding | None = None
         for p_idx, page in enumerate(pages, start=1):
             for l_idx, line in enumerate(page.splitlines(), start=1):
-                low = line.lower()
+                low = _scan_canon(line)
                 if any(k in low for k in keywords):
                     hit = ScheduleIIIFinding(row, True, p_idx, l_idx, line.strip()[:200])
                     break

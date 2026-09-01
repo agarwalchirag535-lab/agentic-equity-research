@@ -1,9 +1,11 @@
 # GOLDEN_SET.md — design before construction
 
 > **Status: PORTED TO THE TRUNK (ADR-0057; authored on the third line as its "ADR-0061/0062").** Seven cases — six hard negatives and one positive —
-> behind `firm eval` / `make eval`. Current: 0 extraction failures, 0 regressions, 1 recorded failure
-> (CAL-1), positives 1/1. Written 2026-08-30 after the point-in-time defects of ADR-0059, which are the
-> reason it was written before any case was added.
+> behind `firm eval` / `make eval`. Current (2026-08-31, ADR-0060): **7 of 7 in band, 0 extraction
+> failures, 0 regressions, positives 1/1** — the set's first fully green run, with Five-Star's
+> readings authored (PORT-1b closed) and CAL-1 closed without moving a threshold. Open: CAL-2 (§6)
+> and human sign-off on all seven cases. Written 2026-08-30 after the point-in-time defects the third
+> line's ADRs recorded, which are the reason it was written before any case was added.
 >
 > **Wave 1 immediately caught five fabricated facts — written by the author of the cases, not by the
 > pipeline.** See ADR-0061. The `method` field is what made them visible.
@@ -196,13 +198,37 @@ change to a case — a corrected fact, a re-baselined expectation — is a revie
 6. **Thresholds move in config, never in code**, and every move cites the calibration run that justified
    it.
 
-### CAL-1 — the first calibration question, already recorded
-`cash_interest_inconsistent` fired SEVERE on Alkyl Amines FY23 at an implied cash yield of 2.55% against a
-2.60% floor (39.2% of risk-free against a 40% band), producing a HARD_FAIL on a company with no fraud, no
-restatement and no governance event (ADR-0059). Is the band wrong, is the severity wrong, is the
-denominator wrong — `Cash + Other Bank Balances` includes non-interest-bearing working balances — or is
-the flag right and the company merely unpunished by events? **The golden set exists to answer that.
-Nobody should move that threshold before it does.**
+### CAL-1 — CLOSED 2026-08-31 (ADR-0059), and not the way a threshold question closes
+`cash_interest_inconsistent` fired SEVERE on Alkyl Amines FY23 at an implied cash yield of 2.55% against
+a 2.60% floor, producing a HARD_FAIL on a company with no fraud, no restatement and no governance event.
+The question recorded here was: is the band wrong, the severity wrong, the denominator wrong, or the flag
+right?
+
+**None of them. The observation was uninterpretable.** Measuring the whole FY19–FY26 series rather than
+the failing year showed the yield is a year of interest over the MEAN of two balance-sheet endpoints, and
+Alkyl's cash and bank balances fell 71% during FY23. The same two endpoints support 1.64% and 5.64%
+equally. The check now asserts a threshold claim only where every timing story the endpoints tell agrees
+with it (§7 of ADR-0059), so FY23 reports UNAVAILABLE naming the balances that would resolve it.
+`cash_yield_floor_ratio` was not touched.
+
+**What replaces CAL-1 is worse news, and it belongs here rather than in a footnote.** Eleven of the
+twelve company-years the firm can read have endpoint bands too wide to test ANY floor, and the one
+positive in the set (PC Jeweller, 5.34% / 5.38% / 4.23%) never approached it. So the threshold is not
+vindicated — **it remains completely untested, and the check cannot currently be calibrated at all from
+annual filings.** Closing that needs within-year balances (Reg 33 half-yearly balance sheets) or the
+cash-and-bank note's current-account/term-deposit split, which is a capability item with a named remedy
+rather than a number to argue about. See §6.5: on this evidence the check is UNCALIBRATED.
+
+### CAL-2 — the provision-coverage floor is uncalibrated on either of its two possible measures
+Recorded 2026-08-31 (ADR-0060). `provision_coverage_low` divides the WHOLE book's ECL allowance by the
+Stage-3 gross; across the five readable lender-years that measure reads 119% / 91% / 55% / 107% / 121%
+and the 50% floor has never fired — a lender provisioning a growing performing book clears it
+structurally. The stage-3-specific PCR (now read for Five-Star: 54.3% → 51.3% → 41.4%) WOULD fire —
+on exactly the lender whose pre-registered case says that firing is wrong, because its book is 99.98%
+secured by registered mortgage and no lender discloses collateral value against Stage-3. The measure
+question and the collateral gate are one question. The inputs are read and reported (the check's
+detail names its measure and prints the PCR and secured share, non-load-bearing); the floor moves only
+when a lender positive exists to calibrate against — wave 3's register has the candidates.
 
 ## 7. How regression testing uses it
 
@@ -247,3 +273,39 @@ own — it proves the two-assertion split and it immediately makes the FY23 and 
 answerable as regressions rather than arguments.
 
 Wave 2 adds positives from the register (§3), which is where the real cost begins.
+
+## 9. The second instrument: a series sweep (added 2026-08-31, ADR-0059)
+
+Labelled cases are expensive — a person reads a filing, an event has to have happened, and a lead time
+has to have elapsed. There is a cheaper instrument that answers a different question, and CAL-1 was
+closed by it rather than by the case that recorded it.
+
+> A **series sweep** replays one check across every company-year the firm can read and asks whether the
+> spread is explicable. It needs no label, no event and no human verification.
+
+What it is for, and why it is not a substitute for §2: a case asks *did the firm reach the right verdict
+on this company?* A sweep asks *is this check measuring anything at all?* The second question is
+logically prior, and cheaper, and the golden set kept asking the first one first.
+
+The worked example is CAL-1. Read at FY23 alone, `cash_interest_inconsistent` posed a threshold
+question nobody could answer from one observation. Read across FY19–FY26 of the same company it posed
+no threshold question at all: the check fires only in years the cash balance moved violently, which is
+a property of a two-endpoint average and not of Alkyl Amines. **Same check, same data, opposite
+conclusion — the difference is entirely the width of the window the analyst looked through.**
+
+Standing steps, in this order:
+
+1. **Sweep before you calibrate.** For any check about to be tuned, replay it across every readable
+   company-year and print value, threshold and — where the input is a rate over a moving balance — the
+   band the endpoints support. A check whose spread on one honest company already crosses its own
+   threshold is not ready to be calibrated on labelled cases.
+2. **A wide band is a capability finding, not a calibration finding.** It names data the firm is not
+   reading (here: Reg 33 half-yearly balance sheets, or the cash-and-bank note's split). It belongs in
+   the backlog, not in an argument about a number.
+3. **Sweep after any threshold change too**, for the same reason §7 re-runs the cases: a number moved
+   to fit one company-year should be visible against all the others.
+
+Current sweep, 4 companies × their readable years: **35 flow-over-average-stock rates, 16 (46%) pinned
+to within 20% of their own value.** Cost of debt and cash yield are the loose ones; the accrual ratio
+behaves. That fraction is itself a metric worth watching — it is the share of the firm's rate
+arithmetic that currently means what it says.

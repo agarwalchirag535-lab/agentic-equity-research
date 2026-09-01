@@ -154,3 +154,41 @@ def test_the_exculpatory_checks_stay_visible_beside_the_flag():
     assert "raised" in ev.record("reserve_suppression").detail
     fired = {r.name for r in ev.records if r.outcome.value == "FLAG"}
     assert fired == {"gnpa_drift", "provision_book_divergent"}
+
+
+def _facts_with_stage3_detail() -> D.CompanyFacts:
+    """The ADR-0052 note fixture plus the stage-3-specific allowance and the security split (ADR-0060),
+    on the shape of Five-Star FY26: a book almost entirely secured, whose stage-3 PCR sits well below
+    the whole-book coverage number."""
+    store = FactStore(":memory:")
+    extra = {
+        "FY25": {"notes:Stage 3 Allowance": 780.0, "notes:Secured Loans": 25580.0,
+                 "notes:Unsecured Loans": 3.08},
+        "FY24": {"notes:Stage 3 Allowance": 190.0, "notes:Secured Loans": 25100.0,
+                 "notes:Unsecured Loans": 4.99},
+    }
+    for period, rows in CREDITACC.items():
+        doc, pub = f"AR-{period}", date(int(f"20{period[2:]}"), 7, 5)
+        store.add_document(Document(doc_id=doc, source_url="u", sha256="", published_at=pub,
+                                    fetched_at=pub, grade="A", extractor_version="llm-read@1"))
+        for metric, value in {**rows, **CREDITACC_NOTES[period], **extra[period]}.items():
+            store.add_fact(fact_id=f"{doc}:{metric}:{period}", doc_id=doc, ticker="CA", metric=metric,
+                           period=period, value=value, unit="INR_cr", locator="note 7",
+                           period_end=date(int(f"20{period[2:]}"), 3, 31))
+    return D.load_company_facts(store, "CA", date(2025, 12, 31), start_year=2024)
+
+
+def test_provision_coverage_names_its_measure_and_reports_the_pcr_beside_it():
+    """ADR-0060: whole-book allowance over Stage-3 gross is NOT the PCR, and must not read like one.
+
+    The flag stays on the whole-book measure (unchanged, uncalibrated either way — CAL-2); what changes
+    is honesty: the detail names the measure, and when the stage-3-specific allowance and the security
+    split are read, both appear beside it without bearing load — the flag must not move even though the
+    reported PCR (64%) is far from the whole-book number (107%).
+    """
+    _, _, ev = _evaluate(_facts_with_stage3_detail())
+    record = ev.record("provision_coverage_low")
+    assert record.outcome.value == "PASS"
+    assert "whole-book impairment allowance" in record.detail and "107%" in record.detail
+    assert "PCR 64%" in record.detail and "not load-bearing" in record.detail and "CAL-2" in record.detail
+    assert "99.99% secured by tangible assets" in record.detail

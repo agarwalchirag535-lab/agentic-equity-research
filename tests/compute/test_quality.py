@@ -13,6 +13,7 @@ from firm.core.compute.quality import (
     beneish_m_score,
     cash_debt_paradox,
     cash_interest_consistency,
+    flow_over_stock,
     cfo_pat_ratio,
     cumulative_cfo_pat_ratio,
     disclosure_completeness,
@@ -70,6 +71,44 @@ def test_cash_interest_consistency():
     assert ok is False
     with pytest.raises(ValueError):
         cash_interest_consistency(1, 0, 0.065, 0.40)
+
+
+def test_flow_over_stock_bands_the_rate_its_endpoints_support():
+    """ALKYLAMINE FY23, the live false positive ADR-0059 traced (₹ crore, floor 2.60%)."""
+    band = flow_over_stock(1.0286, opening=62.5712, closing=18.2321)
+    assert band.point == pytest.approx(0.02545, abs=1e-5)   # what the check compared to the floor
+    assert band.low == pytest.approx(0.01644, abs=1e-5)     # if the money sat there all year
+    assert band.high == pytest.approx(0.05641, abs=1e-5)    # if the drawdown happened in April
+    assert band.drift == pytest.approx(0.7086, abs=1e-4)
+    # The point estimate is below the floor; the band is not. That is the whole finding: the flag was
+    # a property of the estimator, not of the company.
+    assert band.below(0.026) is False
+    assert band.indeterminate_below(0.026) is True
+
+
+def test_flow_over_stock_collapses_when_the_balance_held_still():
+    """ALKYLAMINE FY26: the balance moved 1%, so the band is a number and the check is unchanged."""
+    band = flow_over_stock(15.7788, opening=204.0558, closing=201.7030)
+    assert band.drift == pytest.approx(0.0115, abs=1e-4)
+    assert band.low == pytest.approx(0.07733, abs=1e-5)
+    assert band.high == pytest.approx(0.07823, abs=1e-5)
+    assert band.below(0.026) is False and band.indeterminate_below(0.026) is False
+    assert band.above(0.05) is True
+
+
+def test_flow_over_stock_still_bites_on_a_stable_balance_earning_nothing():
+    """The Satyam shape: a large deposit balance that does not move and does not earn."""
+    band = flow_over_stock(20.0, opening=5000.0, closing=5000.0)
+    assert band.below(0.026) is True and band.indeterminate_below(0.026) is False
+    assert band.above(0.026) is False
+
+
+def test_flow_over_stock_refuses_a_zero_endpoint():
+    """Money that arrived or left entirely within the year is a different question, not a wide one."""
+    with pytest.raises(ValueError):
+        flow_over_stock(1.0, opening=0.0, closing=10.0)
+    with pytest.raises(ValueError):
+        flow_over_stock(1.0, opening=10.0, closing=0.0)
 
 
 def test_cash_debt_paradox():

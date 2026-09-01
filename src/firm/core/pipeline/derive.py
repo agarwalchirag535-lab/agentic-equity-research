@@ -33,6 +33,7 @@ from typing import Any, Mapping, Sequence
 
 from firm.core.compute import periods as P
 from firm.core.compute import quality, ratios
+from firm.core.compute.quality import FlowOverStock, flow_over_stock
 from firm.core.compute import roic as RO
 from firm.core.facts.store import Fact, FactStore
 from firm.schemas._base import Citation, Grade
@@ -99,6 +100,17 @@ INTEREST_INCOME_PNL = "pnl:Interest Income"
 GROSS_LOANS = "notes:Gross Loans"
 IMPAIRMENT_ALLOWANCE = "notes:Impairment Allowance"
 STAGE3_GROSS = "notes:Stage 3 Gross"
+#: The ECL allowance held AGAINST the Stage-3 book alone (the staging note's stage-3 column of the
+#: allowance reconciliation) — the numerator of the PCR a regulator quotes. Distinct from
+#: IMPAIRMENT_ALLOWANCE, which is the whole book's allowance across all three stages: Five-Star FY26
+#: reads 41.4% on this measure and 54.5% on the whole-book one, and a coverage check that conflates
+#: them is measuring different things on different lenders (ADR-0060).
+STAGE3_ALLOWANCE = "notes:Stage 3 Allowance"
+#: The loans note's security split (Schedule III B. "Based on security"). The collateral profile is
+#: the input the provision-coverage floor has always silently assumed: a 50% PCR floor is a claim
+#: about unsecured recovery, and Five-Star's book is 99.98% secured by registered mortgage (ADR-0060).
+SECURED_LOANS = "notes:Secured Loans"
+UNSECURED_LOANS = "notes:Unsecured Loans"
 INVENTORY_CHANGE = "pnl:Changes in Inventories"
 EMPLOYEE_COST = "pnl:Employee Benefits"
 OTHER_EXPENSES = "pnl:Other Expenses"
@@ -143,7 +155,7 @@ READ_METRICS: tuple[str, ...] = (
     EPS, EXPENSES, DIVIDEND_PAYOUT_PCT, CFI,
     TOTAL_INCOME, MATERIALS, PURCHASES_STOCK_IN_TRADE, INVENTORY_CHANGE, EMPLOYEE_COST, OTHER_EXPENSES,
     TOTAL_EXPENSES, LOAN_BOOK, IMPAIRMENT, INTEREST_INCOME_PNL,
-    GROSS_LOANS, IMPAIRMENT_ALLOWANCE, STAGE3_GROSS,
+    GROSS_LOANS, IMPAIRMENT_ALLOWANCE, STAGE3_GROSS, STAGE3_ALLOWANCE, SECURED_LOANS, UNSECURED_LOANS,
     TOTAL_TAX, OTHER_BANK, PAYABLES, CFF, CAPEX, DIVIDEND_PAID, INTEREST_PAID, INTEREST_INCOME,
     *BALANCE_SHEET_REMAINDER,
 )
@@ -288,6 +300,11 @@ class Derivation:
     formula: str
     inputs: tuple[Fact, ...]
     extractor_version: str = "core.compute@1.0.0"
+    #: For a rate of the form "a year's flow over an average balance", the band the two endpoints
+    #: support (ADR-0059). `value` stays the conventional two-point estimate — it is what a reader of
+    #: the statements computes — and `band` is what a THRESHOLD CLAIM must be tested against, because
+    #: the average balance was never observed. None for every metric that is not of that shape.
+    band: FlowOverStock | None = None
 
     @property
     def fact_ids(self) -> tuple[str, ...]:
@@ -332,6 +349,19 @@ class DerivedSet:
     def get(self, metric: str) -> Derivation | None:
         return self.values.get(metric)
 
+    def extended(self, extra: Mapping[str, Derivation]) -> "DerivedSet":
+        """A copy carrying `extra` derivations as well (Phase 4, ADR-0062).
+
+        The valuation layer needs a price and a policy block, so it cannot run inside
+        `derive_metrics` — but its outputs ARE derivations (a formula over input facts) and every
+        consumer downstream expects to find numbers here: the Law-1 validator looks up an agent's
+        field by metric name, and the report cites a `Derivation` by its inputs' worst grade. Merging
+        rather than special-casing means the valuation is checked and cited by the machinery that
+        already exists, instead of by a second copy of it.
+        """
+        return DerivedSet(self.ticker, self.as_of, {**self.values, **extra}, self.missing,
+                          self.first_period, self.last_period, self.fy_close)
+
     def value(self, metric: str) -> float | None:
         d = self.values.get(metric)
         return None if d is None else d.value
@@ -366,11 +396,28 @@ class _Builder:
             return None
         return got
 
-    def add(self, metric: str, value: float | None, formula: str, inputs: Sequence[Fact]) -> None:
+    def add(self, metric: str, value: float | None, formula: str, inputs: Sequence[Fact],
+            band: FlowOverStock | None = None) -> None:
         if value is None:
             self.missing.setdefault(metric, ("undefined for these inputs",))
             return
-        self.values[metric] = Derivation(metric, float(value), formula, tuple(inputs))
+        self.values[metric] = Derivation(metric, float(value), formula, tuple(inputs), band=band)
+
+    def add_rate_over_balance(self, metric: str, flow: float, opening: float, closing: float,
+                              formula: str, inputs: Sequence[Fact]) -> None:
+        """A flow-over-average-balance rate, carrying the band its two endpoints support (ADR-0059).
+
+        A balance that was zero at either end leaves the rate undefined rather than merely uncertain —
+        money that arrived or left entirely within the year is a different question — so it is recorded
+        as missing with that reason instead of divided.
+        """
+        if opening <= 0 or closing <= 0:
+            self.missing.setdefault(metric, (
+                f"a positive opening AND closing balance ({formula}); one endpoint is zero or negative, "
+                "so the year has no average balance to divide by",))
+            return
+        band = flow_over_stock(flow, opening, closing)
+        self.values[metric] = Derivation(metric, band.point, formula, tuple(inputs), band=band)
 
 
 def _as_fraction(fact: Fact) -> float:
@@ -478,6 +525,12 @@ def derive_metrics(
     if (got := b.need("pat_cagr", (PAT, f0), (PAT, fN))) is not None:
         b.add("pat_cagr", _cagr(got[0].value, got[1].value, span),
               f"({PAT} {fN} / {PAT} {f0})^(1/{span}) - 1", got)
+    # The anchor the Phase-4 scenario grid is centred on (ADR-0062). FCF first because a valuation
+    # discounts cash, not profit; `value_company` falls back to `pat_cagr` when the cash-flow series
+    # does not reach the window's start, and says which anchor it used.
+    if (got := b.need("fcf_cagr", (FCF, f0), (FCF, fN))) is not None:
+        b.add("fcf_cagr", _cagr(got[0].value, got[1].value, span),
+              f"({FCF} {fN} / {FCF} {f0})^(1/{span}) - 1", got)
     if (got := b.need("opm_latest", (OPERATING_PROFIT, fN), (SALES, fN))) is not None:
         b.add("opm_latest", got[0].value / got[1].value if got[1].value else None,
               f"{OPERATING_PROFIT} {fN} / {SALES} {fN}", got)
@@ -522,10 +575,10 @@ def derive_metrics(
     if (got := b.need("accrual_ratio_latest", (PAT, fN), (CFO, fN),
                       (TOTAL_ASSETS, fN),
                       (TOTAL_ASSETS, with_core[-2] if len(with_core) >= 2 else fN))) is not None:
-        avg_assets = (got[2].value + got[3].value) / 2.0
-        b.add("accrual_ratio_latest",
-              quality.accrual_ratio(got[0].value, got[1].value, avg_assets) if avg_assets > 0 else None,
-              f"(PAT - CFO)({fN}) / avg Total Assets", got)
+        b.add_rate_over_balance(
+            "accrual_ratio_latest", got[0].value - got[1].value,
+            opening=got[3].value, closing=got[2].value,
+            formula=f"(PAT - CFO)({fN}) / avg Total Assets", inputs=got)
 
     # ---- other income / interest ----------------------------------------------------------------
     # Raw ratios only: the threshold comparison lives in `checks.py` so a single check owns a single
@@ -739,10 +792,11 @@ def derive_metrics(
     prior = with_core[-2] if len(with_core) >= 2 else fN
     if (got := b.need("cash_yield_latest", (INTEREST_INCOME, fN), (CASH, fN), (OTHER_BANK, fN),
                       (CASH, prior), (OTHER_BANK, prior))) is not None:
-        income = abs(got[0].value)
-        average = (got[1].value + got[2].value + got[3].value + got[4].value) / 2.0
-        b.add("cash_yield_latest", income / average if average > 0 else None,
-              f"|Interest Income {fN}| / average (Cash + Other Bank Balances), {prior}-{fN}", got)
+        b.add_rate_over_balance(
+            "cash_yield_latest", abs(got[0].value),
+            opening=got[3].value + got[4].value, closing=got[1].value + got[2].value,
+            formula=f"|Interest Income {fN}| / average (Cash + Other Bank Balances), {prior}-{fN}",
+            inputs=got)
     if (got := b.need("net_cash_position", (CASH, fN), (OTHER_BANK, fN), (BORROWINGS, fN))) is not None:
         b.add("net_cash_position", got[0].value + got[1].value - got[2].value,
               f"Cash + Other Bank Balances - Borrowings, {fN}", got)
@@ -753,9 +807,10 @@ def derive_metrics(
     # implausible outside 2-30% and refuses to narrate it.
     if (got := b.need("cost_of_debt_average", (INTEREST, fN), (BORROWINGS, fN),
                       (BORROWINGS, prior))) is not None:
-        average_debt = (got[1].value + got[2].value) / 2.0
-        b.add("cost_of_debt_average", got[0].value / average_debt if average_debt > 0 else None,
-              f"Interest {fN} / average Borrowings, {prior}-{fN}", got)
+        b.add_rate_over_balance(
+            "cost_of_debt_average", got[0].value,
+            opening=got[2].value, closing=got[1].value,
+            formula=f"Interest {fN} / average Borrowings, {prior}-{fN}", inputs=got)
 
     incremental = _incremental_roic(facts, with_core)
     if incremental is None:

@@ -153,13 +153,22 @@ NUMERIC_FIELD_SOURCES: Mapping[str, str | None] = {
     # computation exists the score stays null and the judgment lives in prose, where it is validated.
     "smart_money_score": None,
     "days_to_exit_at_20pct_adv": None,
-    # Phase-4 judgment tier — none of these may carry an LLM-authored number. When Phase 4 is wired,
-    # each moves to a real compute source (`reverse_dcf`, `scenarios`) as part of that wiring, not before.
-    "reverse_dcf_implied_growth": None,
-    "base_case_value_per_share": None,
-    "base_rate_of_failure": None,
+    # Phase-4 judgment tier (ADR-0062). The two valuation scalars now have real compute sources: the
+    # valuation layer registers them as derivations on the run's DerivedSet, so the same Law-1 check
+    # that polices `incremental_roic` polices these.
+    "reverse_dcf_implied_growth": "reverse_dcf_implied_growth",
+    "base_case_value_per_share": "base_case_value_per_share",
+    # STILL NULL-ONLY, EACH FOR ITS OWN REASON — not because Phase 4 is unbuilt.
+    #   `expectancy` and `position_size_pct` are functions of a JUDGMENT (how likely is the bull
+    #   case?) and of computed multiples. An LLM may author neither, so the agent supplies the
+    #   probabilities and the pipeline computes these from them (`scenarios.expectancy_from`). The
+    #   agent must return null; a value here means it did the arithmetic itself.
     "position_size_pct": None,
     "expectancy": None,
+    #   `base_rate_of_failure` is an empirical frequency ("how often has a business like this failed?")
+    #   and this firm has no dataset behind it yet. Until one exists the honest answer is null and the
+    #   argument lives in prose, where the citation gate can hold it to something real.
+    "base_rate_of_failure": None,
     # Phase-5 post_mortem — produced by core/monitoring (resolver, Brier), never by the agent.
     "resolved_predictions": None,
     "brier": None,
@@ -174,11 +183,19 @@ JUDGMENT_NUMERIC_FIELDS: frozenset[str] = frozenset({
     "Confidence.evidence_count",   # a count of the citations backing the claim
     "SectorScore.tailwind_score",  # bounded [-1, 1] sector judgment by design
     "SectorScore.horizon_years",   # the judgment's stated horizon
-    # Phase-4 scenario lines: probability is judgment; return_multiple must be re-visited when the
-    # valuation wiring lands — it should tie to core/compute/scenarios.py, and this entry removed then.
+    # A scenario's PROBABILITY is the analyst's judgment and belongs here. Its return multiple does
+    # not — see NESTED_COMPUTED_FIELDS.
     "ScenarioLine.probability",
-    "ScenarioLine.return_multiple",
 })
+
+#: Nested numeric fields that are neither free judgment nor a top-level metric: the compute layer
+#: produces them per item, and the agent's copy is checked against it item by item (ADR-0062).
+#:
+#: `ScenarioLine.return_multiple` sat in the judgment allowlist while no valuation existed to check it
+#: against, with a note saying to revisit this the day one did. This is that day. Allowlisting it now
+#: would let an agent write "bull: 4.2x" beside a computed 0.22x and pass every gate — the single
+#: easiest way to launder an invented number through this system.
+NESTED_COMPUTED_FIELDS: frozenset[str] = frozenset({"ScenarioLine.return_multiple"})
 
 _ARITHMETIC_REL_TOL = 0.01   # 1%: an agent restating a computed ratio may round it, not change it
 
@@ -390,6 +407,39 @@ def _numeric_discipline(output: AgentOutputBase, derived: DerivedSet) -> list[st
                 f"field '{field_name}' = {quoted} but {metric} computes to {computed} "
                 f"(difference {check.abs_diff:.6g})"
             )
+    return problems
+
+
+def _scenario_discipline(
+    output: AgentOutputBase, priced: Mapping[str, float]
+) -> list[str]:
+    """Every scenario line an agent returned must match the compute layer's priced grid (ADR-0062).
+
+    Checked by NAME, so an agent cannot quietly relabel which column is "base" — the label an
+    optimistic reading reassigns first. A line naming a scenario the compute layer never priced is a
+    fabrication, and is reported as one rather than ignored.
+    """
+    lines = getattr(output, "scenarios", None)
+    if not lines:
+        return []
+    problems: list[str] = []
+    for line in lines:
+        name = getattr(line, "name", "")
+        quoted = getattr(line, "return_multiple", None)
+        if quoted is None:
+            continue
+        if name not in priced:
+            problems.append(
+                f"scenario '{name}' has a return multiple of {quoted} but the compute layer never "
+                f"priced a scenario by that name (priced: {sorted(priced)}) — Law 1: agents never "
+                "author numbers")
+            continue
+        check = arithmetic.check(f"scenario[{name}].return_multiple", float(quoted),
+                                 float(priced[name]), rel_tol=_ARITHMETIC_REL_TOL)
+        if not check.ok:
+            problems.append(
+                f"scenario '{name}' return multiple {quoted} but the DCF prices it at "
+                f"{priced[name]:.4f} (difference {check.abs_diff:.6g})")
     return problems
 
 
