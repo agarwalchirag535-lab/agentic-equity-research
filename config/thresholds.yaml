@@ -207,4 +207,7 @@ screen:
   mcap_min_cr: 300
   mcap_max_cr: 30000
   min_history_years: 5          # below this → INSUFFICIENT_HISTORY, separate pipeline
+  # ADR-0008 routing floor: at or above this (but under min_history_years) a company is EMERGING —
+  # a real, lighter track — and below it QUARANTINE (revisit as filings accrue). Routed, never dropped.
+  emerging_min_years: 2
   adv_floor_cr: 1.0             # min average daily traded value (₹cr) — liquidity floor

@@ -850,6 +850,37 @@ def resolve_cmd(
                    f"P={r.prediction.probability:.2f} and broke — record why in memory/lessons.jsonl")
 
 
+@app.command("sweep")
+def sweep_cmd(
+    ticker: list[str] = typer.Option(..., "--ticker", help="repeatable; the companies to sweep"),
+    as_of: str = typer.Option(None, "--as-of", help="ISO date; default today"),
+    db: str = typer.Option("data/firm.db", "--db"),
+    out: str = typer.Option("reports/_sweeps", "--out"),
+    write: bool = typer.Option(True, "--write/--no-write"),
+) -> None:
+    """Run many companies through the deterministic layer and write one funnel report (SPEC §8).
+
+    The discovery half of the firm: no agent runs, no LLM is called, and the output says who earns a
+    deep dive, who is routed by history (ADR-0008 — routed, never dropped), and who the funnel excluded
+    WITH the reason (the register discipline, ADR-0061). It never decides report eligibility: any
+    company here can still be deep-dived by name (ADR-0064).
+    """
+    from pathlib import Path
+
+    from firm.core.screen.sweep import render_sweep, sweep_company
+
+    run_date = date.fromisoformat(as_of) if as_of else date.today()
+    store = FactStore(db)
+    rows = [sweep_company(store, t.strip().upper(), run_date) for t in ticker]
+    rendered = render_sweep(rows, run_date)
+    typer.echo(rendered)
+    if write:
+        target = Path(out) / f"{run_date.isoformat()}.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(rendered)
+        typer.echo(f"sweep written: {target}")
+
+
 @app.command("dashboard")
 def dashboard_cmd(
     memory: str = typer.Option("memory", "--memory"),

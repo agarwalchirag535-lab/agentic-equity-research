@@ -3363,3 +3363,36 @@ honest treatment of a record written before the question was being asked.
 is git-trackable files), so `git diff memory/calibration.md` *is* the calibration trend. Run against
 the real ledger it shows the firm's entire measurable history: Brier 0.2244 over three PC Jeweller
 predictions, every other panel honestly waiting.
+
+### ADR-0085 — `firm sweep`: discovery over the deterministic layer, with nobody silently dropped
+
+**Date** 2026-09-01 · **Status** accepted · **The owner's 2026-08-01 goal item** · **Files**
+`core/screen/sweep.py` (new), `core/screen/pipeline.py` (finally wired), `cli.py`,
+`config/thresholds.yaml` (`screen.emerging_min_years`), `tests/screen/test_sweep.py` (new) ·
+**1049 tests, compute 100%**
+
+**What it is.** Many companies through the pieces a deep dive already runs — facts, derived metrics,
+model detection, the check playbook, the forensic screen, the feasibility gate, the priced view,
+Gates A–E — and one funnel report out: who earns a deep dive, who is routed by history, who was
+excluded and exactly why, who is not yet ingested. **No agent runs and no LLM is called**, which is
+what makes discovery affordable at hundreds of companies (SPEC §8): the sweep decides where the
+expensive attention goes, and the deterministic layer is the only tier cheap enough to decide that.
+
+**The line it does not cross.** In a sweep the gates genuinely decide who gets deep attention — that is
+their purpose and their economics — but they never decide who appears in the output, and they never
+decide report eligibility (ADR-0064): any company in the sweep can still be deep-dived by name, and the
+page says so. Every company that entered appears — survivor, routed, excluded-with-reason, or
+not-yet-ingested — the register's exclusion discipline (ADR-0061) applied to discovery, with a test
+asserting no row can vanish.
+
+**Two things the first live run taught, both kept.** First: the render cited **Gate D** in ALKYLAMINE's
+exclusion — but only Gates A and B decide funnel survival, and a feasibility miss is a finding about
+the return target, not why attention was withheld. Citing it as an exclusion reason teaches the reader
+the wrong lesson about the company; the render now cites deciding gates only. Second: `route_by_history`
+(ADR-0008, Phase 0) had **no caller until now** — the fourth orphan wired to its purpose this session —
+so a two-year-old company goes to the EMERGING track instead of being measured against ten-year floors,
+and its routing floor moved from an inline default into config where every number lives.
+
+**UNAVAILABLE is not PASS, at funnel level either.** A company whose liquidity could not be established
+does not survive the funnel — spending the expensive tier there is how a funnel stops being one — but
+it is listed with that exact reason, not dropped.
