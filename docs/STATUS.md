@@ -36,7 +36,7 @@ never "buy this".
 | 5 — memory loop | ⚠️ half-built (see §3) |
 | 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0061)**: 8 cases, 7 in band + CAP-EPC recorded, positives **2/2**; register spans 7 event kinds; awaiting human sign-off |
 
-**Tests:** 827 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 893 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -912,6 +912,33 @@ Two invariants are pinned by tests because a careless later change would break t
 launders a red flag** (every rung reassembles from the same deterministic checklist, so FLAGs, the
 anti-thesis and the replication notes survive at every level), and **the verdict never improves**.
 877 tests, compute still 100%.
+
+## 6q. The mandate lands in code — four commits (2026-09-01, ADR-0066/0067/0068)
+
+ADR-0063/0064 broadened the mandate on paper; these closed the gap between the paper and the code. In
+order, and each with the flag it retires:
+
+* **Questions for management (ADR-0066)** — a first-class report field, computed on EVERY report from
+  the checks that flagged, the checks the filings could not feed, the high-severity line-item questions
+  the sources did not answer, and the mandated disclosures the notes walker could not find. Each entry
+  carries why it matters, what would answer it, and the check that raised it. Deterministic: an agent
+  can neither add a question nor drop one. Only the COMPANY's gaps go to the company (ADR-0051).
+* **The four-outcome headline (ADR-0067)** — `Outcome` = PASS / MIXED / FAIL / INSUFFICIENT_EVIDENCE,
+  computed from the verdict so the two cannot disagree. `POSITIVE_VERDICTS` had one member, so a clean,
+  fairly-priced business that could not compound 5x published as a negative alongside a forensic
+  caution. MIXED is now first-class. `Verdict` is unchanged and still load-bearing.
+* **Return potential as a section (ADR-0068)** — `render.py` had NO feasibility output at all: SPEC's
+  "intellectual centre of the system" reached the reader only through a verdict rationale. The section
+  now prints the target, the earnings CAGR it demands, ROIC, the required reinvestment and the gate
+  verdict — and prints them even when the gate could not run, naming ROIC as the blocking input. The
+  target is a per-run parameter (`--target-multiple` / `--target-years`), defaulting to 5x/7y.
+
+**Known, deliberately unpaid:** `make lint` is red on trunk with ~180 ruff findings, nearly all
+version drift (UP035/ISC004/RUF022 — rules that postdate the code). The non-style findings among them
+were fixed (`899ebde`: two undefined names in annotations, a dead assignment, stale suppressions); the
+mechanical 70-file reformat is left for the owner to schedule. Also unpaid by choice:
+`QUALITY_WRONG_PRICE` is named for a price test it does not perform (it fires on the feasibility gate)
+— worth renaming when the ladder is next opened for Phase 4, not before.
 
 ## 7. Suggested next step
 
