@@ -16,8 +16,9 @@ Everything is injectable so the logic is 100% testable offline with zero PDF/OCR
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -94,8 +95,8 @@ def _pages_from_text_layer(pdf_bytes: bytes) -> list[str]:  # pragma: no cover -
         plain = page.extract_text() or ""
         try:
             laid_out = _normalise_layout(page.extract_text(extraction_mode="layout") or "")
-        except Exception:  # noqa: BLE001 - a page pypdf cannot lay out is still worth reading plainly
-            laid_out = ""
+        except Exception:  # noqa: BLE001 — pypdf's layout mode raises library-internal types on odd
+            laid_out = ""  # geometry; falling back to plain text loses alignment, not content
         # pypdf warns "Rotated text discovered. Output will be incomplete." and DROPS the rotated block
         # rather than failing, so a sideways-printed table (these filings set the Schedule III ageing
         # tables that way) comes back short. Losing content is worse than losing column alignment, so the

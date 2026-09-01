@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Sequence
 from datetime import date
-from typing import Sequence
 
 from firm.adapters.base.interfaces import FinancialRow
 from firm.core.facts.store import Document, FactStore

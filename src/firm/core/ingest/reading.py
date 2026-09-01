@@ -1009,7 +1009,8 @@ def _pinned_pdf(
     elif fetcher is not None:
         try:
             payload = fetcher(str(entry["source_url"]))
-        except Exception as err:  # noqa: BLE001 - the reason travels to the result, never swallowed
+        except Exception as err:  # noqa: BLE001 — injected fetcher; the error is recorded and the
+            #                       manifest row is reported failed rather than the run dying
             return None, f"fetch failed: {err}"
     else:
         return None, f"no PDF at {path} and no fetcher supplied"

@@ -26,10 +26,11 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 import yaml
 
@@ -268,8 +269,8 @@ def _check_against_register(cases: Sequence[GoldenCase], register: Path) -> None
     for case in cases:
         event = case.label_event or {}
         source = str(event.get("source", ""))
-        if case.label in POSITIVE_LABELS and event.get("kind") in _REGISTER_KINDS:
-            if source not in known:
+        if (case.label in POSITIVE_LABELS and event.get("kind") in _REGISTER_KINDS
+                and source not in known):
                 raise GoldenCaseError(
                     f"{case.case_id}: label_event.source is not in {register.name} — a citation that the "
                     "register never produced was not selected from it, whatever the case says")

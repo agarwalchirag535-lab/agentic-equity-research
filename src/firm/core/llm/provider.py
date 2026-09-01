@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Protocol
+from typing import Protocol
 
 from firm.core.llm.cache import DiskCache, make_key
 from firm.core.orchestrator.budget import BudgetExceeded
@@ -110,8 +111,8 @@ def _default_cli_runner(cmd: list[str], stdin_text: str, timeout: float) -> str:
         raise RuntimeError(
             f"`{cmd[0]}` CLI not found on PATH — run inside Claude Code, or install the CLI."
         )
-    proc = subprocess.run(  # noqa: S603 (fixed argv, no shell)
-        cmd, input=stdin_text, capture_output=True, text=True, timeout=timeout
+    proc = subprocess.run(          # check=False: the return code is inspected just below,
+        cmd, input=stdin_text, capture_output=True, text=True, timeout=timeout, check=False
     )
     if proc.returncode != 0:
         raise RuntimeError(f"{cmd[0]} failed (exit {proc.returncode}): {proc.stderr[:400]}")

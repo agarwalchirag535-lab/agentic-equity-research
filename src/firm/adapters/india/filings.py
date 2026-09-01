@@ -39,7 +39,7 @@ def _ssl_context() -> ssl.SSLContext:
 
 def fetch_pdf(url: str, timeout: float = 90.0) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": _UA})
-    with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
         return resp.read()
 
 

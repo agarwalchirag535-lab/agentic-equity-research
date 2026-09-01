@@ -25,8 +25,8 @@ one graph without collision, and so a claim in a published report traces back to
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
 
 from firm.schemas._base import AgentOutputBase, Claim, Grade
 from firm.schemas.evidence import (

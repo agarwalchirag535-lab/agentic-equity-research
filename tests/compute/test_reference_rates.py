@@ -79,7 +79,6 @@ def test_the_shipped_config_is_readable_and_declares_its_own_gap():
 def test_the_cash_yield_check_reports_which_rate_its_floor_came_from():
     """A reader cannot judge a cash-yield flag without knowing which year's rate it was measured
     against, so the basis is part of the check's detail rather than a footnote in config."""
-    from firm.core.compute.quality import ForensicMetrics  # noqa: F401  (import cost only)
 
     rate = risk_free_for("FY21", reference_rates())
     assert rate.basis                       # non-empty, and it is what checks.py appends to `detail`

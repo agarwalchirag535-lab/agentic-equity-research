@@ -23,11 +23,12 @@ the FY17-FY26 receivables chain reconciles exactly at every join.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from itertools import pairwise
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.adapters.base.extract import extract_document
 from firm.core.facts.store import FactStore
@@ -208,7 +209,7 @@ def crosscheck_overlaps(
     # Consecutive filings by period: filing N's comparative column covers filing N-1's reported year.
     ordered = sorted(results, key=lambda r: r.period)
     overlaps: list[Overlap] = []
-    for prior, newer in zip(ordered, ordered[1:]):
+    for prior, newer in pairwise(ordered):
         for metric in metrics:
             # doc_id is f"AR-{period}-{file}", so the filename is everything after the second hyphen.
             claims = {

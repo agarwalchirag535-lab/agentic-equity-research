@@ -15,8 +15,8 @@ judging auditor language is narrative work that belongs to the forensic agent (L
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Mapping, Sequence
 
 # "Note 29: Contingent Liabilities" / "NOTE 12 - Related Party" / "29. CONTINGENT LIABILITIES"
 #: Three heading forms, because Indian filings use all three and the first two alone missed almost every

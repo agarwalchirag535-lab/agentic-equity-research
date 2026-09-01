@@ -6,7 +6,7 @@ return on the next rupee of capital, which matters more than the average.
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def _nonzero(value: float, name: str) -> float:

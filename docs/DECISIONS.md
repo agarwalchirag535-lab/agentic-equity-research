@@ -3396,3 +3396,35 @@ and its routing floor moved from an inline default into config where every numbe
 **UNAVAILABLE is not PASS, at funnel level either.** A company whose liquidity could not be established
 does not survive the funnel — spending the expensive tier there is how a funnel stops being one — but
 it is listed with that exact reason, not dropped.
+
+### ADR-0086 — `make lint` goes green, and the rule set stops being implicit
+
+**Date** 2026-09-01 · **Status** accepted · **Files** ~60 across `src/` and `tests/`,
+`pyproject.toml` · **1049 tests, compute 100%**
+
+**How a repo wakes up with 180 findings.** `pyproject.toml` configured ruff's line length and target
+and nothing else, so the lint gate meant "whatever this ruff version defaults to" — and ruff 0.16's
+defaults are broader than the version the code was written under. `make lint` had been red for an
+unknown time; the four findings that were real bugs (two undefined names, a dead assignment, a stale
+suppression) were fixed the moment they were found (`899ebde`), and the ~170 style findings were
+deliberately left rather than buried inside feature commits. This is that cleanup, as one mechanical,
+verifiable commit.
+
+**What was applied mechanically:** import modernisation (UP035/UP037), implicit-concatenation
+parenthesisation (ISC004 — parentheses only, no string's content changed), `__all__` sorting, stale
+`noqa` removal, `dict()`-literal rewrites, unused imports. Tests were run after every batch.
+
+**What was fixed by hand, because each needed a decision:** `__enter__` returns `Self`; successive-pair
+loops use `pairwise`; two unused unpacked names underscored; a nested condition collapsed; and
+`reserve_suppression`'s tail rewritten to name its concept — `return not stress_relieved` — rather than
+compressing two forensic guards into a negation nobody can read.
+
+**What was ignored, each with its argument written where it binds:** `DTZ011` repo-wide — the CLI's
+"as of today" defaults mean the operator's local date, and point-in-time discipline is enforced by the
+fact store's `published_at` filter (Law 3), never by the clock's timezone. `B008` for `cli.py` only —
+`typer.Option(...)` in parameter defaults is the framework's documented API, not a mutable-default bug.
+The three broad `except Exception` sites keep targeted `noqa`s with reasons: each wraps an *injected*
+fetcher/extractor where one dead document must not kill a backfill, and each records the failure.
+
+**The policy is now explicit.** `[tool.ruff.lint]` pins what the gate means, so the next ruff upgrade
+changes findings by decision rather than by surprise.

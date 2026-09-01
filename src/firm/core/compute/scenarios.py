@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Mapping, Sequence
 
 from firm.core.compute.dcf import dcf_enterprise_value, equity_value, value_per_share
 

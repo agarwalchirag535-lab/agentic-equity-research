@@ -19,8 +19,9 @@ Bulk backfill must be polite: throttle, cache to bronze (immutable, SHA-256), re
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Sequence
 from datetime import date
-from typing import Any, Callable, Sequence
+from typing import Any
 
 from firm.adapters.base.interfaces import Filing
 
@@ -112,7 +113,7 @@ def _default_fetcher(url: str) -> str:  # pragma: no cover - thin network wrappe
     except ImportError:
         ctx = ssl.create_default_context()
     req = urllib.request.Request(url, headers=_HEADERS)
-    with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
         return resp.read().decode("utf-8")
 
 

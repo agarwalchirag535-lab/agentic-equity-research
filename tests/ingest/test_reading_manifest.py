@@ -77,7 +77,7 @@ def test_law_3_an_unpublished_filing_is_not_even_opened(tmp_path):
     bronze, readings = _setup(tmp_path)
     store = FactStore(":memory:")
 
-    def _explode(payload):  # noqa: ARG001 - proof the PDF was never extracted
+    def _explode(payload):
         raise AssertionError("a filing after as_of must not be opened")
 
     (result,) = ingest_readings_manifest(

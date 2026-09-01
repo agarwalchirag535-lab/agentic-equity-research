@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 
 def one_way(func: Callable[[float], float], values: Sequence[float]) -> list[tuple[float, float]]:

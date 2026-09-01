@@ -121,18 +121,18 @@ def test_a_row_absent_from_the_filing_is_simply_not_stored(store):
 #: as a backtick and the Schedule III note-reference column. The totals are what make it recognisable as
 #: the balance sheet rather than a note (`audited_statement_pages`).
 LAKH_AR_PAGES = (
-    "Balance Sheet as at March 31, 2026\n"
+    ("Balance Sheet as at March 31, 2026\n"
     "` In Lakhs\n"
     "(ii)  Trade Receivables 11  23,049.50  23,064.82\n"
     "(iii) Cash and Cash Equivalents 12  9,415.34  4,877.87\n"
     "Total Assets  2,10,000.00  1,95,000.00\n"
-    "Total Equity and Liabilities  2,10,000.00  1,95,000.00\n",
+    "Total Equity and Liabilities  2,10,000.00  1,95,000.00\n"),
 )
 UNDECLARED_AR_PAGES = (
-    "Balance Sheet as at March 31, 2026\n"
+    ("Balance Sheet as at March 31, 2026\n"
     "(ii)  Trade Receivables 11  23,049.50  23,064.82\n"
     "Total Assets  2,10,000.00  1,95,000.00\n"
-    "Total Equity and Liabilities  2,10,000.00  1,95,000.00\n",
+    "Total Equity and Liabilities  2,10,000.00  1,95,000.00\n"),
 )
 
 
@@ -231,8 +231,8 @@ def test_statement_scoping_rejects_a_cashflow_movement_line(store):
     from firm.adapters.base.tables import find_statement_row
 
     cashflow_only = (
-        "AUDITED STATEMENT OF CASH FLOWS FOR THE YEAR ENDED\n"
+        ("AUDITED STATEMENT OF CASH FLOWS FOR THE YEAR ENDED\n"
         "` In Lakhs\n"
-        "(Increase) / Decrease in Trade Receivables  (6,376.60)  1,234.00\n",
+        "(Increase) / Decrease in Trade Receivables  (6,376.60)  1,234.00\n"),
     )
     assert find_statement_row(cashflow_only, "balance_sheet", ("trade receivable",)) is None

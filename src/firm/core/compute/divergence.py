@@ -14,7 +14,7 @@ The compute layer keeps zero third-party runtime deps so it stays trivially test
 from __future__ import annotations
 
 import math
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def pct_change(series: Sequence[float]) -> float:

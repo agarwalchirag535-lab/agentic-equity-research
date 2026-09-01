@@ -19,10 +19,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Callable, Sequence
 
 from firm.adapters.base.interfaces import Filing
 
@@ -61,7 +61,7 @@ class BronzeRecord:
         }, sort_keys=True)
 
     @staticmethod
-    def from_json(line: str) -> "BronzeRecord":
+    def from_json(line: str) -> BronzeRecord:
         d = json.loads(line)
         return BronzeRecord(
             doc_id=d["doc_id"], ticker=d["ticker"], title=d["title"], source_url=d["source_url"],
@@ -169,7 +169,8 @@ def backfill_filings(
             throttle()
         try:
             payload = fetcher(filing.url)
-        except Exception as exc:  # noqa: BLE001 - a source failure must not abort the whole backfill
+        except Exception as exc:  # noqa: BLE001 — the fetcher is injected; one dead URL must not kill
+            #                       a backfill, and the failure is recorded on the result just below
             result.failed.append((filing.doc_id, str(exc)))
             continue
         fetched += 1

@@ -68,9 +68,9 @@ def render_markdown(report: ResearchReport) -> str:
         "",
         f"**Outcome: `{r.outcome.value}` · Verdict: `{r.verdict.value}` — {headline}**",
         "",
-        f"_As-of {r.as_of.isoformat()} · run `{r.run_id}` · confidence "
+        (f"_As-of {r.as_of.isoformat()} · run `{r.run_id}` · confidence "
         f"{r.confidence.value:.2f} (from {r.confidence.evidence_count} facts, lowest grade "
-        f"{r.confidence.lowest_grade_relied_on.value}) · {r.confidence.rationale}_",
+        f"{r.confidence.lowest_grade_relied_on.value}) · {r.confidence.rationale}_"),
         "",
         f"> {r.disclaimer}",
         "",
@@ -153,22 +153,22 @@ def render_markdown(report: ResearchReport) -> str:
     out += ["## Forensic review", ""]
     cl = r.checklist
     if cl.business_models:
-        out += [f"_Business model(s) detected: **{', '.join(cl.business_models)}** — checks selected by "
-                f"playbook (ADR-0017)._", ""]
+        out += [(f"_Business model(s) detected: **{', '.join(cl.business_models)}** — checks selected by "
+                f"playbook (ADR-0017)._"), ""]
     out += [f"**Note coverage: {cl.note_coverage:.0%}**"
             + (f" · undispositioned: {cl.notes_undispositioned}" if cl.notes_undispositioned else ""),
             ""]
     if cl.notes_unenumerated:
         # Coverage is a share of the notes we FOUND. A hole in the filed numbering means a note exists
         # that the parser never saw, and saying 100% without saying this would overstate the reading.
-        out += [f"**Notes the parser could not locate: {cl.notes_unenumerated}** — numbered by the "
+        out += [(f"**Notes the parser could not locate: {cl.notes_unenumerated}** — numbered by the "
                 f"company and absent from our enumeration, so the coverage figure above is a share of "
                 f"the notes we found, not of the notes that exist. This is a gap in our reading, not in "
-                f"the company's disclosure.", ""]
+                f"the company's disclosure."), ""]
     if cl.records:
         out += ["### Verified-clean checklist", "",
-                "_Every check that ran, passes included — a clean verdict with an invisible process is "
-                "worth nothing._", "",
+                ("_Every check that ran, passes included — a clean verdict with an invisible process is "
+                "worth nothing._"), "",
                 "| check | outcome | detail | facts |", "|---|---|---|---|"]
         for rec in cl.records:
             facts = ", ".join(f"`[fact:{f}]`" for f in rec.fact_ids) or "—"
@@ -176,22 +176,22 @@ def render_markdown(report: ResearchReport) -> str:
             out.append(f"| `{rec.name}` | {_OUTCOME_MARK[rec.outcome]} | {detail} | {facts} |")
         out.append("")
     if cl.disclosure_gaps:
-        out += [f"**Disclosure gaps** (mandated but not found — a signal, not a blank): "
-                f"{', '.join(cl.disclosure_gaps)}", ""]
+        out += [(f"**Disclosure gaps** (mandated but not found — a signal, not a blank): "
+                f"{', '.join(cl.disclosure_gaps)}"), ""]
     if r.forensic_narrative:
         out += [r.forensic_narrative, ""]
 
     if r.restatements:
         out += ["### Restatement log — what later filings changed", "",
-                "_Every figure a later filing revised, from the same deterministic overlap classifier "
+                ("_Every figure a later filing revised, from the same deterministic overlap classifier "
                 "that quarantines misreads. A restatement is a fact to explain, not an accusation — an "
                 "accounting-standard transition legitimately rewrites a year — but a company revising "
-                "its history is something a reader sees here in one place, or never._", "",
+                "its history is something a reader sees here in one place, or never._"), "",
                 "| metric | period | earlier filing said | later filing says | revised by |",
                 "|---|---|---|---|---|"]
         for line in r.restatements:
-            out += [f"| `{line.metric}` | {line.period} | {line.earlier_value:,.2f} | "
-                    f"{line.later_value:,.2f} | `{line.later_doc}` |"]
+            out += [(f"| `{line.metric}` | {line.period} | {line.earlier_value:,.2f} | "
+                    f"{line.later_value:,.2f} | `{line.later_doc}` |")]
         out += [""]
 
     # 4b. sector, macro and unit economics — comparative work, printed before the company-only sections

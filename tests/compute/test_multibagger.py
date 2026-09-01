@@ -15,7 +15,7 @@ from firm.core.compute.multibagger import (
     sustainable_growth,
 )
 
-GATE = dict(self_fund_ceiling=1.0, high_quality_ceiling=0.6)
+GATE = {"self_fund_ceiling": 1.0, "high_quality_ceiling": 0.6}
 
 
 # ---- required_earnings_cagr: reproduce the §6.2 table -------------------------------------------

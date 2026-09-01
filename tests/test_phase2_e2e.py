@@ -29,11 +29,9 @@ from firm.core.pipeline.deep_dive import AgentDisciplineError, authored_texts, r
 from firm.core.report.render import render_markdown
 from firm.core.validators import citation
 from firm.schemas.report import CheckOutcome, Verdict
-from tests.conftest import (  # noqa: F401 - imported for the builders, not the fixture
+from tests.conftest import (
     AS_OF,
-    CLEAN_AR_PAGES,
     FRAUD_AR_PAGES,
-    agent_answer,
     clean_answers,
     clean_series,
     filing_for,

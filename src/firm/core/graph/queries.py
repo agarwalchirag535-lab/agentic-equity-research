@@ -8,7 +8,7 @@ direction. All functions are pure and deterministic (Law 1).
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from firm.schemas.evidence import EvidenceGraph
 

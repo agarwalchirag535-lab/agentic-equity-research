@@ -12,7 +12,13 @@ from firm.adapters.base.interfaces import (
 )
 
 __all__ = [
-    "ingest_financials", "sha256",
-    "Filing", "FilingsSource", "FinancialRow", "FundamentalsSource",
-    "MarketDataSource", "PriceBar", "ShareholdingRow",
+    "Filing",
+    "FilingsSource",
+    "FinancialRow",
+    "FundamentalsSource",
+    "MarketDataSource",
+    "PriceBar",
+    "ShareholdingRow",
+    "ingest_financials",
+    "sha256",
 ]

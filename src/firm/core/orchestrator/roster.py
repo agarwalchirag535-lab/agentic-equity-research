@@ -24,9 +24,9 @@ Phase-3 run cannot quietly recruit the Phase-4 judgment tier because someone pas
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Sequence
 
 import yaml
 

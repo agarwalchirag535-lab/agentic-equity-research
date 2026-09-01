@@ -14,7 +14,6 @@ from firm.core.compute.scenarios import (
     value_scenario_grid,
 )
 
-
 # ---- the Phase-4 valuation grid (ADR-0062) -------------------------------------------------------
 
 def test_the_grid_is_anchored_to_the_company_s_own_realised_growth():

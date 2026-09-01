@@ -26,8 +26,9 @@ and both come out of the same deterministic machinery so optimism gets no easier
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date, timedelta
-from typing import Any, Mapping
+from typing import Any
 
 from firm.core.compute import periods
 from firm.core.compute.multibagger import FeasibilityResult

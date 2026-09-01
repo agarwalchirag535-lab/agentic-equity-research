@@ -33,17 +33,17 @@ def _crit(lb=False, metric="gross_margin"):
 
 
 def _positive_report(**kw):
-    defaults = dict(
-        ticker="ABC", company_name="ABC Chemicals Ltd", as_of=date(2026, 7, 30), run_id="run-1",
-        verdict=Verdict.COMPOUNDER, confidence=CONF,
-        agent_versions={"forensic_accountant": "1.0.0"},
-        executive_summary="Self-funds the growth its price implies.",
-        load_bearing_points=[ReportClaim(text="Incremental ROIC 24%", kind="observation",
+    defaults = {
+        "ticker": "ABC", "company_name": "ABC Chemicals Ltd", "as_of": date(2026, 7, 30), "run_id": "run-1",
+        "verdict": Verdict.COMPOUNDER, "confidence": CONF,
+        "agent_versions": {"forensic_accountant": "1.0.0"},
+        "executive_summary": "Self-funds the growth its price implies.",
+        "load_bearing_points": [ReportClaim(text="Incremental ROIC 24%", kind="observation",
                                          lowest_grade=Grade.A, citations=[CITE])],
-        business_model_plain="Sells amines to pharma customers.",
-        computed_facts={"roic": 0.24, "cumulative_cfo_pat": 1.15},
-        fact_citations={"roic": CITE},
-        checklist=VerifiedCleanChecklist(
+        "business_model_plain": "Sells amines to pharma customers.",
+        "computed_facts": {"roic": 0.24, "cumulative_cfo_pat": 1.15},
+        "fact_citations": {"roic": CITE},
+        "checklist": VerifiedCleanChecklist(
             business_models=["MANUFACTURER"],
             expected_checks=["cumulative_cfo_pat", "receivables_divergent", "gnpa_drift"],
             records=[
@@ -56,16 +56,16 @@ def _positive_report(**kw):
             note_coverage=1.0,
             disclosure_gaps=["title_deeds"],
         ),
-        forensic_narrative="Cash converts; the audited notes agree with the numbers.",
-        management_narrative="Promise-vs-delivery 8/10.",
-        valuation_narrative="Reverse DCF implies 18% FCF CAGR.",
-        thesis="Compounds if capacity fills at current spreads.",
-        anti_thesis="A spread collapse breaks it.",
-        kill_criteria=[_crit(True), _crit(metric="roic"), _crit(metric="revenue")],
-        open_questions=["Maintenance vs growth capex split?"],
-        unavailable_items=["Segment-level capex (not disclosed)"],
-        replication_notes=["Pull the FY26 AR from BSE and re-read note 29."],
-    )
+        "forensic_narrative": "Cash converts; the audited notes agree with the numbers.",
+        "management_narrative": "Promise-vs-delivery 8/10.",
+        "valuation_narrative": "Reverse DCF implies 18% FCF CAGR.",
+        "thesis": "Compounds if capacity fills at current spreads.",
+        "anti_thesis": "A spread collapse breaks it.",
+        "kill_criteria": [_crit(True), _crit(metric="roic"), _crit(metric="revenue")],
+        "open_questions": ["Maintenance vs growth capex split?"],
+        "unavailable_items": ["Segment-level capex (not disclosed)"],
+        "replication_notes": ["Pull the FY26 AR from BSE and re-read note 29."],
+    }
     defaults.update(kw)
     return ResearchReport(**defaults)
 

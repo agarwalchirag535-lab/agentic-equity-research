@@ -22,8 +22,8 @@ Three deliberate design points, each of which was a defect before it was decided
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 # A numeric claim: an integer/decimal, optionally signed, optionally with thousands separators or %.
 # The lookbehind excludes only a preceding digit or dot, so a decimal is never split — but a number

@@ -25,9 +25,9 @@ an agent can cite them.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Callable, Mapping, Sequence
 
 from firm.core.compute import periods as P
 from firm.core.compute import ratios
@@ -316,8 +316,8 @@ def load_peer_comparisons(
         peer_facts = load_company_facts(store, ticker, as_of, start_year=start_year)
         if not peer_facts.periods:
             out.append(PeerComparison(subject, ticker, (), (
-                f"no facts for {ticker} published on or before {as_of.isoformat()}, so no measure "
-                f"could be compared",
+                (f"no facts for {ticker} published on or before {as_of.isoformat()}, so no measure "
+                f"could be compared"),
             )))
             continue
         out.append(compare(subject_facts, peer_facts))

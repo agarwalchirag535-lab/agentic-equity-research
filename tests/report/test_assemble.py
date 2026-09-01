@@ -7,6 +7,8 @@ verdict must follow, and the ordering between them must not drift.
 
 from __future__ import annotations
 
+import pytest
+
 from firm.core.compute.models import BusinessModel
 from firm.core.compute.multibagger import GateVerdict, feasibility_gate
 from firm.core.compute.quality import (
@@ -30,8 +32,6 @@ from firm.core.report.assemble import (
 )
 from firm.schemas._base import Citation, Grade
 from firm.schemas.evidence import Evidence, EvidenceGraph, SourceClass
-import pytest
-
 from firm.schemas.report import CheckOutcome, CheckRecord, GapKind, Verdict
 from tests.conftest import AS_OF, clean_series, seed_store
 

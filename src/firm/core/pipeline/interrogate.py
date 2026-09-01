@@ -30,9 +30,10 @@ policy numbers in Python), and nothing here calls an LLM or the network.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.core.pipeline.derive import DerivedSet
 from firm.schemas._base import Citation

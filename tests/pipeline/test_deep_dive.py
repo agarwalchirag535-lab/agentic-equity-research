@@ -163,8 +163,8 @@ def test_every_agent_that_narrates_reaches_a_report_section(store):
     unwired — giving it one is part of wiring it, and raising `MAX_PHASE` here is how that gets caught.
     """
     MAX_PHASE = 3
-    from firm.core.pipeline.deep_dive import _narration
     from firm.core.orchestrator.roster import load_roster
+    from firm.core.pipeline.deep_dive import _narration
     from firm.schemas.agents import AGENT_OUTPUTS
 
     _, derived = _derived(store, "ACME")
@@ -182,10 +182,7 @@ def test_every_agent_that_narrates_reaches_a_report_section(store):
     narration = _narration(
         outputs, ForensicScreenResult(ForensicVerdict.PASS, False, []),
         CheckEvaluation((), ForensicMetrics(), ()), derived, None)
-    rendered = " ".join((
-        narration.executive_summary, narration.business_model_plain, narration.forensic_narrative,
-        narration.sector_narrative, narration.management_narrative, narration.thesis,
-        narration.anti_thesis))
+    rendered = f"{narration.executive_summary} {narration.business_model_plain} {narration.forensic_narrative} {narration.sector_narrative} {narration.management_narrative} {narration.thesis} {narration.anti_thesis}"
 
     unrendered = [name for name in outputs if f"NARRATIVE-{name}" not in rendered]
     assert not unrendered, (

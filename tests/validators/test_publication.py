@@ -38,30 +38,30 @@ def _criterion(load_bearing=False, metric="gross_margin"):
 
 
 def _clean_checklist(**kw):
-    defaults = dict(
-        business_models=["MANUFACTURER"],
-        expected_checks=["cumulative_cfo_pat", "receivables_divergent"],
-        records=[
+    defaults = {
+        "business_models": ["MANUFACTURER"],
+        "expected_checks": ["cumulative_cfo_pat", "receivables_divergent"],
+        "records": [
             CheckRecord(name="cumulative_cfo_pat", outcome=CheckOutcome.PASS, detail="1.15",
                         fact_ids=["f1"]),
             CheckRecord(name="receivables_divergent", outcome=CheckOutcome.PASS, detail="gap 0.02",
                         fact_ids=["f2"]),
         ],
-        note_coverage=1.0,
-    )
+        "note_coverage": 1.0,
+    }
     defaults.update(kw)
     return VerifiedCleanChecklist(**defaults)
 
 
 def _report(**kw):
-    defaults = dict(
-        ticker="ABC", company_name="ABC Ltd", as_of=date(2026, 7, 30), run_id="r1",
-        verdict=Verdict.COMPOUNDER, confidence=CONF, checklist=_clean_checklist(),
-        thesis="Compounds if capacity fills at current margins.",
-        anti_thesis="A spread collapse breaks the whole case.",
-        kill_criteria=[_criterion(True), _criterion(metric="roic"), _criterion(metric="revenue")],
-        open_questions=["What is maintenance vs growth capex?"],
-    )
+    defaults = {
+        "ticker": "ABC", "company_name": "ABC Ltd", "as_of": date(2026, 7, 30), "run_id": "r1",
+        "verdict": Verdict.COMPOUNDER, "confidence": CONF, "checklist": _clean_checklist(),
+        "thesis": "Compounds if capacity fills at current margins.",
+        "anti_thesis": "A spread collapse breaks the whole case.",
+        "kill_criteria": [_criterion(True), _criterion(metric="roic"), _criterion(metric="revenue")],
+        "open_questions": ["What is maintenance vs growth capex?"],
+    }
     defaults.update(kw)
     return ResearchReport(**defaults)
 
@@ -229,11 +229,11 @@ def test_checklist_outcome_lookup():
 
 
 def _answer(**kw):
-    defaults = dict(
-        question_id="q1", question="Where does revenue come from?",
-        status=AnswerStatus.UNANSWERED, severity="high", gap=GapKind.DISCLOSURE,
-        needs=["Ind AS 108 segment note"], reason="the sources read do not disclose it",
-    )
+    defaults = {
+        "question_id": "q1", "question": "Where does revenue come from?",
+        "status": AnswerStatus.UNANSWERED, "severity": "high", "gap": GapKind.DISCLOSURE,
+        "needs": ["Ind AS 108 segment note"], "reason": "the sources read do not disclose it",
+    }
     defaults.update(kw)
     return LineItemAnswer(**defaults)
 

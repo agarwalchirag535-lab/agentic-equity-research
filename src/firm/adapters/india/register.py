@@ -21,9 +21,9 @@ from __future__ import annotations
 
 import json
 import urllib.parse
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Callable, Iterable, Sequence
 
 #: BSE's own (category, subcategory) names — the event vocabulary the exchange publishes. Kept
 #: VERBATIM, whitespace included: the API's subcategory filter is an exact match against the parent

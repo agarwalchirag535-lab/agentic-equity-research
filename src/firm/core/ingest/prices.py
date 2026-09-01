@@ -21,9 +21,10 @@ Sunday cites the Friday it actually rests on.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any, Callable, Sequence
+from typing import Any
 
 from firm.adapters.india.prices import Close, close_on_or_before, fetch_closes, price_url
 from firm.core.facts.store import Document, FactStore

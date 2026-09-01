@@ -9,18 +9,18 @@ from firm.core.compute.quality import (
     ForensicVerdict,
     SectorClass,
     accrual_ratio,
+    adjusted_ebitda_bridge_gap,
     ageing_cwip_flag,
     beneish_m_score,
+    capitalised_cost_share,
     cash_debt_paradox,
     cash_interest_consistency,
-    flow_over_stock,
     cfo_pat_ratio,
+    contract_asset_divergence,
     cumulative_cfo_pat_ratio,
     disclosure_completeness,
+    flow_over_stock,
     forensic_screen,
-    adjusted_ebitda_bridge_gap,
-    capitalised_cost_share,
-    contract_asset_divergence,
     gain_on_sale_reliance,
     gnpa_drift_flag,
     guarantees_to_net_worth,
@@ -173,7 +173,7 @@ def test_restructured_book_flag():
 
 
 # ---- originate-to-sell / lender earnings-quality checks (FORENSIC_METHODOLOGY §7 P7) -----------
-import math  # noqa: E402
+import math
 
 
 def test_gain_on_sale_reliance():

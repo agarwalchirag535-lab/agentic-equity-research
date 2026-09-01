@@ -23,8 +23,8 @@ governance finding; `None` (no pledge question located) is a refusal to conclude
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from firm.adapters.base.tables import numbers_on_line
 
@@ -38,15 +38,15 @@ from firm.adapters.base.tables import numbers_on_line
 #: in reading-order mode and lost it in layout mode. Requiring `A <conjunction>` keeps it strict: a bare
 #: `A\s+promoter` would also match ordinary prose like "held by a promoter".
 _PROMOTER_ROW = re.compile(
-    r"(?:^|\s)\(?A\)?\s+promoter\s*(?:&|and)\s*(?:promoter\s*group)?", re.I
+    r"(?:^|\s)\(?A\)?\s+promoter\s*(?:&|and)\s*(?:promoter\s*group)?", re.IGNORECASE
 )
-_PUBLIC_ROW = re.compile(r"(?:^|\s)\(?B\)?\s+public\b", re.I)
-_NON_PROMOTER_ROW = re.compile(r"(?:^|\s)\(?C\d?\)?\s+non[\s-]*promoter[\s-]*non[\s-]*public\b", re.I)
+_PUBLIC_ROW = re.compile(r"(?:^|\s)\(?B\)?\s+public\b", re.IGNORECASE)
+_NON_PROMOTER_ROW = re.compile(r"(?:^|\s)\(?C\d?\)?\s+non[\s-]*promoter[\s-]*non[\s-]*public\b", re.IGNORECASE)
 #: Where a category row's figures must stop. Without a terminator the public row would run on into Table II
 #: (the promoter-by-name breakdown), whose per-shareholder percentages would then compete with the
 #: category's own — and one of them reconciles to 100 by coincidence often enough to matter.
 _ROW_END = re.compile(
-    r"(?:^|\s)(?:\(?[BC]\d?\)?\s+(?:public|non[\s-]*promoter)|total\b|table\s+I{2,})", re.I
+    r"(?:^|\s)(?:\(?[BC]\d?\)?\s+(?:public|non[\s-]*promoter)|total\b|table\s+I{2,})", re.IGNORECASE
 )
 
 #: The promoter-pledge declaration, in both wordings SEBI has used.
@@ -65,7 +65,7 @@ _PLEDGE_QUESTION = re.compile(
     r"(?:pledge[d]?\s+or\s+otherwise\s+encumbered"
     r"|encumbered\s+under\s*[\"'“”]?\s*pledged)"
     r"[\"'“”]?\s*\??\s*(yes|no)?",
-    re.I,
+    re.IGNORECASE,
 )
 #: The reporting date. Real filings write "As on : 30-09-2024" with a colon and spaces, and some give only
 #: "Quarter ending 30-09-2024" — an earlier pattern required "as on" followed immediately by the date and so
@@ -73,9 +73,9 @@ _PLEDGE_QUESTION = re.compile(
 #: the month as a NAME ("as on : 31-Mar-2021"), which no all-digit pattern can read.
 _MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 _AS_ON_PREFIX = r"(?:as\s+(?:on|at|of)|quarter\s+end(?:ing|ed))\s*:?\s*"
-_AS_ON = re.compile(_AS_ON_PREFIX + r"(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})", re.I)
+_AS_ON = re.compile(_AS_ON_PREFIX + r"(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})", re.IGNORECASE)
 _AS_ON_NAMED = re.compile(
-    _AS_ON_PREFIX + r"(\d{1,2})[/\-.\s]*(" + "|".join(_MONTHS) + r")[a-z]*[/\-.\s]*(\d{4})", re.I
+    _AS_ON_PREFIX + r"(\d{1,2})[/\-.\s]*(" + "|".join(_MONTHS) + r")[a-z]*[/\-.\s]*(\d{4})", re.IGNORECASE
 )
 
 #: A holding percentage is in (0, 100]. Share COUNTS are large integers, so a decimal in range is the

@@ -367,8 +367,8 @@ def test_a_row_this_firm_could_not_read_is_never_charged_to_the_company(store):
     external = ExternalInputs(
         disclosure_scanned=True,
         disclosure_gaps=(),
-        extraction_gaps=("balance_sheet:Total Assets: the row labelled for this metric read 49,881.61 "
-                         "against 1,59,008.74 on the balancing line at p.86",),
+        extraction_gaps=(("balance_sheet:Total Assets: the row labelled for this metric read 49,881.61 "
+                         "against 1,59,008.74 on the balancing line at p.86"),),
     )
     evaluation, _ = _evaluate(store, "ACME", clean_series(), [BusinessModel.MANUFACTURER],
                               external=external)

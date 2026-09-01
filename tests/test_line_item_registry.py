@@ -8,7 +8,6 @@ in fact have answered. It would look exactly like honest humility. These tests m
 
 from __future__ import annotations
 
-
 import pytest
 
 from firm.core.compute.models import BusinessModel

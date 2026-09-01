@@ -55,19 +55,19 @@ IR_SECTIONS: tuple[str, ...] = (
 #: Document class -> (match, reject). Order matters: the first class whose pattern matches wins, so the
 #: specific patterns precede the general ones ("Annual Return" must be tested before "annual report").
 DOCUMENT_CLASSES: tuple[tuple[str, re.Pattern[str], re.Pattern[str] | None], ...] = (
-    ("annual_return", re.compile(r"annual[-_\s]*return|mgt-?7", re.I), None),
-    ("annual_report", re.compile(r"annual[-_\s]*report", re.I),
-     re.compile(r"annual[-_\s]*(return|secretarial)", re.I)),
+    ("annual_return", re.compile(r"annual[-_\s]*return|mgt-?7", re.IGNORECASE), None),
+    ("annual_report", re.compile(r"annual[-_\s]*report", re.IGNORECASE),
+     re.compile(r"annual[-_\s]*(return|secretarial)", re.IGNORECASE)),
     # The shareholding pattern carries the promoter PLEDGE column, so it satisfies both prerequisites.
-    ("shareholding", re.compile(r"shareholding|share[-_\s]*holding|\bshp\b", re.I), None),
-    ("transcript", re.compile(r"transcript|con-?call|earnings[-_\s]*call", re.I), None),
-    ("credit_rating", re.compile(r"credit[-_\s]*rating", re.I), None),
-    ("voting_result", re.compile(r"voting[-_\s]*result|scrutinis|scrutiniz", re.I), None),
-    ("presentation", re.compile(r"presentation|investor[-_\s]*deck", re.I), None),
-    ("quarterly_result", re.compile(r"result|financial[-_\s]*results", re.I),
-     re.compile(r"voting|newspaper", re.I)),
+    ("shareholding", re.compile(r"shareholding|share[-_\s]*holding|\bshp\b", re.IGNORECASE), None),
+    ("transcript", re.compile(r"transcript|con-?call|earnings[-_\s]*call", re.IGNORECASE), None),
+    ("credit_rating", re.compile(r"credit[-_\s]*rating", re.IGNORECASE), None),
+    ("voting_result", re.compile(r"voting[-_\s]*result|scrutinis|scrutiniz", re.IGNORECASE), None),
+    ("presentation", re.compile(r"presentation|investor[-_\s]*deck", re.IGNORECASE), None),
+    ("quarterly_result", re.compile(r"result|financial[-_\s]*results", re.IGNORECASE),
+     re.compile(r"voting|newspaper", re.IGNORECASE)),
     ("governance", re.compile(r"corporate[-_\s]*governance|board[-_\s]*meet|policy|policies|code[-_\s]*of",
-                              re.I), None),
+                              re.IGNORECASE), None),
 )
 
 

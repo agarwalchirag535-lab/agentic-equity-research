@@ -12,8 +12,9 @@ A and B are 'primary/primary-adjacent'; C and D are secondary for a numeric clai
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 _GRADE_RANK = {"A": 0, "B": 1, "C": 2, "D": 3}  # lower rank = more primary = preferred
 _PRIMARY_GRADES = frozenset({"A", "B"})

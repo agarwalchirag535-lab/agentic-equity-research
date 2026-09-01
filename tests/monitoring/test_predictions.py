@@ -23,22 +23,22 @@ def _report_with_criteria(**kw):
     from firm.schemas._base import Confidence, Grade
     from firm.schemas.report import Criterion, ResearchReport, Verdict
 
-    defaults = dict(
-        ticker="ABC", company_name="ABC Ltd", as_of=date(2026, 7, 30), run_id="run-1",
-        verdict=Verdict.COMPOUNDER,
-        confidence=Confidence(value=0.62, evidence_count=9, lowest_grade_relied_on=Grade.B,
+    defaults = {
+        "ticker": "ABC", "company_name": "ABC Ltd", "as_of": date(2026, 7, 30), "run_id": "run-1",
+        "verdict": Verdict.COMPOUNDER,
+        "confidence": Confidence(value=0.62, evidence_count=9, lowest_grade_relied_on=Grade.B,
                               rationale="9 grade-B facts"),
-        kill_criteria=[
+        "kill_criteria": [
             Criterion(statement="CFO/PAT stays above 1.14", metric="cum_cfo_pat", operator=">=",
                       threshold=1.14, resolve_by=date(2027, 10, 27), load_bearing=True),
             Criterion(statement="ROIC stays above 9.2%", metric="roic_latest", operator=">=",
                       threshold=0.092, resolve_by=date(2027, 10, 27)),
         ],
-        rehabilitation_criteria=[
+        "rehabilitation_criteria": [
             Criterion(statement="the company discloses its cash balance", metric="checks_unavailable",
                       operator="<=", threshold=0.0, resolve_by=date(2027, 10, 27), load_bearing=True),
         ],
-    )
+    }
     defaults.update(kw)
     return ResearchReport(**defaults)
 

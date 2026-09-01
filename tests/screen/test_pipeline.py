@@ -4,7 +4,7 @@ import pytest
 
 from firm.core.screen.pipeline import Pipeline, graduates_to_main, route_by_history
 
-CFG = dict(min_history_years=5, emerging_min_years=1)
+CFG = {"min_history_years": 5, "emerging_min_years": 1}
 
 
 def test_long_history_routes_to_main():

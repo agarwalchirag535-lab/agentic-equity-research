@@ -23,9 +23,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Callable, Sequence
 
 #: The exchange's chart endpoint. `flag=1` is the daily-close series; `flag=0` is intraday ticks.
 _CHART = ("https://api.bseindia.com/BseIndiaAPI/api/StockReachGraph/w"

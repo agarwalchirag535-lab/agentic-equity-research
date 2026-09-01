@@ -13,9 +13,9 @@ Design decisions baked in here:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum
-from typing import Sequence
 
 
 class SectorClass(str, Enum):
@@ -367,11 +367,10 @@ def reserve_suppression_flag(
     """
     if (provision_rate_prior - provision_rate_curr) < min_rate_drop:
         return False
-    if (impaired_share_curr is not None and impaired_share_prior is not None
-            and stress_relief_min_drop is not None
-            and (impaired_share_prior - impaired_share_curr) >= stress_relief_min_drop):
-        return False
-    return True
+    stress_relieved = (impaired_share_curr is not None and impaired_share_prior is not None
+                       and stress_relief_min_drop is not None
+                       and (impaired_share_prior - impaired_share_curr) >= stress_relief_min_drop)
+    return not stress_relieved
 
 
 def held_for_sale_reserve_flag(

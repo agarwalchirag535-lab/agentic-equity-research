@@ -11,18 +11,18 @@ from __future__ import annotations
 from firm.adapters.india.shareholding import parse_shareholding
 
 CLEAN = (
-    "Shareholding Pattern as on 30/09/2024\n"
+    ("Shareholding Pattern as on 30/09/2024\n"
     "6 Whether any shares held by promoters are pledge or otherwise encumbered? No\n"
     "(A) Promoter & Promoter Group 13 36799268 36799268 71.96 36799268 71.96\n"
-    "(B) Public 178995 14336770 14336770 28.04 14336770 28.04\n",
+    "(B) Public 178995 14336770 14336770 28.04 14336770 28.04\n"),
 )
 
 #: The same filing as the text layer actually renders it on 14 of Alkyl Amines' 27 quarters: the column
 #: separator is lost and the percentage is welded onto the share count.
 WELDED = (
-    "6 Whether any shares held by promoters are pledge or otherwise encumbered? No\n"
+    ("6 Whether any shares held by promoters are pledge or otherwise encumbered? No\n"
     "(A) Promoter & Promoter Group 13 368372680 0 3683726872.0265 368372680 3683726872.0265\n"
-    "(B) Public 149311 143067840 0 1430678427.9735 143067840 1430678427.9735\n",
+    "(B) Public 149311 143067840 0 1430678427.9735 143067840 1430678427.9735\n"),
 )
 
 
@@ -53,8 +53,8 @@ def test_a_welded_column_is_repaired_by_the_category_identity():
 def test_a_stake_that_will_not_reconcile_is_refused_not_reported():
     """The failure this exists to prevent: a wrong stake that looks right."""
     broken = (
-        "(A) Promoter & Promoter Group 13 36799268 17.96\n"
-        "(B) Public 178995 14336770 28.04\n",
+        ("(A) Promoter & Promoter Group 13 36799268 17.96\n"
+        "(B) Public 178995 14336770 28.04\n"),
     )
     s = parse_shareholding(broken)
     assert s.located is False
@@ -67,8 +67,8 @@ def test_pledge_is_tri_state():
     assert parse_shareholding(CLEAN).pledged is False
 
     pledged = (
-        "6 Whether any shares held by promoters are pledge or otherwise encumbered? Yes\n"
-        "(A) Promoter & Promoter Group 13 36799268 71.96\n(B) Public 178995 14336770 28.04\n",
+        ("6 Whether any shares held by promoters are pledge or otherwise encumbered? Yes\n"
+        "(A) Promoter & Promoter Group 13 36799268 71.96\n(B) Public 178995 14336770 28.04\n"),
     )
     assert parse_shareholding(pledged).pledged is True
 
@@ -86,15 +86,15 @@ def test_missing_category_rows_are_reported_as_not_located():
 #: the row's figures over a dozen, so no physical line ever holds a whole row. This shape (14 of Alkyl
 #: Amines' 27 filings) was refused outright by a line-anchored parser — seven years of the promoter series.
 WRAPPED = (
-    "4. Share Holding Pattern as on : 31-Mar-2021 \n"
-    "5 Whether any shares held by promoters are pledge \nor otherwise encumbered? \nNo \n",
-    "A Promoter & \nPromoter \nGroup \n13 1513278\n8 \n0 0 151327\n88 \n74.13 1513\n2788 \n"
+    ("4. Share Holding Pattern as on : 31-Mar-2021 \n"
+    "5 Whether any shares held by promoters are pledge \nor otherwise encumbered? \nNo \n"),
+    ("A Promoter & \nPromoter \nGroup \n13 1513278\n8 \n0 0 151327\n88 \n74.13 1513\n2788 \n"
     "0 151\n327\n88 \n74.13 0 74.13 0 0 0 0 15132788  \n"
     "B Public 59800  5279923 0 0 527992\n3 \n25.87 5279\n923 \n0 527\n992\n3 \n"
     "25.87 0 25.87 0 0   4924017 \n"
-    "C Non \nPromoter- \nNon Public \n0 0 0 0 0  0 0 0 0 0  0 0   0 \n",
-    "Table II - Statement showing shareholding pattern of the Promoter and Promoter Group \n"
-    "Yogesh M \nKothari \n1 12206\n622 \n59.8 12206622 \n",
+    "C Non \nPromoter- \nNon Public \n0 0 0 0 0  0 0 0 0 0  0 0   0 \n"),
+    ("Table II - Statement showing shareholding pattern of the Promoter and Promoter Group \n"
+    "Yogesh M \nKothari \n1 12206\n622 \n59.8 12206622 \n"),
 )
 
 
@@ -118,14 +118,14 @@ def test_table_ii_percentages_never_reach_the_category_row():
 #: are pushed onto the continuation lines beside the wrapped digits. Requiring the full "Promoter &
 #: Promoter Group" phrase found this row in reading-order mode and silently lost it here.
 LAYOUT = (
-    "4. Share Holding Pattern as on : 31-Mar-2021\n"
-    "5 Whether any shares held by promoters are pledge or otherwise encumbered? No\n",
-    "  A  Promoter &  13  1513278  0  0  151327  74.13  1513  0  151  74.13  0  0  15132788\n"
+    ("4. Share Holding Pattern as on : 31-Mar-2021\n"
+    "5 Whether any shares held by promoters are pledge or otherwise encumbered? No\n"),
+    ("  A  Promoter &  13  1513278  0  0  151327  74.13  1513  0  151  74.13  0  0  15132788\n"
     "  Promoter  8  88  2788  327\n"
     "  Group  88\n"
     "  B  Public  59800  5279923  0  0  527992  25.87  5279  0  527  25.87  0  0  4924017\n"
     "  3  923  992\n"
-    "  C  Non  0  0  0  0  0  0  0  0  0  0  0\n  Promoter-\n  Non Public\n",
+    "  C  Non  0  0  0  0  0  0  0  0  0  0  0\n  Promoter-\n  Non Public\n"),
 )
 
 
@@ -139,8 +139,8 @@ def test_the_row_is_found_when_layout_extraction_splits_the_label():
 def test_ordinary_prose_about_a_promoter_is_not_read_as_the_category_row():
     """`A\\s+promoter` alone would match "held by a promoter" — the conjunction is what keeps it strict."""
     prose = (
-        "Any shares held by a promoter are disclosed below at 55.5 per cent of the total.\n"
-        "(B) Public 178995 14336770 28.04\n",
+        ("Any shares held by a promoter are disclosed below at 55.5 per cent of the total.\n"
+        "(B) Public 178995 14336770 28.04\n"),
     )
     assert parse_shareholding(prose).located is False
 
@@ -149,11 +149,11 @@ def test_a_whole_number_percentage_is_read_when_the_filing_rounds():
     """Some quarters print "72" and "28" rather than 72.05/27.95. The decimal discriminator rejects an
     integer by construction, so these two filings were refused until the identity got a second reading."""
     rounded = (
-        "As on : 31-12-2024\n"
+        ("As on : 31-12-2024\n"
         "6 Whether any shares held by promoters are pledge or otherwise encumbered? No\n"
         "(A) Promoter & Promoter Group 13 36819268 36819268 72 36819268 36819268 72 72 36819268\n"
         "(B) Public 174914 14316770 14316770 28 14316770 14316770 28 28 13959250\n"
-        "Total 174927 51136038 51136038 100\n",
+        "Total 174927 51136038 51136038 100\n"),
     )
     s = parse_shareholding(rounded)
     assert s.located
@@ -173,12 +173,12 @@ def test_the_2025_pledge_question_is_read_in_its_new_wording():
     """SEBI split one pledge question into three (Pledged / NDU / other). The old single-question pattern
     matched none of them, so the newest filings reported pledge UNKNOWN while the page answered "No"."""
     revised = (
-        'As on : 31-03-2026\n'
+        ('As on : 31-03-2026\n'
         '7 Whether any shares held by promoters are encumbered under "Pledged"? No\n'
         '8 Whether any shares held by promoters are encumbered under "Non-Disposal Undertaking"? Yes\n'
         '9 Whether any shares held by promoters are encumbered, other than by way of Pledge or NDU, '
         'if any? Yes\n'
-        "(A) Promoter & Promoter Group 13 36799268 71.96\n(B) Public 178995 14336770 28.04\n",
+        "(A) Promoter & Promoter Group 13 36799268 71.96\n(B) Public 178995 14336770 28.04\n"),
     )
     s = parse_shareholding(revised)
     # The PLEDGE answer, not the NDU answer beside it: SEBI separates the instruments and so do we.

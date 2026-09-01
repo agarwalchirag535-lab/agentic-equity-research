@@ -11,8 +11,8 @@ change in what the pipeline read.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from firm.core.eval.golden import CaseResult, EvalReport, GoldenCase, load_cases, score_case
 from firm.core.facts.store import FactStore

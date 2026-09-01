@@ -27,14 +27,15 @@ Point-in-time discipline (Law 3) is inherited: every read goes through `FactStor
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.core.compute import periods as P
 from firm.core.compute import quality, ratios
-from firm.core.compute.quality import FlowOverStock, flow_over_stock
 from firm.core.compute import roic as RO
+from firm.core.compute.quality import FlowOverStock, flow_over_stock
 from firm.core.facts.store import Fact, FactStore
 from firm.schemas._base import Citation, Grade
 
@@ -349,7 +350,7 @@ class DerivedSet:
     def get(self, metric: str) -> Derivation | None:
         return self.values.get(metric)
 
-    def extended(self, extra: Mapping[str, Derivation]) -> "DerivedSet":
+    def extended(self, extra: Mapping[str, Derivation]) -> DerivedSet:
         """A copy carrying `extra` derivations as well (Phase 4, ADR-0062).
 
         The valuation layer needs a price and a policy block, so it cannot run inside
@@ -413,8 +414,8 @@ class _Builder:
         """
         if opening <= 0 or closing <= 0:
             self.missing.setdefault(metric, (
-                f"a positive opening AND closing balance ({formula}); one endpoint is zero or negative, "
-                "so the year has no average balance to divide by",))
+                (f"a positive opening AND closing balance ({formula}); one endpoint is zero or negative, "
+                "so the year has no average balance to divide by"),))
             return
         band = flow_over_stock(flow, opening, closing)
         self.values[metric] = Derivation(metric, band.point, formula, tuple(inputs), band=band)
@@ -782,8 +783,8 @@ def derive_metrics(
               inputs)
     else:
         b.missing.setdefault("capex_to_depreciation", (
-            f"{CAPEX} and {DEPRECIATION} in the same year (the cash-flow capex line comes from the "
-            f"filing, not the screener)",))
+            (f"{CAPEX} and {DEPRECIATION} in the same year (the cash-flow capex line comes from the "
+            f"filing, not the screener)"),))
 
     # ---- is the cash real? -----------------------------------------------------------------------
     # The sharpest test in the forensic library, and it needs two rows a screener does not carry. Cash

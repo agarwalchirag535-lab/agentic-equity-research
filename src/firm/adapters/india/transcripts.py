@@ -31,30 +31,30 @@ from dataclasses import dataclass, field
 
 #: The title every transcript carries — the evidence this document IS an earnings-call transcript.
 #: A concall *announcement* or an audio-recording letter must be refused, not skimmed for numbers.
-_CALL_TITLE = re.compile(r"earnings\s+(?:conference\s+)?call|conference\s+call\s+transcript", re.I)
+_CALL_TITLE = re.compile(r"earnings\s+(?:conference\s+)?call|conference\s+call\s+transcript", re.IGNORECASE)
 #: The title alone is not enough: the *announcement* of a call also says "earnings conference call".
 #: What an announcement never carries is the transcript itself — the word "transcript" (every Reg-30
 #: submission letter states it) or the moderator's dialogue. Found the hard way: the May-2022 intimation
 #: letter, one page of dial-in numbers, parsed as a transcript with zero guidance instead of refusing.
-_TRANSCRIPT_EVIDENCE = re.compile(r"\btranscript\b|^\s*moderator\s*:", re.I | re.M)
+_TRANSCRIPT_EVIDENCE = re.compile(r"\btranscript\b|^\s*moderator\s*:", re.IGNORECASE | re.MULTILINE)
 
 #: "May 12, 2025" — the form Indian transcripts print. Month names, never digits-only, so a share count
 #: can never be misread as a date.
 _MONTH = ("January", "February", "March", "April", "May", "June", "July",
           "August", "September", "October", "November", "December")
-_DATE = re.compile(r"\b(" + "|".join(_MONTH) + r")\s+(\d{1,2}),?\s+(20\d{2})\b", re.I)
+_DATE = re.compile(r"\b(" + "|".join(_MONTH) + r")\s+(\d{1,2}),?\s+(20\d{2})\b", re.IGNORECASE)
 #: The cover letter's own statement of when the call happened. Real letters write it with a weekday —
 #: "held on Thursday, November 7, 2019" — and a pattern requiring the month immediately after "held on"
 #: matched none of them, silently downgrading every call date to the title-page fallback.
 _HELD_ON = re.compile(
-    r"held\s+on\s+(?:[A-Za-z]+day,?\s+)?(" + "|".join(_MONTH) + r")\s+(\d{1,2}),?\s+(20\d{2})", re.I
+    r"held\s+on\s+(?:[A-Za-z]+day,?\s+)?(" + "|".join(_MONTH) + r")\s+(\d{1,2}),?\s+(20\d{2})", re.IGNORECASE
 )
 
 #: "4QFY2025", "Q4 FY25", "Q4 FY23-24", "FY '24". The range form names the fiscal year twice — start and
 #: end — and the Indian FY is named for the year it ENDS in, so the second token wins when present.
 #: Without the range branch, "Q4 FY23-24" read as FY23: a whole year off, on a stated label.
 _PERIOD = re.compile(
-    r"(?:Q\s*([1-4])|([1-4])\s*Q)\s*FY\s*'?\s*(20\d{2}|\d{2})(?:\s*[-/]\s*'?(20\d{2}|\d{2}))?", re.I
+    r"(?:Q\s*([1-4])|([1-4])\s*Q)\s*FY\s*'?\s*(20\d{2}|\d{2})(?:\s*[-/]\s*'?(20\d{2}|\d{2}))?", re.IGNORECASE
 )
 
 #: A sentence is forward-looking when it carries one of these cues. Deliberately verbs-of-intent plus
@@ -63,24 +63,24 @@ _FORWARD_CUE = re.compile(
     r"\b(expect(?:ing|ed)?|guidance|guided?|forecast(?:ing)?|target(?:ing)?|aim(?:ing)?|"
     r"plan(?:ning)?|envisag\w*|outlook|going\s+forward|next\s+(?:year|quarter|fiscal)|"
     r"coming\s+(?:year|years|quarters?))\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 #: Values are extracted ONLY with a stated unit. "15%" and "Rs. 150 crores" carry meaning; a bare "150"
 #: carries none an agent could cite.
 _PCT_VALUE = re.compile(r"(\d+(?:\.\d+)?)\s*%")
-_CRORE_VALUE = re.compile(r"(?:Rs\.?|INR|₹)\s*(\d+(?:,\d{2,3})*(?:\.\d+)?)\s*crores?", re.I)
+_CRORE_VALUE = re.compile(r"(?:Rs\.?|INR|₹)\s*(\d+(?:,\d{2,3})*(?:\.\d+)?)\s*crores?", re.IGNORECASE)
 
 #: Topic, by the vocabulary of the sentence itself. First match wins; 'general' is the honest residue,
 #: never a guess. These drive the fact METRIC LABEL only — the quote and value are what carry weight.
 #: Prefix matches on purpose: "debottleneck" must catch "debottlenecking", "grow" must catch "growth".
 _TOPICS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("capex", re.compile(r"\b(?:capex|capital\s+expenditure)", re.I)),
-    ("margin", re.compile(r"\b(?:margin|ebitda)", re.I)),
-    ("volume_growth", re.compile(r"\b(?:volume|tonn|grow)", re.I)),
-    ("capacity", re.compile(r"\b(?:capacity|plant|commission|debottleneck)", re.I)),
-    ("exports", re.compile(r"\bexport", re.I)),
-    ("pricing", re.compile(r"\b(?:price|pricing|realisation|realization)", re.I)),
+    ("capex", re.compile(r"\b(?:capex|capital\s+expenditure)", re.IGNORECASE)),
+    ("margin", re.compile(r"\b(?:margin|ebitda)", re.IGNORECASE)),
+    ("volume_growth", re.compile(r"\b(?:volume|tonn|grow)", re.IGNORECASE)),
+    ("capacity", re.compile(r"\b(?:capacity|plant|commission|debottleneck)", re.IGNORECASE)),
+    ("exports", re.compile(r"\bexport", re.IGNORECASE)),
+    ("pricing", re.compile(r"\b(?:price|pricing|realisation|realization)", re.IGNORECASE)),
 )
 
 #: An analyst's ask does not always end in "?" — "Sir, just wanted to ask, any guidance regarding this
@@ -88,13 +88,13 @@ _TOPICS: tuple[tuple[str, re.Pattern[str]], ...] = (
 #: in management's mouth. These phrasings mark a sentence as a question regardless of its final mark.
 _QUESTION_CUE = re.compile(
     r"\b(?:wanted\s+to\s+ask|can\s+you|could\s+you|would\s+you|any\s+guidance\s+(?:on|regarding|for))\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 #: Page furniture to drop before sentences are assembled: a bare speaker label ("Kanchan Shinde:"),
 #: a page footer, or the company-name running header.
 _SPEAKER_LABEL = re.compile(r"^[A-Z][\w.'\- ]{0,40}:$")
-_PAGE_FOOTER = re.compile(r"^page\s+\d+\s+of\s+\d+$", re.I)
+_PAGE_FOOTER = re.compile(r"^page\s+\d+\s+of\s+\d+$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)

@@ -22,10 +22,11 @@ taken as seven calendar days) — the same conservative direction as the shareho
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.adapters.base.extract import extract_document
 from firm.adapters.india.transcripts import TranscriptSummary, parse_transcript

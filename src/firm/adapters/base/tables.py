@@ -19,8 +19,8 @@ Honesty rules:
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Sequence
 
 # Period tokens are labels, not numbers (same convention as validators/citation.py).
 _PERIOD = re.compile(r"\b(FY\s?\d{2,4}|Q[1-4]\s?FY\s?\d{2,4}|[12]\d{3}-\d{2})\b", re.IGNORECASE)

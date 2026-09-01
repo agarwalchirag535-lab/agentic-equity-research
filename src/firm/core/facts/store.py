@@ -13,9 +13,10 @@ Backed by stdlib SQLite so there is no vendor-hosted state (Law 6). Use ``:memor
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Sequence
+from typing import Self
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS documents (
@@ -91,7 +92,7 @@ class FactStore:
     def close(self) -> None:
         self._conn.close()
 
-    def __enter__(self) -> "FactStore":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> None:

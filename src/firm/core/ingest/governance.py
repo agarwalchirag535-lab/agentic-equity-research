@@ -21,10 +21,11 @@ can never mistake "no pledge" for "not asked" (ADR-0027's tri-state, preserved t
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.adapters.base.extract import extract_document
 from firm.adapters.india.shareholding import ShareholdingSummary, parse_shareholding

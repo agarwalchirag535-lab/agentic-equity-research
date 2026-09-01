@@ -21,6 +21,7 @@ from pathlib import Path
 from firm.adapters.base.extract import extract_document
 from firm.adapters.base.sourcing import assess_sourcing
 from firm.adapters.base.tables import find_row
+from firm.adapters.india.exchange import parse_annual_reports
 from firm.adapters.india.filings import disclosure_gaps, forensic_sections
 from firm.adapters.india.notes import (
     NoteDisposition,
@@ -31,7 +32,6 @@ from firm.adapters.india.notes import (
     scan_schedule_iii,
     schedule_iii_gaps,
 )
-from firm.adapters.india.exchange import parse_annual_reports
 from firm.core.compute import (
     BusinessModel,
     ForensicMetrics,

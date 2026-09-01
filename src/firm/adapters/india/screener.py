@@ -47,7 +47,7 @@ def fetch(ticker: str, basis: str = "default", timeout: float = 40.0) -> str:
     """
     url = f"https://www.screener.in/company/{ticker}/{_BASIS_PATH[basis]}"
     req = urllib.request.Request(url, headers={"User-Agent": _UA})
-    with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
         return resp.read().decode("utf-8", errors="replace")
 
 
@@ -77,22 +77,22 @@ def _num(raw: str) -> tuple[float | None, bool]:
 
 
 def _first_data_table(section_html: str) -> str | None:
-    m = re.search(r'<table class="data-table.*?</table>', section_html, re.S)
+    m = re.search(r'<table class="data-table.*?</table>', section_html, re.DOTALL)
     return m.group(0) if m else None
 
 
 def parse_financials(html: str, ticker: str, consolidated: bool = True) -> list[FinancialRow]:
     rows: list[FinancialRow] = []
     for sec_id, statement in _SECTION_STATEMENT.items():
-        sec = re.search(rf'<section id="{sec_id}".*?</section>', html, re.S)
+        sec = re.search(rf'<section id="{sec_id}".*?</section>', html, re.DOTALL)
         if not sec:
             continue
         table = _first_data_table(sec.group(0))
         if not table:
             continue
-        periods = [_period_to_fy(_strip(t)) for t in re.findall(r"<th[^>]*>(.*?)</th>", table, re.S)]
-        for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.S):
-            cells = re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S)
+        periods = [_period_to_fy(_strip(t)) for t in re.findall(r"<th[^>]*>(.*?)</th>", table, re.DOTALL)]
+        for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.DOTALL):
+            cells = re.findall(r"<td[^>]*>(.*?)</td>", tr, re.DOTALL)
             if not cells:
                 continue
             metric = _strip(cells[0]).replace("+", "").strip()
@@ -113,16 +113,16 @@ def parse_financials(html: str, ticker: str, consolidated: bool = True) -> list[
 
 
 def parse_shareholding(html: str, ticker: str) -> list[ShareholdingRow]:
-    sec = re.search(r'<section id="shareholding".*?</section>', html, re.S)
+    sec = re.search(r'<section id="shareholding".*?</section>', html, re.DOTALL)
     if not sec:
         return []
     table = _first_data_table(sec.group(0))
     if not table:
         return []
-    periods = [_strip(t) for t in re.findall(r"<th[^>]*>(.*?)</th>", table, re.S)]
+    periods = [_strip(t) for t in re.findall(r"<th[^>]*>(.*?)</th>", table, re.DOTALL)]
     out: list[ShareholdingRow] = []
-    for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.S):
-        cells = re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S)
+    for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.DOTALL):
+        cells = re.findall(r"<td[^>]*>(.*?)</td>", tr, re.DOTALL)
         if not cells:
             continue
         label = _strip(cells[0]).replace("+", "").strip()

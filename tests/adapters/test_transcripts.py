@@ -73,9 +73,9 @@ def test_an_ask_without_a_question_mark_is_still_a_question():
 def test_a_call_announcement_is_refused_not_skimmed():
     """The May-2022 intimation letter names an earnings call but carries only dial-in numbers."""
     announcement = (
-        "May 16, 2022\nSub: Intimation under Regulation 30\n"
+        ("May 16, 2022\nSub: Intimation under Regulation 30\n"
         "We wish to inform you that an earnings conference call is scheduled to be held on "
-        "Friday, May 20, 2022 at 3:00 pm (IST).\nUniversal Access: +91 22 6280 1458\n",
+        "Friday, May 20, 2022 at 3:00 pm (IST).\nUniversal Access: +91 22 6280 1458\n"),
     )
     s = parse_transcript(announcement)
     assert s.located is False
@@ -98,9 +98,9 @@ def test_a_fiscal_year_range_names_the_end_year():
 def test_a_weekday_in_the_held_on_sentence_still_dates_the_call():
     """Real letters write "held on Thursday, November 7, 2019" — the weekday broke the first pattern."""
     pages = (
-        "November 19, 2019\nSubmission of transcript of earnings conference call\n"
+        ("November 19, 2019\nSubmission of transcript of earnings conference call\n"
         "please find enclosed the transcript of the earnings conference call held on "
-        "Thursday, November 7, 2019.\n",
+        "Thursday, November 7, 2019.\n"),
         "Moderator:\nWe expect the plant to be commissioned next year with 30% higher capacity.\n",
     )
     s = parse_transcript(pages)

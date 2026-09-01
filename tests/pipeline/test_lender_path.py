@@ -76,7 +76,7 @@ def test_the_pipeline_reproduces_the_hand_computed_creditaccess_result():
     """VALIDATION_TIER0 concluded REVIEW on provision-book divergence, with reserve-suppression
     correctly NOT firing (they provisioned more, honestly) and gain-on-sale UNAVAILABLE. The pipeline
     now reaches the same conclusion from the audited statements rather than from typed-in figures."""
-    models, _, ev = _evaluate(_facts())
+    _models, _, ev = _evaluate(_facts())
     divergence = ev.record("provision_book_divergent")
     assert divergence.outcome.value == "FLAG"
     assert "+327.1%" in divergence.detail            # impairment growth, as the filing prints it

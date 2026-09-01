@@ -18,9 +18,10 @@ receives this result and argues about it; it authors none of it.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.core.compute import reverse_dcf
 from firm.core.compute.scenarios import (
@@ -144,8 +145,8 @@ def value_company(
         # nothing, and this one would have shipped in a published report.
         return ValuationResult(
             "unavailable",
-            ("any annual period readable at this as_of — the store holds no financial year for this "
-             "company on or before the run date, so there is nothing to value",),
+            (("any annual period readable at this as_of — the store holds no financial year for this "
+             "company on or before the run date, so there is nothing to value"),),
             price=price, price_on=price_on, assumptions=dict(policy))
 
     if price is None:

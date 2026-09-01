@@ -29,8 +29,8 @@ def store():
 
 
 def _summary(**overrides) -> TranscriptSummary:
-    base = dict(located=True, call_date="2025-05-12", cover_date="2025-05-16",
-                period="Q4FY25", period_basis="stated", guidance=(GROWTH, ASK))
+    base = {"located": True, "call_date": "2025-05-12", "cover_date": "2025-05-16",
+                "period": "Q4FY25", "period_basis": "stated", "guidance": (GROWTH, ASK)}
     base.update(overrides)
     return TranscriptSummary(**base)
 

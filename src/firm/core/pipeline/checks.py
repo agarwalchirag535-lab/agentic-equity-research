@@ -21,13 +21,14 @@ threshold is passed in from config (Law 1, CLAUDE.md).
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.core.compute import quality
+from firm.core.compute.models import Playbook
 from firm.core.compute.rates import risk_free_for
 from firm.core.config import reference_rates
-from firm.core.compute.models import Playbook
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.derive import CompanyFacts, DerivedSet
 from firm.schemas.report import CheckOutcome, CheckRecord, GapKind
@@ -492,17 +493,17 @@ def evaluate_checks(
                 # finding about the company. It is reported as unavailable and named as a fault rather than
                 # flagged — this exact ratio read 496.6% when a lakh cash figure met a crore asset base.
                 r.unavailable(check, [
-                    f"cash/assets computes to {impossible:.1%}, which is impossible — the inputs are on "
-                    f"different scales or a row was misread, so this check cannot run"
+                    (f"cash/assets computes to {impossible:.1%}, which is impossible — the inputs are on "
+                    f"different scales or a row was misread, so this check cannot run")
                 ])
             elif (debt_share := debt.value / assets.value) < check_inputs["min_debt_to_assets"]:
                 # Immaterial borrowings make the implied cost of debt an artefact of rounding: ALKYLAMINE's
                 # Rs 1cr of debt against Rs 1cr of interest produced "100%". A paradox check needs real debt
                 # for the paradox to exist at all.
                 r.unavailable(check, [
-                    f"borrowings are {debt_share:.2%} of assets (floor "
+                    (f"borrowings are {debt_share:.2%} of assets (floor "
                     f"{check_inputs['min_debt_to_assets']:.0%}), so the implied cost of debt "
-                    f"({cod.value:.0%}) is an artefact of rounding rather than a rate the company pays"
+                    f"({cod.value:.0%}) is an artefact of rounding rather than a rate the company pays")
                 ])
             else:
                 # The paradox asserts the cost of debt is HIGH, so it is established only if the whole
@@ -616,9 +617,9 @@ def evaluate_checks(
                     # amounts are read (the Schedule III row, or an ADR-0056 verified note read), the
                     # honest record is: channel disclosed, magnitude unread — the firm's gap.
                     r.unavailable(check, (
-                        f"the related-party note discloses {categories} channels "
+                        (f"the related-party note discloses {categories} channels "
                         f"({ext.locator(check) or 'AR'}){pay}, but the AMOUNTS and direction are not "
-                        "read at category level — a siphoning flag needs the figures",
+                        "read at category level — a siphoning flag needs the figures"),
                     ), GapKind.CAPABILITY)
                 else:
                     r.ran(check, False,

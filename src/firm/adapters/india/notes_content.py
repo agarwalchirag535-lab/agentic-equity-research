@@ -33,16 +33,16 @@ _NOTE_HEADING = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z][A-Za-z ,&/'\-()]{5,70})\s
 #: so they are tracked separately rather than collapsed into "has related-party transactions".
 _RP_CATEGORIES: dict[str, re.Pattern[str]] = {
     # The channel that matters most: value moved at a price nobody negotiated.
-    "sales": re.compile(r"\bsale[s]?\s+of\s+(goods|products|materials)|\brevenue\s+from\s+related", re.I),
-    "purchases": re.compile(r"\bpurchase[s]?\s+of\s+(goods|materials|raw)", re.I),
+    "sales": re.compile(r"\bsale[s]?\s+of\s+(goods|products|materials)|\brevenue\s+from\s+related", re.IGNORECASE),
+    "purchases": re.compile(r"\bpurchase[s]?\s+of\s+(goods|materials|raw)", re.IGNORECASE),
     # Money out of the listed company and into a promoter vehicle.
-    "loans_given": re.compile(r"\bloans?\s+(given|granted|advanced)|\badvances?\s+(given|to)\b", re.I),
-    "loans_taken": re.compile(r"\bloans?\s+(taken|received|accepted)|\bdeposits?\s+accepted\b", re.I),
-    "guarantees": re.compile(r"\bguarantee[s]?\b", re.I),
-    "investments": re.compile(r"\binvestment[s]?\s+(in|made)\b", re.I),
+    "loans_given": re.compile(r"\bloans?\s+(given|granted|advanced)|\badvances?\s+(given|to)\b", re.IGNORECASE),
+    "loans_taken": re.compile(r"\bloans?\s+(taken|received|accepted)|\bdeposits?\s+accepted\b", re.IGNORECASE),
+    "guarantees": re.compile(r"\bguarantee[s]?\b", re.IGNORECASE),
+    "investments": re.compile(r"\binvestment[s]?\s+(in|made)\b", re.IGNORECASE),
     # Legitimate but must be sized: this is what the Alkyl Amines note contains, and only this.
     "remuneration": re.compile(
-        r"remuneration|sitting\s*fee|commission\b|managerial\s+remuneration", re.I),
+        r"remuneration|sitting\s*fee|commission\b|managerial\s+remuneration", re.IGNORECASE),
 }
 
 #: Running headers, footers, page numbers, column captions and footnotes. Every PDF page carries them and
@@ -53,7 +53,7 @@ _PAGE_FURNITURE = re.compile(
     r"annual\s+report|website|www\.|^\s*\d{1,3}\s*$|particulars|with\s+note|in\s+lakhs|"
     r"figures\s+in\s+brackets|pertain\s+to|^\s*\(|includes\s+the\s+contribution|"
     r"key\s+management\s+personnel|and\s+their\s+relatives",
-    re.I,
+    re.IGNORECASE,
 )
 #: A party row: a name or sub-label, then its figure. Anchors the label to the START of the line so a
 #: sentence that merely happens to contain digits cannot qualify.
@@ -63,7 +63,7 @@ _PARTY_ROW = re.compile(r"^[A-Za-z][A-Za-z.\s*'&,\-()]{1,44}?\s+[`\d(]")
 _EXPLICIT_NIL = re.compile(
     r"no\s+amount\s+(was\s+)?(written\s+off|written\s+back)|"
     r"there\s+(was|were)\s+no\s+(such\s+)?transaction|\bnil\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -90,7 +90,7 @@ def find_note_body(pages: tuple[str, ...], title_pattern: str) -> NoteBody:
     the audited note is the one with the figures. Returns `located=False` rather than an empty string when no
     heading matches, so a caller can never mistake "not found" for "found and empty".
     """
-    pattern = re.compile(title_pattern, re.I)
+    pattern = re.compile(title_pattern, re.IGNORECASE)
     for index in range(len(pages) - 1, -1, -1):
         lines = pages[index].splitlines()
         for line_no, line in enumerate(lines):

@@ -31,7 +31,7 @@ def _priced(store, series=None, price=2044.40):
 
 
 def test_a_company_with_price_and_cash_flow_is_valued_against_its_own_growth(store):
-    facts, derived, v = _priced(store)
+    facts, _derived, v = _priced(store)
     assert v.valued and v.missing == ()
     # Share count is the filing's OWN identity, PAT / EPS — not a face-value assumption.
     assert v.shares_cr == facts.value("pnl:Net Profit", "FY26") / facts.value("pnl:EPS in Rs", "FY26")

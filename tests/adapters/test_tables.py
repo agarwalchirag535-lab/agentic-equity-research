@@ -85,9 +85,9 @@ def test_find_row_and_unavailable():
 def test_leading_note_reference_is_not_a_figure():
     """Regression (found by tests/test_pipeline_e2e.py): Indian AR line items carry a note
     cross-reference prefix. Without masking it, '9' parses as a value and the label collapses to 'Note'."""
-    rows = extract_labeled_rows(["Note 9: Trade Receivables 118.0 110.0\n"
+    rows = extract_labeled_rows([("Note 9: Trade Receivables 118.0 110.0\n"
                                  "29. Contingent Liabilities 45.0 40.0\n"
-                                 "12) Other Income 3.5\n"])
+                                 "12) Other Income 3.5\n")])
     by_label = {r.label: r.values for r in rows}
     assert by_label["Trade Receivables"] == (118.0, 110.0)     # note number excluded
     assert by_label["Contingent Liabilities"] == (45.0, 40.0)

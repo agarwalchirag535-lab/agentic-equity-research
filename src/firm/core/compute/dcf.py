@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def present_value(cashflows: Sequence[float], discount_rate: float) -> float:

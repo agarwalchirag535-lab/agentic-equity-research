@@ -20,9 +20,10 @@ that share, not just coverage. Coverage proves enumeration; substantive share pr
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from firm.adapters.base.tables import (
     ExtractedValue,
@@ -33,20 +34,20 @@ from firm.adapters.base.tables import (
     to_canonical_crore,
 )
 from firm.adapters.india.filings import disclosure_gaps, forensic_sections
-from firm.adapters.india.notes_content import RelatedPartySummary, related_party_summary
 from firm.adapters.india.notes import (
     Note,
-    notes_section_start,
     NoteDisposition,
     caro_candidate_flags,
     coverage,
-    sequence_gaps,
     enumerate_notes,
     note_body,
+    notes_section_start,
     parse_caro_clauses,
     scan_schedule_iii,
     schedule_iii_gaps,
+    sequence_gaps,
 )
+from firm.adapters.india.notes_content import RelatedPartySummary, related_party_summary
 from firm.core.facts.store import Document, FactStore
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs
