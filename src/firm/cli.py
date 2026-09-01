@@ -839,6 +839,69 @@ def resolve_cmd(
                    f"P={r.prediction.probability:.2f} and broke — record why in memory/lessons.jsonl")
 
 
+@app.command("evolve")
+def evolve_cmd(
+    memory: str = typer.Option("memory", "--memory", help="directory holding lessons/predictions"),
+    agent: str = typer.Option(None, "--agent", help="only propose changes to this agent's card"),
+) -> None:
+    """Propose prompt changes from clustered lessons, and score whether past changes worked (SPEC §7.3).
+
+    Proposes; it does not apply. A system that rewrites its own instructions from its own failure log,
+    unattended, optimises for a quiet log rather than for being right — so this prints the change, the
+    lessons that justify it, and the block to insert, and a person decides. `core/evolution/` was empty
+    from Phase 0 until now, which is why no prompt has ever been revised on evidence.
+    """
+    from pathlib import Path
+
+    from firm.core.evolution.calibration import brier_by_agent_version, compare_versions
+    from firm.core.evolution.lessons import read_lessons
+    from firm.core.evolution.propose import propose_changes
+    from firm.core.monitoring.predictions import read_jsonl
+
+    policy = load_thresholds()["evolution"]
+    root = Path(memory)
+    lessons = read_lessons(root / "lessons.jsonl")
+    if not lessons:
+        typer.echo(f"no lessons at {root / 'lessons.jsonl'} — nothing has been learned to act on")
+        raise typer.Exit(1)
+
+    report = propose_changes(lessons, min_cluster=int(policy["min_lessons_per_cluster"]))
+    shown = [p for p in report.proposals if agent is None or p.agent == agent]
+
+    typer.echo(f"{len(lessons)} lesson(s); {len(report.proposals)} cluster(s); "
+               f"{len(report.ready)} ready to propose\n")
+    for proposal in shown:
+        mark = "READY" if proposal.ready else "forming"
+        typer.echo(f"[{mark}] {proposal.agent} — {proposal.category} ({proposal.size} lesson(s))")
+        for lesson in proposal.lessons:
+            typer.echo(f"    · {lesson.ticker} {lesson.date}: {lesson.lesson[:140]}")
+        if proposal.ready:
+            typer.echo("\n  --- proposed addition to "
+                       f"agents/{proposal.agent}.md (review, then apply by hand) ---")
+            for line in proposal.patch.splitlines():
+                typer.echo(f"  {line}")
+            typer.echo("  --- end ---\n")
+
+    if report.unclassified:
+        typer.echo(f"\n{len(report.unclassified)} lesson(s) cannot cluster yet:")
+        # Grouped by reason: eighteen identical lines teach the reader nothing the first one did not.
+        reasons: dict[str, int] = {}
+        for _, reason in report.unclassified:
+            reasons[reason] = reasons.get(reason, 0) + 1
+        for reason, count in sorted(reasons.items(), key=lambda kv: -kv[1]):
+            typer.echo(f"  {count:3d} x {reason}")
+        typer.echo("  (classifying a root cause is a human judgment — this job will not guess one)")
+
+    scores = brier_by_agent_version(read_jsonl(root / "predictions.jsonl"))
+    if scores:
+        typer.echo("\nCalibration by agent version (lower is better; 0.25 = a coin flip at 50%):")
+        for s in scores:
+            typer.echo(f"  {s.agent}@{s.version}  brier {s.brier:.4f}  ({s.resolved} resolved)")
+        for c in compare_versions(scores,
+                                  min_resolved=int(policy["min_resolved_for_comparison"])):
+            typer.echo(f"  {c.agent}: {c.verdict}")
+
+
 @app.command("eval")
 def eval_golden(
     cases: str = typer.Option("evals/golden_set", "--cases", help="directory of golden-set case files"),

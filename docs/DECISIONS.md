@@ -3038,3 +3038,46 @@ same questions.
 **No questions means no page**, not an empty one. A company where every applicable check ran and the
 filings answered what was asked deserves that stated as a finding, not a blank sheet implying the firm
 forgot to ask.
+
+### ADR-0077 — `core/evolution/`: the loop learns, and a person still decides
+
+**Date** 2026-09-01 · **Status** accepted · **Phase 5 complete** · **Files**
+`core/evolution/{lessons,propose,calibration}.py` (new), `cli.py`, `config/thresholds.yaml`,
+`tests/evolution/` (new) · **961 tests, compute 100%**
+
+**The gap.** `core/evolution/` held nothing but `__init__.py` from Phase 0. SPEC §7.3 — prompt
+evolution from clustered lessons, with a human approving — existed as an intention, so **no prompt in
+this repo has ever been revised on evidence.** With ADR-0073 closing the resolution half, the loop had
+a scoreboard and still no way to act on it.
+
+**What the loop now is, end to end:** a published report logs dated kill criteria as predictions
+(ADR-0023) → `firm resolve` scores them against later filings, point-in-time (ADR-0073) → a person
+writes a lesson naming the root cause → `firm evolve` clusters lessons and proposes a prompt change →
+a person accepts it → the agent card's semver rises → the next resolutions say whether the new version
+actually forecasts better.
+
+**Three refusals define this module**, and each is the reason it is safe to have at all.
+
+1. **It proposes; it never applies.** It does not write `agents/*.md` and does not touch git. A system
+   that rewrites its own instructions from its own failure log, unattended, optimises for a quiet log
+   rather than for being right.
+2. **It never invents a root cause.** Classification into SPEC §7.2's fixed nine-item taxonomy is a
+   human judgment about why the world differed from the model. A lesson without one is *reported as
+   needing one* — the repo's 18 real lessons predate the schema and are surfaced, grouped by reason,
+   rather than bucketed by guesswork.
+3. **It never invents guidance.** A proposed patch is assembled from the `action` lines lesson authors
+   wrote, quoted verbatim with attribution. A cluster with no stated action produces a proposal that
+   says so, in as many words: composing an instruction there would be this system telling itself what
+   to think.
+
+**Two floors, both in config, both anti-noise.** `min_lessons_per_cluster: 3` is SPEC's — one miss is a
+sample of one, and a card patched after every bad quarter is a card overfitted to the last bad quarter;
+sub-threshold clusters are still shown as *forming*, because seeing a pattern before acting on it is
+the point. `min_resolved_for_comparison: 5` guards the new `brier_by_agent_version`: every prediction
+has recorded `agent_version` since Phase 0 with nothing reading it, and comparing two versions on two
+predictions each is noise wearing a decimal point — the same reasoning as
+`cumulative_cfo_pat_min_periods` refusing a cycle claim without a cycle.
+
+**Run against the real ledger it reports, correctly, that it can propose nothing:** 18 lessons, 0
+classified, 0 clusters — and the firm's actual calibration to date, Brier 0.2244 over the 3 resolved
+PC Jeweller predictions. The honest first output of a learning loop is usually "not yet".

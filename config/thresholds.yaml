@@ -37,6 +37,15 @@ multibagger:
   # §6.5 serial-dilution flag
   share_cagr_flag: 0.06         # share count CAGR (10y) above this without matching ROIC step-up
 
+# Prompt evolution (SPEC §7.3). Both numbers exist to stop the firm learning from noise.
+evolution:
+  # Lessons sharing a root cause before a prompt change is proposed. One miss is a sample of one, and a
+  # card patched after every bad quarter is a card overfitted to the last bad quarter.
+  min_lessons_per_cluster: 3
+  # Resolved predictions per agent VERSION before its Brier score may be compared with another's.
+  # Brier over two predictions is noise wearing a decimal point.
+  min_resolved_for_comparison: 5
+
 forensic:
   # SPEC §5 + ADR-0006. Single-value refs; PLAN OQ#3 may promote some to dated series.
   cfo_pat_min: 0.70             # single-year CFO/PAT below this = quality flag
