@@ -133,7 +133,9 @@ doesn't hide the fact that the data layer is the real work.
 Phase 0 (skeleton + contracts + compute core) → 1 (finish compute + tests) → 2 (three agents) →
 3 (full roster + orchestrator) → 4 (judgment tier) → 5 (memory loop) → 6 (evaluation). No phase skip.
 
-**Landed as of 2026-07-30:** phases 0, 1 and 2. Phase 2's acceptance test (five companies, one of them an
-accounting-fraud pattern, every number citation-validated) passes offline, and the first real report is
-published at `reports/ALKYLAMINE/2026-07-23-433c94208117/`. See ADR-0021 for the four design decisions that
-phase forced, and `docs/STATUS.md` §3 for what the first real run showed is missing.
+**Landed as of 2026-09-01:** phases 0 through 5. Phase 6 (the golden set) is live and awaiting human
+sign-off — 8 cases, 7 in band + CAP-EPC recorded, positives 2/2. The mandate also broadened on
+2026-09-01 (ADR-0063/0064): the deliverable is a complete standalone report on any company the owner
+names, and §6's feasibility gate is a mandatory *section* of it rather than the system's purpose — which
+makes §1 and §3 of this file the record of how the build got here, not a statement of current scope. See
+`docs/STATUS.md` §1 for the phase-by-phase state and §3 for what remains.

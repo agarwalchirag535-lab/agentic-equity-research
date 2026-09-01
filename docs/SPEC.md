@@ -1,5 +1,5 @@
 # MASTER BUILD PROMPT — "Agentic Equity Research Firm"
-### Micro / Small / Mid-cap multibagger discovery engine (India-first, market-agnostic core)
+### Micro / Small / Mid-cap equity research engine (India-first, market-agnostic core)
 
 ---
 
@@ -19,11 +19,25 @@ Save this file as `docs/SPEC.md` in the repo. It is the constitution.
 
 Build a **research firm made of specialised agents**, not a stock screener with a chatbot on top.
 
-The objective is **not** to find profitable companies. It is to answer one question with an auditable evidence chain:
+**Amended by ADR-0063 and ADR-0064 (2026-09-01, owner directive).** The objective is a **complete,
+standalone, evidence-backed research report on any company the owner chooses to analyze** — business
+quality, growth, financials, earnings quality, valuation, management/governance, forensic red flags,
+risks, industry/peers — landing on a verdict the evidence chain supports, positive or negative.
+
+Within that report one section keeps the original question's teeth, and it is the §6 return-potential
+decomposition:
 
 > *"Can this business plausibly compound earnings fast enough, for long enough, funded by its own returns, under a management team that has historically done what it said — such that a 5–10x over 5–8 years is a live scenario and not a fantasy?"*
 
-Everything in the system serves that question. A company that is profitable but cannot pass the growth-feasibility math (§6) is **rejected**, no matter how good it looks.
+That question is **a mandatory section of every report, not the system's sole purpose**. A company that
+fails the growth-feasibility math (§6) is never refused a report and never silently dropped: research
+eligibility and the investment verdict are separate (ADR-0064). The feasibility miss is a finding
+*inside* that section, and the rest of the analysis is published in full.
+
+*(The pre-amendment text read: "The objective is not to find profitable companies… A company that is
+profitable but cannot pass the growth-feasibility math (§6) is rejected, no matter how good it looks."
+Recorded here because SPEC is the constitution — when in doubt SPEC wins, so what it used to say
+matters to anyone reading an older ADR.)*
 
 **Scope:** Indian listed equities, market cap ₹300 cr – ₹30,000 cr (micro/small/mid). Core engine must be market-agnostic; India-specific logic lives only in `adapters/india/`.
 

@@ -78,14 +78,24 @@ Existing: citation, arithmetic, consistency, hedge, evidence-graph R1–R6. Adde
 
 ## 5. Status — BUILT (2026-07-30)
 
-- `schemas/report.py` — `ResearchReport` (5 verdicts, 11 sections), `VerifiedCleanChecklist`,
+- `schemas/report.py` — `ResearchReport` (6 verdicts **plus the four-value `Outcome` axis above them**,
+  ADR-0067; sections now include `return_potential` (ADR-0068), `valuation` (ADR-0069), `gates`
+  (ADR-0071) and `management_questions` (ADR-0066)), `VerifiedCleanChecklist`,
   `CheckRecord` (PASS / FLAG / NOT_APPLICABLE / UNAVAILABLE, the latter two requiring a reason),
   `Criterion` (dated, filing-resolvable), `ReportClaim` (grade inline).
-- `core/validators/publication.py` — the three blocking gates: **P1** verified-clean completeness (every
+- `core/validators/publication.py` — the **four** blocking gates (P4 was added by ADR-0022 and this line
+  went on saying three): **P1** verified-clean completeness (every
   expected check accounted for; note coverage must be 100%), **P2** symmetry (positives need ≥3 dated kill
   criteria incl. one load-bearing; negatives need rehabilitation criteria; both need the opposing case and
   non-empty open questions), **P3** legal framing (unhedged fraud accusations blocked; a FORENSIC_CAUTION
-  needs replication steps, ≥1 FLAG, and may not rest only on grade C/D).
+  needs replication steps, ≥1 FLAG, and may not rest only on grade C/D), and **P4** line-item integrity
+  (ADR-0022: every unanswered analyst question names what would answer it, every suppressed one says why,
+  and a positive verdict may not ship while high-severity questions the filings were asked stay
+  unanswerable from them).
+
+  When a gate blocks, the run no longer ends in silence: the publication ladder (ADR-0065) republishes
+  a report that asserts strictly less — supplemented, then verdict-withheld, then deterministic-only —
+  and states on the artifact what it withheld and why. The gates were not relaxed to achieve that.
 - `core/report/render.py` — markdown + JSON renderer. `write_report()` **runs the gates and refuses to
   write an invalid report** (`ReportNotPublishable`), so a misleading artifact cannot reach disk by
   accident. Uncited numbers render as `**UNCITED**` rather than passing as sourced.
@@ -107,8 +117,10 @@ The report is no longer assembled by hand. `core/pipeline/deep_dive.py` produces
   next FY close plus the filing lag. A failed feasibility gate becomes the §2 re-entry trigger.
 - **the verdict** is the deterministic ladder in `core/report/assemble.py`; the forensic agent's veto can
   only make it worse.
-- **§6 management and §7 valuation** state that the Phase-3/4 agents did not run, rather than rendering
-  empty — absent is not clean.
+- **§6 management and §7 valuation** are wired: `management_analyst` (Phase 3) and `valuation_modeler` /
+  `portfolio_manager` (Phase 4, ADR-0069/0070) narrate whenever staffed, above a deterministic Valuation
+  section carrying the reverse DCF and the priced grid. When an agent genuinely did not run, the section
+  says so explicitly rather than rendering empty — absent is not clean.
 
 One amendment to §4 above: the note-coverage gate now exempts `INSUFFICIENT_DISCLOSURE`, whose finding *is*
 the unreadable filing, and instead requires that verdict to be evidenced by an `UNAVAILABLE` check or a

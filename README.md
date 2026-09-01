@@ -16,7 +16,8 @@ Full constitution: [`docs/SPEC.md`](docs/SPEC.md). Build plan + corrections: [`d
 Decisions: [`docs/DECISIONS.md`](docs/DECISIONS.md). Short rules: [`CLAUDE.md`](CLAUDE.md).
 
 ## Status
-Phases 0–2 complete. **368 tests; 100% coverage on the compute layer.**
+Phases 0–5 complete; Phase 6 (the golden set) is live and awaiting human sign-off.
+**995 tests; 100% coverage on the compute layer.**
 The firm now publishes: `python -m firm deep-dive --ticker X --as-of D` runs the deterministic layer,
 lets three agents narrate it, checks their claims against the evidence-graph invariants, and writes
 `reports/{TICKER}/{run_id}/report.md` + `.json` only if the three publication gates pass. Full detail:
@@ -45,13 +46,15 @@ lets three agents narrate it, checks their claims against the evidence-graph inv
   `python -m firm deep-dive --ticker X --answers <dir>`. First artifact through the new pipeline:
   `reports/ALKYLAMINE/2026-07-23-433c94208117/` — verdict `INSUFFICIENT_DISCLOSURE`, because four of seven
   checks had no inputs in a screener-only run and a thesis would have been the dishonest answer.
-- **Remaining:** get the cash / receivables / inventory rows out of the audited AR so real companies can
-  reach a substantive verdict; wire the other 11 agents (Phase 3); log the dated criteria as predictions
-  (Phase 5); build the golden-set eval (Phase 6).
+- **Remaining:** human sign-off on the golden set (8 cases, 7 in band, positives 2/2); SPEC §7.5's
+  calibration dashboard; the last of the old-charter narrowness in code (ADR-0063 flags #1–#4 — chiefly
+  `thesis_synthesizer`'s mandate, still written as the multibagger decomposition alone); dated
+  reference-rate rows (ADR-0078); and `make lint`'s ~180 ruff version-drift findings.
 
-Demos: `python -m firm gate-demo` · `python -m firm facts-demo` · `python -m firm ingest --ticker X` ·
-`python -m firm forensic --ticker X` · `python -m firm analyze --ticker X` ·
-`python -m firm packets --ticker X` · `python -m firm deep-dive --ticker X`
+Commands: `gate-demo` · `facts-demo` · `ingest --ticker X` · `ingest-prices --ticker X --scrip N` ·
+`forensic --ticker X` · `analyze --ticker X` · `discover-filings --ticker X --url U` ·
+`packets --ticker X` · `read-packets --ticker X` · `deep-dive --ticker X` · `questions --ticker X` ·
+`resolve --ticker X --as-of D` · `evolve` · `eval` · `register` · `triage` · `run`
 
 ## Quickstart
 ```bash
@@ -68,7 +71,7 @@ config/    thresholds/models/universe/sectors — every magic number lives here
 agents/    markdown prompts (Law 6); _shared/ holds the house standards
 src/firm/  the package (python -m firm)
   core/compute/    Law 1 pure-Python math (multibagger, forensic quality) — 100% tested
-  core/{facts,orchestrator,validators,screen,monitoring,evolution,llm}/  (to build)
+  core/{facts,orchestrator,validators,screen,monitoring,evolution,llm,eval,ingest,graph,pipeline,report,agents}/
   adapters/{base,india}/   market-agnostic core; India logic isolated
   schemas/   Pydantic output contracts (Law 4); _base.py holds shared provenance types
 tests/     mirrors core/compute

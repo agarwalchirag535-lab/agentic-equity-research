@@ -63,5 +63,6 @@ a management claim is data about *management*, not about the *business* · cite 
 
 ## Build order (do not proceed until acceptance test passes AND the human confirms)
 Phase 0 skeleton+contracts → 1 compute → 2 three agents → 3 full roster+orchestrator →
-4 judgment tier → 5 memory loop → 6 evaluation. Current phase: **2 complete → 3 next**
+4 judgment tier → 5 memory loop → 6 evaluation. Current phase: **0–5 complete → 6 (golden set) live,
+awaiting human sign-off**
 (see `docs/STATUS.md` §1 and §3 for the state and the priority order).

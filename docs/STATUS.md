@@ -36,7 +36,7 @@ never "buy this".
 | 5 — memory loop | 🔨 **§7.1-7.4 done 2026-09-01 (ADR-0073/0077/0079)**: `firm resolve` scores due predictions point-in-time; `firm evolve` clusters lessons into prompt proposals a human approves and scores Brier per agent VERSION; per-company memory accumulates and is filtered by `as_of` on read. **Remaining: §7.5 the calibration dashboard** (over/under-confidence curve, hit rate by claim type, and which agent's output most changed the decision — an agent that never changes one is dead weight) |
 | 6 — evaluation / golden set | ⚠️ **live and biting (ADR-0061)**: 8 cases, 7 in band + CAP-EPC recorded, positives **2/2**; register spans 7 event kinds; awaiting human sign-off |
 
-**Tests:** 961 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
+**Tests:** 995 passing · `core/compute` at **100%** (the Phase-1 gate; note `--cov-fail-under=100` scopes
 to the compute layer only, per `pyproject.toml`). `make cov` was silently broken until 2026-07-30 — it
 invoked a bare `python`, absent on stock macOS, so the gate failed before measuring anything; it now
 resolves the interpreter and the 100% is verified rather than asserted · the Phase-2 modules
@@ -271,26 +271,39 @@ what is missing is the *numeric extraction quality* on real ARs (ADR-0011) plus 
 - `firm ingest` writes a grade-B screener snapshot only; wire `backfill_filings()` to the CLI so a run can
   fetch and walk the AR for a ticker in one command (`firm deep-dive --filing latest`).
 
-### B. Phase 3 — the remaining 11 agents onto the same rails
-The three Tier-2 agents are wired; the pattern to copy is `PHASE2_AGENTS` + `NUMERIC_FIELD_SOURCES` +
-`_narration()` in `core/pipeline/deep_dive.py`. Sequencing them behind Gates A–E in
-`core/orchestrator/` is the actual Phase-3 work; `management_analyst` / `ownership_flows_analyst` also need
-shareholding + pledge ingestion, which does not exist yet.
+### B. ~~Phase 3 — the remaining 11 agents onto the same rails~~ — DONE (ADR-0030–0044)
+All nine Phase-2/3 agents are staffed and rendered, and the Phase-4 four followed (ADR-0070).
+`management_analyst` / `ownership_flows_analyst` have their shareholding + pledge ingestion
+(ADR-0035/0038). **Gates A–E no longer sequence agent access in a deep dive**: they are reported as
+findings and filter nothing, because research eligibility is not the investment verdict (ADR-0064/0071).
+They still gate the discovery sweep's cost funnel (SPEC §8) — a different question asked by a different
+caller.
 
 ### C. Phase 5 — finish the memory loop
 - ✅ **done 2026-07-30 (ADR-0023):** a published report's kill criteria are logged to
   `memory/predictions.jsonl`, idempotent by `(run_id, metric)`, at the report's own confidence as the
   probability. Kill criteria only — rehabilitation criteria are counterfactuals the firm is not
   forecasting. Blocked reports log nothing. `run_deep_dive(memory_root=...)` isolates the ledger in tests.
-- `memory/lessons.jsonl` **still does not exist**
-- `resolver.py` is built but **never invoked**: nothing resolves a prediction against a later filing, so
-  the ledger has inputs and no loop. This is the next Phase-5 step and it needs a second point-in-time
-  run of the same ticker to have anything to resolve against.
-- `core/monitoring/` (Brier, resolver, watch triggers) is built but nothing flows into it
-- **`core/evolution/` is completely empty** — the prompt-evolution job (SPEC §7.3) was never written
+- ✅ `memory/lessons.jsonl` exists (first entries 2026-08-31, ADR-0047); 18 lessons as of 2026-09-01.
+- ✅ **done 2026-09-01 (ADR-0073):** `firm resolve` calls `resolve_due()` and scores due predictions
+  against the metric as the firm recomputes it point-in-time, then prints the Brier score. The loop that
+  had inputs and no output now closes.
+- ✅ **done 2026-09-01 (ADR-0077):** `core/evolution/{lessons,propose,calibration}.py` + `firm evolve`
+  cluster lessons into prompt-change proposals a human approves, and score Brier per agent VERSION so a
+  card revision is a claim that can be checked. It proposes; it never applies.
+- ✅ **done 2026-09-01 (ADR-0079):** per-company memory (SPEC §7.4) accumulates across runs and is
+  filtered by `as_of` on read, so a later conclusion cannot leak into an earlier replay.
+- ⬜ **§7.5, the calibration dashboard, is still unbuilt** — the over/under-confidence curve, hit rate by
+  claim type, and the attribution question that matters most: which agent's output most changed the
+  decision. An agent whose output never changes one is dead weight.
 
-### D. Phase 6 — the golden set ← **the biggest risk, and the honest measure**
-`evals/golden_set/` and `evals/rubrics/` contain only `.gitkeep`; there is no `run_eval.py`.
+### D. Phase 6 — the golden set ← **still the biggest risk, and now live** (ADR-0057–0061)
+`evals/golden_set/` holds 8 real cases (ALKYLAMINE-FY19/21/23/26, CREDITACC-FY26, FIVESTAR-FY26,
+GAYATRI-FY18, PCJEWELLER-FY21) plus `_register.jsonl`/`_candidates.jsonl`; `firm eval`
+(`core/eval/run.py`) replays them. 7 in band + CAP-EPC recorded, positives 2/2, **awaiting human
+sign-off**. The set still needs to grow toward PLAN §9's 30-company target across more fraud types, and
+GOLDEN_SET.md §1's dated-reference-rate prerequisite is half-closed (ADR-0078: mechanism built, rows
+not yet sourced).
 **Every forensic threshold in `config/*.yaml` is provisional until this calibrates them.** Needs 30
 Indian companies 2015–2021, point-in-time frozen, spanning fraud *types* (receivable, cash, guarantee,
 inventory — not just lender). PLAN §9 warns this is 3–5× harder than the agent phases. The Phase-2
@@ -303,10 +316,12 @@ refuses to read a filing published after `as_of`.
 - **Exogenous series** (`config/exogenous.yaml`) — `divergence.py` works but has no data behind it
 - Matrix items needing external data: same-store growth, ECL stage migration, RERA/USFDA cross-checks
 
-### F. Phase 4 — judgment tier
-`valuation_modeler`, `thesis_synthesizer`, `red_team`, `portfolio_manager` exist as prompts only. Until
-they run, every report says so explicitly in its Valuation and Management sections rather than leaving them
-blank — see the ALKYLAMINE note.
+### F. ~~Phase 4 — judgment tier~~ — DONE 2026-09-01 (ADR-0069/0070/0071/0072)
+`valuation_modeler`, `thesis_synthesizer`, `red_team` and `portfolio_manager` are staffed at phase 4 in
+`config/roster.yaml` and narrate whenever the run staffs them (`core/pipeline/deep_dive.py`). The
+valuation section renders (ADR-0069), Gates A–E report as findings rather than filters (ADR-0071), and
+the base FCF is normalised over a cycle (ADR-0072). A run that does NOT staff them still says so
+explicitly rather than rendering an empty section — absent is not clean.
 
 ## 4. Owner directives (standing — do not violate)
 
@@ -942,16 +957,30 @@ mechanical 70-file reformat is left for the owner to schedule. Also unpaid by ch
 
 ## 7. Suggested next step
 
-Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):
+Updated 2026-09-01. The 2026-08-31 list is superseded and **all of its open items are done** — the PCJ
+REJECT report published (§6c, ADR-0047), ADR-0046 reading wired into the CLI (§6h, ADR-0055), and
+note-level reads landed (§6i, ADR-0056). In order:
 
-1. **Publish the PC Jeweller REJECT report** — take the verified facts through `run_deep_dive` with
-   narration to a published dual-verdict FAIL report; this exercises the verdict ladder + publication
-   gates on a HARD_FAIL for the first time and seeds the golden set (n=1).
-2. **Wire ADR-0046 reading into the CLI** (`firm read-packets` / `deep-dive --readings`) so the packet
-   path works for any company without driving Python by hand; then a compounder and a boring company
-   point-in-time (golden set n=3, three business shapes).
-3. **Note-level reads for PCJ-class inputs** (interest income on cash, Schedule III promoter rows) via
-   the same propose/verify pattern — NOT more hand-coded note parsers.
+1. **Human sign-off on the golden set (Phase 6).** 8 cases, 7 in band + CAP-EPC recorded, positives 2/2.
+   Every forensic threshold in `config/*.yaml` stays provisional until this happens, and the set still
+   needs to grow toward PLAN §9's 30 companies across more fraud types. **This is the honest measure and
+   it is the only item here that can tell the firm it is wrong.**
+2. **Source the dated reference-rate rows** (ADR-0078). The mechanism is built and
+   `by_fiscal_year` is empty, so every cash-yield floor still rests on an undated 6.5% and says so. A
+   test shows the flat rate false-positives in a low-rate year and false-negatives in a high-rate one —
+   which is exactly the year-dependent error GOLDEN_SET.md §1 warns calibration would learn to
+   compensate for, so this should land BEFORE sign-off, not after.
+3. **Retire the last old-charter narrowness in code** (ADR-0063 flags #1–#4). `POSITIVE_VERDICTS` still
+   has one member; `choose_verdict` still lets a feasibility miss carry the ladder; and
+   `agents/thesis_synthesizer.md` is still v1.0.0 with its mandate written as "own the §6 multibagger
+   decomposition and the feasibility gate" rather than the overall investment case.
+4. **SPEC §7.5, the calibration dashboard** — the over/under-confidence curve, hit rate by claim type,
+   and the attribution question that matters most: which agent's output most changed the decision. An
+   agent whose output never changes one is dead weight and should be cut.
+5. **`make lint`** — ~180 ruff findings, nearly all version drift (UP035/ISC004/RUF022). A mechanical
+   ~70-file reformat; the non-style findings among them were fixed in `899ebde`.
+6. **Rename `QUALITY_WRONG_PRICE`** — it fires on the feasibility gate, not a price test, and has been
+   misnamed since Phase 2. Worth doing the next time the verdict ladder is opened (see item 3).
 4. ~~Re-run ALKYLAMINE through the reading path and diff against the walker's facts~~ **DONE
    2026-08-31 — the two extraction lines cross-validate.** The FY26 AR read via ADR-0046 (60 figures,
    3/3 statements verified, zero violations; sha256-verified re-download): **9/9 exact agreement** with
