@@ -252,7 +252,7 @@ def beneish_m_score(prior: BeneishYear, current: BeneishYear) -> float:
             (p.long_term_debt + p.current_liabilities) / p.total_assets
         )
         tata = (t.income_continuing_ops - t.cfo) / t.total_assets
-    except ZeroDivisionError as exc:  # noqa: F841
+    except ZeroDivisionError as exc:
         raise ValueError("beneish_m_score: a required denominator was zero") from exc
 
     return (

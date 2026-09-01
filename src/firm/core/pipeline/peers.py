@@ -262,7 +262,7 @@ def _growth_metric(
     for company in (subject, peer):
         start, end = company.fact(SALES, first), company.fact(SALES, last)
         if start is None or end is None:
-            return f"sales_cagr is not compared: Sales is missing at a window bound"  # pragma: no cover
+            return "sales_cagr is not compared: Sales is missing at a window bound"  # pragma: no cover
         try:
             value = ratios.cagr(start.value, end.value, span)
         except ValueError:

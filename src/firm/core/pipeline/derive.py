@@ -770,7 +770,7 @@ def derive_metrics(
     # further back. Summing each over "whatever years it has" would divide eleven years of depreciation
     # into ten of capex and call the answer a ratio.
     both = [p for p in with_core if facts.fact(CAPEX, p) and facts.fact(DEPRECIATION, p)]
-    capex_sum = _cum(b, facts, "capex_cum_window", CAPEX, with_core, f"Σ |capex|, {f0}-{fN}", sign=-1.0)
+    _cum(b, facts, "capex_cum_window", CAPEX, with_core, f"Σ |capex|, {f0}-{fN}", sign=-1.0)
     if both:
         window = f"{both[0]}-{both[-1]}"
         inputs = ([facts.fact(CAPEX, p) for p in both] + [facts.fact(DEPRECIATION, p) for p in both])

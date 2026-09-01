@@ -28,6 +28,7 @@ import json
 import math
 from dataclasses import dataclass
 from datetime import date
+from typing import Sequence
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
