@@ -2950,3 +2950,43 @@ inventing the reason a forecast failed is exactly the kind of narration this fir
 **Still open in Phase 5:** `core/evolution/` remains empty — the prompt-evolution job (SPEC §7.3) was
 never written, and now that resolutions produce a real score there is finally something for it to
 learn from.
+
+### ADR-0074 — A check nothing calls protects nothing: call-site coverage becomes structural
+
+**Date** 2026-09-01 · **Status** accepted · **Files** `tests/test_no_orphaned_checks.py` (new) ·
+**925 tests, compute 100%**
+
+**Why this exists.** Three defects of exactly one shape surfaced in a single day, none of them found by
+the test suite:
+
+* `_scenario_discipline` (ADR-0070) — written to stop an agent inventing a return multiple, its own
+  docstring calling that "the single easiest way to launder an invented number through this system".
+  **Never called.** An agent could write "bull: 4.2x" beside a computed 0.03x and pass every gate.
+* `cleared_a_positive` (ADR-0071) — the golden set's record of the firm's most expensive error, unused
+  while `render()` recomputed its count inline, so the number printed without naming the company.
+* `resolve_due` / `brier_score` (ADR-0073) — the entire memory loop, tested since Phase 0 and called by
+  nothing, so the firm logged forecasts for months and never learned whether it was right.
+
+Each had passing unit tests. That is the lesson: **unit tests do not catch a missing call site, because
+the unit works perfectly in isolation.** The suite verified that the checks were correct and never that
+they were connected — and a check nothing calls cannot fail, so it protects nothing while reading, in
+review and in an ADR, exactly like protection.
+
+**The guard.** `test_every_private_function_has_a_caller` fails when a module-level function named with
+a single leading underscore has no reference in its own module. Scope is deliberately narrow: such
+functions are private by convention, so an uncalled one is dead code or a disconnected check, never a
+public API awaiting its first consumer. It was verified to fire by injecting an orphan, watching the
+test fail, and removing it — a guard that has never been seen to fail is the very thing this ADR is
+about.
+
+**The allowlist is empty and should stay empty.** A guard with a long allowlist teaches people to
+extend the allowlist; a second test fails if an entry names a function that is no longer orphaned, so
+an exemption cannot quietly outlive its reason.
+
+**Known limitation, stated rather than papered over.** Two of the three defects were *public*
+(`cleared_a_positive`, `resolve_due`), and this guard would not have caught them: "no caller yet" is a
+defensible state for a public helper, and enforcing it would need an allowlist of dozens of legitimate
+compute-layer entries — which is the failure mode above. The narrow check buys the case with no
+exceptions. The public case stays a review question, and the sweep that found these
+(cross-referencing every definition against uses outside its module) is worth re-running when a phase
+completes.
