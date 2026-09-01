@@ -892,6 +892,27 @@ years against 5.2% realised.** PC Jeweller returns `unavailable` with all four g
 section, gate D/E, and normalise the base FCF (a single trough year currently flatters the bear case —
 the fix is the missing input, per ADR-0059, not a nudged discount rate).
 
+## 6p. The publication ladder closes the completeness hole (2026-09-01, ADR-0065)
+
+The first code to land under the broadened mandate, and it came straight out of ADR-0064's own audit:
+`run_deep_dive` wrote nothing when a publication gate (P1-P4) or a graph invariant (R1-R6) refused the
+report, so "research this company" could answer with silence. No gate was relaxed to fix it. Instead a
+four-rung ladder publishes something the gates already accept — supplement the missing sections,
+withhold the verdict, fall to a deterministic floor — with a fifth rung that writes the floor anyway,
+naming its own failed gates, because an artifact that admits its limits beats no artifact.
+
+The piece that made it possible is `core/report/narration.py`: **the narration the firm can write with
+no agent at all.** P2 demands a thesis, an anti-thesis and open questions, all previously agent-authored,
+so an empty floor would have failed the gate it existed to satisfy. The deterministic layer now authors
+all three from the check evaluation, the screen, the notes and the interrogation — and its open
+questions are already phrased as **questions for management**, split from the firm's own extractor
+backlog per ADR-0051. That is the seed of the standing questions-for-management deliverable.
+
+Two invariants are pinned by tests because a careless later change would break them: **degrading never
+launders a red flag** (every rung reassembles from the same deterministic checklist, so FLAGs, the
+anti-thesis and the replication notes survive at every level), and **the verdict never improves**.
+877 tests, compute still 100%.
+
 ## 7. Suggested next step
 
 Updated 2026-08-31, in order (the 2026-08-01 list is superseded — the PC Jeweller run reset priorities):

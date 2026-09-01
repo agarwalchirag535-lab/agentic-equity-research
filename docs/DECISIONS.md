@@ -2563,3 +2563,75 @@ research — it is to research them deeply enough to explain *why* they are good
    management-questions artifact (assembled from `open_questions` + `disclosure_backlog` +
    UNANSWERED line items, deduplicated, cited, ordered by severity) a standing deliverable of every
    report — a section and/or `firm questions --ticker X` — not a someday item.
+
+### ADR-0065 — The publication ladder: gates stay blocking, and the run always leaves an artifact
+
+**Date** 2026-09-01 · **Status** accepted · **Implements** ADR-0064 flag #1 · **Files**
+`core/report/narration.py` (new), `core/report/publish.py` (new), `core/pipeline/deep_dive.py`,
+`cli.py`, `tests/report/test_publish_ladder.py` (new) · **877 tests, compute 100%**
+
+**The hole.** ADR-0064 promised that an owner-chosen company always gets a report. The code did not
+keep that promise on the firm's own side: `run_deep_dive` wrote `report.md` only when the publication
+gates (P1-P4) and the graph invariants (R1-R6) were both clean, and otherwise returned a debuggable
+object and wrote nothing. The owner's answer to "research this company" could therefore be silence —
+and silence is the one outcome that is never honest, because it is indistinguishable from "we
+declined", "it crashed", and "there was nothing to say".
+
+**What was NOT done, and why.** The tempting fix is to exempt a blocked report from a gate, or to
+lower a threshold until the artifact appears. Every one of those gates polices the FIRM's claims, not
+the company's quality: P1 says a clean verdict must show its work, P2 that optimism and pessimism face
+the same standard, P3 that a forensic finding is hedged and replicable, R6 that no claim rests on a
+document published after `as_of`. Relaxing one to manufacture an artifact would trade honesty for
+completeness, which is exactly the trade the invariants forbid. **No gate was changed by this ADR.**
+
+**What was done.** A ladder that publishes something the gates *already* accept, by asserting strictly
+less at each rung, and that says on the artifact what it withheld:
+
+1. **As assembled** — gates passed, nothing happens.
+2. **Supplemented** — the analysts' prose stands and the deterministic layer fills what the gates found
+   missing. The verdict survives. This rescues the common case (a narration with no anti-thesis, a
+   FORENSIC_CAUTION with no replication notes) *without* touching the judgment.
+3. **Verdict withheld** — the judgment drops to `INSUFFICIENT_EVIDENCE`, whose definition is already
+   "we could not look hard enough to judge, for want of the firm's own reach". A gate refusing our own
+   report is precisely that. The original verdict is named in the executive summary and in the coverage
+   gaps, so a downgrade can never bury what the ladder actually concluded.
+4. **Deterministic floor** — no agent narration, no evidence graph, verdict withheld.
+5. **Forced** — if even the floor fails, the floor is written anyway with the residual rules named in
+   the body. This should never fire; it exists so the failure is visible instead of silent.
+
+**The load-bearing new piece is `core/report/narration.py`** — the narration the firm can write with
+no agent at all. P2 requires a thesis, an anti-thesis and non-empty open questions, all three of which
+were agent-authored, so an empty-narration floor would have failed the very gate it was meant to
+satisfy. Rather than exempt the floor, the deterministic layer now authors them: the thesis is what
+actually passed, the anti-thesis is what flagged plus what could not be tested plus a standing
+limitation that is true even of a spotless company, and the open questions are the disclosure gaps
+phrased **as questions for management**, kept separate from the firm's own extractor backlog
+(ADR-0051 — publishing our unfinished parser as their opacity is a false accusation). Nothing is
+summarised from agent prose, so this narration cannot cite a fact that does not exist: it never
+authors one. It is also the seed of the standing questions-for-management deliverable ADR-0064 owes.
+
+**Two properties the tests pin down**, because they are what a careless later change would break:
+
+* **Degrading never launders a red flag.** Every rung reassembles from the same deterministic
+  `CheckEvaluation`, so the checklist, its FLAGs, the anti-thesis and the replication notes survive
+  intact at every level. A run that reached FORENSIC_CAUTION cannot be quietened into an empty report
+  — only into one that says "the judgment is withheld" while still showing every flag.
+* **The verdict never improves.** No rung asserts more than the one above it.
+
+**Known limitation, deliberately not papered over.** A negative verdict whose rehabilitation criteria
+cannot be derived (no flags, nothing unavailable, no feasibility result) is unsatisfiable at every
+rung and lands on rung 5. `choose_verdict` does not produce that state — such a company is a
+COMPOUNDER, not a WATCH — and the honest options were to fabricate a criterion (refused: a Criterion
+must be dated and filing-resolvable, SPEC §7.1) or to let the artifact name its own failure. The
+second is tested explicitly.
+
+**Also changed.** `DeepDiveResult` gains `degradation`, `residual_violations` and `assembled_report`;
+`publication_violations` keeps its old meaning (what the gates said about the report as first
+assembled) so existing callers and tests are unaffected. `firm deep-dive` prints the degradation
+loudly — an operator who reads "published" and cannot tell a full report from a withheld-verdict one
+has been misled by omission — and `--force` keeps its meaning by persisting the as-assembled draft,
+which is the artifact worth debugging.
+
+**Refinement left on the table:** a graph violation currently falls all the way to rung 4, discarding
+every agent claim rather than pruning the offending ones. Surgical pruning is a later improvement; the
+current behaviour is safe (it drops too much, never too little) and simple.

@@ -482,15 +482,26 @@ def deep_dive(
     for violation in result.publication_violations:
         typer.echo(f"  publication gate {violation.rule} @ {violation.field}: {violation.detail}")
 
-    if result.published:
-        typer.echo(f"  published: {result.markdown_path}")
-        return
+    # ADR-0065: the gates above still refuse what they always refused, but a refusal now degrades the
+    # report instead of cancelling it. Say so loudly — an operator who reads "published" and cannot
+    # tell a full report from a withheld-verdict one has been misled by omission.
+    if result.degraded:
+        typer.echo("  ⚠ DEGRADED — the gates refused the report as assembled; a lesser one was published:")
+        for note in result.degradation:
+            typer.echo(f"      · {note}")
+    if result.residual_violations:
+        typer.echo(f"  ⚠⚠ the written report STILL fails {', '.join(result.residual_violations)} — "
+                   f"this is a firm-side bug, not a finding about the company")
+
     if force:
-        md, _ = write_report(result.report, reports_root, force=True)
-        typer.echo(f"  ⚠ FORCED draft written (failed gates): {md}")
+        # `--force` runs with write=False and persists the draft here instead, keeping its original
+        # meaning: the report AS ASSEMBLED, agents' narration and all, gates not enforced. That draft is
+        # the thing worth debugging — the ladder's degraded version is already reproducible from it.
+        draft = result.assembled_report if result.assembled_report is not None else result.report
+        md, _ = write_report(draft, reports_root, force=True)
+        typer.echo(f"  ⚠ FORCED: as-assembled draft written, publication gates NOT enforced: {md}")
         return
-    typer.echo("  NOT PUBLISHED — fix the violations above (a report that fails a gate never ships)")
-    raise typer.Exit(1)
+    typer.echo(f"  published: {result.markdown_path}")
 
 
 @app.command("read-packets")

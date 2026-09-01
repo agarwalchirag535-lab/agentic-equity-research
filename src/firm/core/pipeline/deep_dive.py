@@ -39,6 +39,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from datetime import date
+from functools import partial
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -93,6 +94,8 @@ from firm.core.report.assemble import (
     assemble_report,
     choose_verdict,
 )
+from firm.core.report.narration import deterministic_narration
+from firm.core.report.publish import publish_or_degrade
 from firm.core.report.render import write_report
 from firm.core.validators import arithmetic, citation
 from firm.core.validators.evidence_graph import GraphViolation, validate_graph
@@ -234,12 +237,27 @@ class DeepDiveResult:
     publication_violations: tuple[PublicationViolation, ...]
     markdown_path: Path | None = None
     json_path: Path | None = None
-    #: Kill criteria logged to the prediction ledger. Empty unless the report actually published.
+    #: Kill criteria logged to the prediction ledger. Empty unless the report published undegraded.
     predictions: tuple[Prediction, ...] = ()
+    #: What the publication ladder had to withhold for this report to ship (ADR-0065). Empty means the
+    #: report is exactly what the run assembled; non-empty means the same text is on the artifact.
+    degradation: tuple[str, ...] = ()
+    #: Gates still failing on the artifact that was WRITTEN. Should always be empty — the deterministic
+    #: floor is built to satisfy them — so a non-empty value is a bug worth chasing, not a bad company.
+    residual_violations: tuple[str, ...] = ()
+    #: The report as FIRST assembled, kept only when the ladder published something else. The agents'
+    #: narration is the most expensive thing a run produces and a gate failure should not vanish it from
+    #: the operator's view; `firm deep-dive --force` writes this draft instead of the degraded report.
+    assembled_report: ResearchReport | None = None
 
     @property
     def published(self) -> bool:
         return self.markdown_path is not None
+
+    @property
+    def degraded(self) -> bool:
+        """True when the gates refused the assembled report and a lesser one was published instead."""
+        return bool(self.degradation)
 
     @property
     def blocked_by(self) -> tuple[str, ...]:
@@ -864,34 +882,56 @@ def run_deep_dive(
         # NOT `coverage_gaps`. The verdict must never move because the FIRM failed to look — ADR-0019.
         # They reach the report (below) so a reader sees them, and stop there.
     )
-    report = assemble_report(
+    # Everything run-constant is bound once: the publication ladder (ADR-0065) may have to re-assemble
+    # this report two or three times, and a second literal argument list is a second place to drift.
+    assemble = partial(
+        assemble_report,
         ticker=ticker, company_name=company_name or ticker, as_of=as_of, run_id=run_id,
-        decision=decision, derived=derived, evaluation=evaluation, models=models, notes=notes,
-        graph=graph, load_bearing_ids=load_bearing_ids,
-        narration=_narration(run.outputs, screen, evaluation, derived, feasibility),
+        derived=derived, evaluation=evaluation, models=models, notes=notes,
         agent_versions={o.agent: o.agent_version for o in run.outputs.values()},
         forensic=thresholds["forensic"], policy=policy,
         feasibility=feasibility,
         self_fund_ceiling=float(thresholds["multibagger"]["self_fund_ceiling"]),
         interrogation=interrogation,
-        coverage_gaps=coverage_gaps,
         # Quiet revisions between visible filings (lesson 3 of the first prediction resolution): every
         # figure a later filing changed, point-in-time, from the overlap classifier. Deterministic; the
         # Ind AS transition legitimately produces a cluster, which is why the section explains itself.
         restatements=restatement_log(
             store, ticker, None, as_of, thresholds["reconciliation"]),
     )
+    agent_narration = _narration(run.outputs, screen, evaluation, derived, feasibility)
+    assembled = assemble(
+        decision=decision, graph=graph, load_bearing_ids=load_bearing_ids,
+        narration=agent_narration, coverage_gaps=coverage_gaps,
+    )
 
-    publication_violations = tuple(validate_report(report))
+    publication_violations = tuple(validate_report(assembled))
+    # ADR-0064/0065: a company the owner chose is never left without an artifact. The gates stay
+    # blocking — `publication_violations` above still records exactly what they refused — but the
+    # fallback when they block is a report that asserts LESS, never a lowered gate.
+    report, degradation, residual_violations = publish_or_degrade(
+        assemble=assemble, as_of=as_of, report=assembled, decision=decision,
+        publication_violations=publication_violations, graph_violations=graph_violations,
+        agent_narration=agent_narration,
+        fallback_narration=deterministic_narration(
+            evaluation=evaluation, screen=screen, notes=notes,
+            interrogation=interrogation, feasibility=feasibility,
+        ),
+        graph=graph, load_bearing_ids=load_bearing_ids, coverage_gaps=coverage_gaps,
+    )
+
     md_path = json_path = None
     logged: tuple[Prediction, ...] = ()
-    if write and not publication_violations and not graph_violations:
-        md_path, json_path = write_report(report, reports_root)
+    if write:
+        # `force` only ever applies on the ladder's last rung, where the artifact names its own failed
+        # gates in the body — an unpublishable draft that says so beats silence (ADR-0065).
+        md_path, json_path = write_report(report, reports_root, force=bool(residual_violations))
         # Phase 5 (ADR-0023): a published report's dated kill criteria become scoreable predictions.
-        # Only on publish — a report blocked by a gate was never a forecast, and logging it would let the
-        # calibration record fill up with theses the firm declined to stand behind.
-        ledger = Path(memory_root) if memory_root is not None else Path(repo) / "memory"
-        logged = tuple(log_report_predictions(report, ledger / "predictions.jsonl"))
+        # Only on a clean publish — a report the gates refused was never a forecast, and logging one
+        # would let the calibration record fill up with theses the firm declined to stand behind.
+        if not degradation:
+            ledger = Path(memory_root) if memory_root is not None else Path(repo) / "memory"
+            logged = tuple(log_report_predictions(report, ledger / "predictions.jsonl"))
 
     return DeepDiveResult(
         ticker=ticker, as_of=as_of, run_id=run_id, report=report, decision=decision, derived=derived,
@@ -900,7 +940,8 @@ def run_deep_dive(
         fragments=tuple(run.fragments),
         outputs=tuple(run.outputs.values()), graph_violations=graph_violations,
         publication_violations=publication_violations, markdown_path=md_path, json_path=json_path,
-        predictions=logged,
+        predictions=logged, degradation=degradation, residual_violations=residual_violations,
+        assembled_report=assembled if degradation else None,
     )
 
 
