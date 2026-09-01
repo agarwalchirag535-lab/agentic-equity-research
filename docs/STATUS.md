@@ -976,11 +976,11 @@ note-level reads landed (§6i, ADR-0056). In order:
    at v1.1.0 owning the overall investment case with the §6 decomposition as one pillar.
    `POSITIVE_VERDICTS` deliberately keeps one member — see the ADR for why a second would re-hardcode
    a house opinion about which targets deserve applause.
-4. **SPEC §7.5, the calibration dashboard** — the over/under-confidence curve, hit rate by claim type,
-   and the attribution question that matters most: which agent's output most changed the decision. An
-   agent whose output never changes one is dead weight and should be cut.
-5. **`make lint`** — ~180 ruff findings, nearly all version drift (UP035/ISC004/RUF022). A mechanical
-   ~70-file reformat; the non-style findings among them were fixed in `899ebde`.
+4. ~~**SPEC §7.5, the calibration dashboard**~~ — **compute + record DONE (ADR-0084)**: `firm dashboard`
+   writes `memory/calibration.md`, panels refuse below config floors, attribution by counterfactual
+   replay of the verdict ladder. Remaining: the HTML page, held for sign-off/calibration.
+5. ~~**`make lint`**~~ — **GREEN (ADR-0086)**: the rule set is pinned in `pyproject.toml` with argued
+   ignores, so the next ruff upgrade changes findings by decision rather than by surprise.
 6. ~~**Rename `QUALITY_WRONG_PRICE`**~~ — **DONE 2026-09-01 (ADR-0081)**, together with item 3.
 4. ~~Re-run ALKYLAMINE through the reading path and diff against the walker's facts~~ **DONE
    2026-08-31 — the two extraction lines cross-validate.** The FY26 AR read via ADR-0046 (60 figures,
