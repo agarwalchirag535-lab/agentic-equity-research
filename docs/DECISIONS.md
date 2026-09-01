@@ -3120,3 +3120,37 @@ data, not code.
 shipped with a `__float__` convenience nothing called. The orphan guard skips dunders, and the 100%
 compute-coverage gate is what caught it. It was deleted rather than tested — code that exists only to
 be tested is the same dead weight in a nicer shape.
+
+### ADR-0079 — Per-company memory, and the backwards leak it must not spring
+
+**Date** 2026-09-01 · **Status** accepted · **SPEC §7.4** · **Files**
+`core/monitoring/company_notes.py` (new), `core/pipeline/deep_dive.py`,
+`tests/monitoring/test_company_notes.py` (new) · **979 tests, compute 100%**
+
+`memory/company_notes/` had existed as an empty directory with a `.gitkeep` since Phase 0, and nothing
+in `src/` or `tests/` referenced it. SPEC §7.4's promise — *"the system should never re-learn something
+it already knew about a company"* — was unimplemented, so every run started from zero and could
+silently contradict a conclusion the firm published a month earlier without anyone noticing.
+
+`append_run` now records each published run — outcome, verdict, what flagged, what could not be
+evaluated, the criteria the firm staked itself on, the questions it put to management — and
+`read_notes` feeds them back into the agent packet on the next run.
+
+**The point-in-time filter is the whole design, not a refinement.** The golden set replays historical
+`as_of` dates. A notes file that let a 2026 conclusion be read during a 2019 replay would hand every
+replay the answer, and the eval would then measure the firm's ability to read its own notes **while
+reporting it as foresight** — the most expensive bug this file could contain, because the result looks
+like success. Every entry carries the date it was written from and `read_notes(as_of)` returns only
+entries at or before it, the same filter the fact store applies to documents, for the same reason. An
+entry whose date cannot be parsed is skipped rather than included: an undateable memory cannot be
+filtered, and unfilterable memory is the leak.
+
+**A note is the firm's own prior output, never evidence.** It carries no fact id, so the citation
+validator rejects any claim leaning on one, and the payload says so in as many words. Prior conclusions
+shape which questions get asked; they never support a finding. **Degraded reports are recorded too** —
+a withheld verdict is still something the firm decided, and it should have to face that next time.
+
+**Correction to this session's own STATUS entry.** Phase 5 was marked complete on ADR-0073/0077. That
+was wrong: §7.4 was unbuilt (this ADR) and §7.5, the calibration dashboard, still is. STATUS now says
+so. Overstating coverage in the status file is the same failure the report gates exist to prevent, and
+it is worse there, because STATUS is what the next session reads first.

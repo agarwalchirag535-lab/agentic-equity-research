@@ -79,6 +79,7 @@ from firm.core.ingest.filings import restatement_log
 from firm.core.ingest.prices import ADV, latest_market_fact
 from firm.core.llm.cache import make_key
 from firm.core.llm.provider import Provider, StaticProvider
+from firm.core.monitoring.company_notes import append_run, read_notes
 from firm.core.monitoring.predictions import Prediction, log_report_predictions
 from firm.core.pipeline import derive as D
 from firm.core.pipeline.checks import CheckEvaluation, ExternalInputs, evaluate_checks
@@ -337,6 +338,7 @@ def agent_facts_payload(
     notes: NotesReview, guidance: Sequence[Fact] = (),
     peers: Sequence[PeerComparison] = (),
     valuation: Any | None = None,
+    prior_notes: Sequence[Any] = (),
 ) -> dict[str, Any]:
     """What the agents are shown: computed numbers WITH their fact ids, and nothing they must compute.
 
@@ -395,6 +397,19 @@ def agent_facts_payload(
             }
             for f in guidance
         ],
+        # WHAT THE FIRM ALREADY CONCLUDED (SPEC §7.4). Its own prior output, never evidence: no entry
+        # carries a fact id, so the citation validator rejects any claim that leans on one. It is here
+        # so an agent can be confronted with a conclusion the firm reached before — including one it
+        # now disagrees with — rather than re-deriving the company from scratch every run.
+        "prior_conclusions": {
+            "rule": ("this is THIS FIRM's own past output, not evidence about the company. Do not "
+                     "cite it, and do not treat a past verdict as support for a present one. Use it "
+                     "to notice what has changed and to avoid re-asking a question already answered"),
+            "entries": [
+                {"as_of": e.as_of.isoformat(), "run_id": e.run_id, "text": e.text}
+                for e in prior_notes
+            ],
+        },
         # The priced grid, for the judgment tier (ADR-0070). The valuation's SCALARS already reach the
         # agent through `computed_metrics` (they are derivations on the run's DerivedSet, so they carry
         # citable ids); the scenario ROWS do not, and `valuation_modeler` cannot assign probabilities to
@@ -914,8 +929,14 @@ def run_deep_dive(
     guidance = store.query_metric_prefix(ticker, "guidance:", as_of)
     peer_comparisons = load_peer_comparisons(store, ticker, peers, as_of, start_year=start_year)
     peer_values = peer_citable_values(peer_comparisons)
+    # Prior conclusions, filtered to what existed at `as_of` (SPEC §7.4). A note from a later run is
+    # invisible here: the golden set replays historical dates, and memory leaking backwards would hand
+    # every replay the answer and report it as foresight.
+    prior = read_notes(ticker, Path(memory_root) if memory_root is not None else Path(repo) / "memory",
+                       as_of)
     payload = agent_facts_payload(derived, evaluation, screen, feasibility, models, notes,
-                                  guidance=guidance, peers=peer_comparisons, valuation=valuation)
+                                  guidance=guidance, peers=peer_comparisons, valuation=valuation,
+                                  prior_notes=prior)
     packets = build_packets(payload, agents_dir=agents_path, repo_root=repo, agents=agents)
     known_fact_ids = (set(facts.all_fact_ids()) | {f"derived:{n}" for n in derived.values}
                       | {f.fact_id for f in guidance} | set(peer_values))
@@ -1073,6 +1094,10 @@ def run_deep_dive(
         # `force` only ever applies on the ladder's last rung, where the artifact names its own failed
         # gates in the body — an unpublishable draft that says so beats silence (ADR-0065).
         md_path, json_path = write_report(report, reports_root, force=bool(residual_violations))
+        # SPEC §7.4: what the firm concluded about this company, so the next run starts from it rather
+        # than re-deriving it. Written on every publish including degraded ones — a withheld verdict is
+        # still something the firm decided and should have to face next time.
+        append_run(report, Path(memory_root) if memory_root is not None else Path(repo) / "memory")
         # Phase 5 (ADR-0023): a published report's dated kill criteria become scoreable predictions.
         # Only on a clean publish — a report the gates refused was never a forecast, and logging one
         # would let the calibration record fill up with theses the firm declined to stand behind.
