@@ -360,4 +360,47 @@ def write_report(
     json_path = out_dir / "report.json"
     md_path.write_text(render_markdown(report))
     json_path.write_text(render_json(report))
+    # The questions travel separately as well as inside the report (ADR-0076). The owner takes them into
+    # a meeting; a 40-page research note is the wrong thing to hold while someone is answering.
+    if report.management_questions:
+        (out_dir / "questions.md").write_text(render_questions(report))
     return md_path, json_path
+
+
+def render_questions(r: ResearchReport) -> str:
+    """The questions-for-management page, standalone — the artifact that goes into the meeting.
+
+    Same content as the report's section, and deliberately the same source: both project
+    `report.management_questions`, so the page a company is asked from cannot drift from the page the
+    firm published. Ordered by severity, with what would answer each, because "where is it disclosed?"
+    is the follow-up that actually closes a gap.
+    """
+    out = [
+        f"# Questions for management — {r.company_name} ({r.ticker})",
+        "",
+        (f"_Prepared as of {r.as_of.isoformat()} from run `{r.run_id}`. Outcome: "
+         f"`{r.outcome.value}` · verdict: `{r.verdict.value}`._"),
+        "",
+        ("_Every question below is the company's to answer: it comes from a check that flagged, an "
+         "input the filings did not carry, or a question the sources were asked and did not answer. "
+         "Gaps in this firm's own extraction are excluded on purpose — they belong in our backlog, not "
+         "in your meeting._"),
+        "",
+    ]
+    for severity in ("high", "medium", "low"):
+        group = [q for q in r.management_questions if q.severity == severity]
+        if not group:
+            continue
+        out += [f"## {severity.capitalize()} priority", ""]
+        for i, q in enumerate(group, 1):
+            out += [f"**{i}. {q.question}**", "", f"- _Why it matters:_ {q.why}"]
+            if q.answerable_from:
+                out += [f"- _Answerable from:_ {'; '.join(q.answerable_from)}"]
+            if q.source:
+                out += [f"- _Raised by:_ `{q.source}`"]
+            out += [""]
+    other = [q for q in r.management_questions if q.severity not in ("high", "medium", "low")]
+    if other:
+        out += ["## Other", ""] + [f"- {q.question}" for q in other] + [""]
+    out += ["---", "", f"> {r.disclaimer}"]
+    return "\n".join(out).rstrip() + "\n"

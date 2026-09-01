@@ -731,6 +731,50 @@ def packets(
                f"python -m firm deep-dive --ticker {ticker} --as-of {run_date} --answers {out_dir}")
 
 
+@app.command("questions")
+def questions_cmd(
+    ticker: str = typer.Option(..., "--ticker"),
+    reports_root: str = typer.Option("reports", "--reports"),
+    run_id: str = typer.Option(None, "--run", help="a specific run; default is the most recent"),
+) -> None:
+    """Print the questions to put to this company's management, from its latest published report.
+
+    Reads the published artifact rather than re-running anything: the questions were computed when the
+    report was, from the same records the verdict rests on, so re-deriving them here could only produce
+    a different list than the one the firm published.
+    """
+    import json as _json
+    from pathlib import Path
+
+    company_dir = Path(reports_root) / ticker
+    runs = sorted(d for d in company_dir.glob("*") if (d / "report.json").exists()) \
+        if company_dir.exists() else []
+    if not runs:
+        typer.echo(f"no published report for {ticker} under {company_dir} — run `firm deep-dive` first")
+        raise typer.Exit(1)
+    chosen = next((d for d in runs if d.name == run_id), None) if run_id else runs[-1]
+    if chosen is None:
+        typer.echo(f"no run {run_id!r} for {ticker}; available: {', '.join(d.name for d in runs)}")
+        raise typer.Exit(1)
+
+    report = _json.loads((chosen / "report.json").read_text())
+    questions = report.get("management_questions", [])
+    if not questions:
+        typer.echo(f"{ticker} ({chosen.name}): no questions — every applicable check ran and the "
+                   f"filings answered what was asked of them")
+        return
+
+    typer.echo(f"{ticker} — {len(questions)} question(s) for management, from run {chosen.name}\n")
+    for i, q in enumerate(questions, 1):
+        typer.echo(f"{i}. [{q.get('severity', '?')}] {q['question']}")
+        typer.echo(f"     why: {q.get('why', '')}")
+        if q.get("answerable_from"):
+            typer.echo(f"     answerable from: {'; '.join(q['answerable_from'])}")
+    page = chosen / "questions.md"
+    if page.exists():
+        typer.echo(f"\nthe same list as a page to take into the meeting: {page}")
+
+
 @app.command("resolve")
 def resolve_cmd(
     ticker: str = typer.Option(..., "--ticker"),

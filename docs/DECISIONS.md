@@ -3016,3 +3016,25 @@ genuinely malformed answer still points at the right problem.
 the Pydantic schema (Law 4); prose containing no object still fails the run; and every downstream gate
 — numeric discipline, the scenario grid check, the citation validator — runs unchanged on whatever
 comes out. Tolerating an envelope is not tolerating an answer.
+
+### ADR-0076 — The questions page travels separately: `questions.md` and `firm questions`
+
+**Date** 2026-09-01 · **Status** accepted · **Completes** ADR-0066 · **Files**
+`core/report/render.py`, `cli.py`, `tests/report/test_questions_artifact.py` (new) ·
+**940 tests, compute 100%**
+
+ADR-0066 made the questions a computed section of the report and explicitly deferred the standalone
+artifact. The owner's use for them is a meeting, and a forty-page research note is the wrong thing to
+be holding while someone is answering — so `write_report` now also writes `questions.md` beside
+`report.md`, grouped by severity with what would answer each, and `firm questions --ticker X` prints
+the list from the published report.
+
+**The command reads the artifact; it does not recompute.** The questions were computed when the report
+was, from the same records the verdict rests on. Re-deriving them at print time could only produce a
+different list than the one the firm published, and the page a company is asked from must not drift
+from the page the firm stands behind — a test asserts the page, the JSON and the section carry the
+same questions.
+
+**No questions means no page**, not an empty one. A company where every applicable check ran and the
+filings answered what was asked deserves that stated as a finding, not a blank sheet implying the firm
+forgot to ask.
